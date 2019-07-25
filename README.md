@@ -1,2 +1,2 @@
-# Datasets and Codes for mCNN.
-## Directory Structure.
+# mCNN
+## Directory Structure
