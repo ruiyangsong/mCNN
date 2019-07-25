@@ -1,0 +1,15 @@
+*.tar.gz
+.idea/
+src/__pycache__/
+
+datasets/S1925/pdbS1925
+/datasets/S1925/*.csv
+!S1925.csv
+!S1925_new.csv
+
+datasets/S2648/pdbS2648
+/datasets/S2648/*.csv
+!S2648.csv
+!S2648_new.csv
+
+datastes_array/
