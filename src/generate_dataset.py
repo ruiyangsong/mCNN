@@ -135,7 +135,7 @@ def generate_dataset(num_mutation, df_dataset, cutoff_step=0, k_neighbor=30):
                 print('processing %d-th mutation' % key)
             df_key = df_dataset[df_dataset['key'] == key]
             ddg = df_key.iloc[0, df_key.columns.get_loc('ddg')]
-            print(ddg)
+            # print(ddg)
             if width == 16:
                 df_key = df_key.loc[:, ['dist', 'x', 'y', 'z', 'ph', 'temperature', 'C', 'H', 'O', 'N', 'other',
                                         'dC', 'dH', 'dO', 'dN', 'dother']]

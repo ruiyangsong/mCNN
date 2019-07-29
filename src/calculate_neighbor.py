@@ -9,6 +9,8 @@
 import sys
 import numpy as np
 import pandas as pd
+import warnings
+from Bio import BiopythonParserWarning
 from Bio.PDB.PDBParser import PDBParser
 from sklearn.decomposition import PCA
 from generate_dataset import get_df_dataset, generate_dataset, save_data_array
@@ -71,6 +73,7 @@ def get_neighbor(df_mutation_protein, radius, path_pdbfile_base, k_neighbor=0, o
     #print('The pdbid is: %s, contains %d mutations.' % (pdbid, num_mutation_protein))
 
     ## ==================== parser this protein structure. ====================
+    warnings.simplefilter('ignore', BiopythonParserWarning)
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure(pdbid, path_pdbfile_base + '/' + pdbid + '.pdb')
     for i in range(num_mutation_protein):
