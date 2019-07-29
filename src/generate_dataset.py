@@ -84,7 +84,7 @@ def get_df_dataset(df_coord, atom_class=5):
         num_type_delta_r = len(df_key_delta_r)
         print('Number of different types of delta_r: ', num_type_delta_r) # 302
         for i in range(num_type_delta_r):
-            if i % 50 == 0:
+            if i % 100 == 0:
                 print('Processing %d-th delta_r' % (i))
             wild_type = df_key_delta_r.iloc[i, 0]
             mutant = df_key_delta_r.iloc[i, 1]
@@ -131,7 +131,7 @@ def generate_dataset(num_mutation, df_dataset, cutoff_step=0, k_neighbor=30):
         print('This dataset contains %d mutations, every mutation is 2D array with shape: %d * %d'
               % (num_mutation, height, width))
         for key in range(num_mutation):
-            if key % 200 == 0:
+            if key % 500 == 0:
                 print('processing %d-th mutation' % key)
             df_key = df_dataset[df_dataset['key'] == key]
             ddg = df_key.iloc[0, df_key.columns.get_loc('ddg')]

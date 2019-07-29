@@ -224,7 +224,7 @@ if __name__ == '__main__':
     path_csv_coord = path_dataset + name_dataset + '_r_%.2f_neighbor_%d_onlyAtom_%s_centerCA_%s.csv'\
                      % (radius, k_neighbor, only_atom, centerCA)
     df_coord_all.to_csv(path_csv_coord, index=False)
-    print('store df_coord_all done.', 'Shape of df_coord_all:', df_coord_all.shape, '\n', 'begin generate datasets_array...')
+    print('store df_coord_all done.', 'Shape of df_coord_all:', df_coord_all.shape, 'begin generate datasets_array...')
 
     ## ==================== Call generate_dataset.py ====================
     df_delta_r = get_df_dataset(df_coord_all, atom_class=num_class)
