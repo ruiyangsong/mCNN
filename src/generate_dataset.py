@@ -11,7 +11,6 @@ import os
 import numpy as np
 import pandas as pd
 from transform_data_array import transform_data_array
-from shuffle_data import shuffle_data
 
 def get_df_dataset(df_coord, atom_class=5):
     '''
@@ -212,6 +211,7 @@ if __name__ == '__main__':
     ##计算并保存x,y
     x, y, ddg_value = generate_dataset(mutation_csv_path, df_dataset, cutoff_step=0, k_neighbor = k_neighbor)
     save_data_array(x, y, ddg_value, dataset_name, radius, k_neighbor, class_num)
+
     ## 计算并保存dist_array
     # print('-' * 10, '正在将坐标数据转换成距离矩阵...')
     # x_dist = transform_data_array(x)

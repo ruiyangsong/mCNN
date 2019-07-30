@@ -1,5 +1,6 @@
 *.tar.gz
 .idea/
+src/test.py
 src/.idea/
 src/__pycache__/
 

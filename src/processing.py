@@ -10,86 +10,112 @@
 import numpy as np
 import pandas as pd
 import itertools
+from imblearn.over_sampling import RandomOverSampler
 
-def multi_channel(x):
-    """
-    :param x: 二通道的data_array.
-    :return: 多通道的data_array
-    """
-    ## 为方便正规化、切分验证集等操作，多通道表示在最后完成.
-    data_num, row, col = x.shape
+def load_data(dataset_name, radius, k_neighbor, class_num):
+    '''
+    :param dataset_name: str, name of the dataset.
+    :param radius: float, radius of the environment.
+    :param k_neighbor: int, k neighboring atoms.
+    :param class_num: int, class number of atom category.
+    :return: numpy array of x, y and ddg.
+    '''
+    if k_neighbor != 0:
+        data = np.load('../datasets_array/%s/k_neighbor/%s_r_%.2f_neighbor_%d_class_%d.npz'
+                       % (dataset_name, dataset_name, radius, k_neighbor, class_num))
+    else:
+        data = np.load('../datasets_array/%s/radius/%s_r_%.2f_neighbor_%d_class_%d.npz'
+                       % (dataset_name, dataset_name, radius, k_neighbor, class_num))
+    x = data['x']
+    y = data['y']
+    ddg = data['ddg']
+    assert x.shape[0] == ddg.shape[0]
+    assert x.shape[0] == y.shape[0]
+    return x,y,ddg
 
-    if col == 16:
-        # S2648,不含RSA,['dist'||'x','y', 'z'||'ph'||'temperature'||'C', 'H', 'O', 'N', 'other']
-        # group_num = 5
-        #print('列属性数目为：',col)
-        pchange = x[:, 0, 11:]
-        x_new = np.zeros(data_num * 120 * row * 11).reshape(data_num, 120, row, 11)
-        nums = itertools.permutations([0, 1, 2, 3, 4])
-        dict = {'0': [0], '1': [1, 2, 3], '2': [4], '3': [5], '4': [6,7, 8, 9, 10]}
-        count = 0
-        for sequence in nums:
-            keys = [str(i) for i in sequence]
-            for k in range(data_num):
-                temp = x[k]
-                x_new[k, count, :, :] = temp[:,dict[keys[0]] + dict[keys[1]] + dict[keys[2]] + dict[keys[3]] + dict[keys[4]]]
-            count += 1
-        # print('x_new shape:', x_new.shape,'pcahnge shape:',pchange.shape)
-        return x_new, pchange
+def sort_row(x, method):
+    '''
+    :param x: 3D tensor of this dataset, the axis are: data_num, row_num and col_nm.
+    :param method: str, sorting method = [0,1,2]<-->sort by[dist, octant, random].
+    :return: 3D tensor after sort.
+    '''
+    data_num, row_num, col_num = x.shape
+    if method == 'distance':
+        return x
+    elif method == 'octant':
+        x_new = np.zeros(x.shape)
+        for i in range(x.shape[0]):
+            data = pd.DataFrame(x[i])
+            octant1 = data[(data[1] >= 0) & (data[2] >= 0) & (data[3] >= 0)]
+            octant2 = data[(data[1] < 0) & (data[2] > 0) & (data[3] > 0)]
+            octant3 = data[(data[1] < 0) & (data[2] < 0) & (data[3] > 0)]
+            octant4 = data[(data[1] > 0) & (data[2] < 0) & (data[3] > 0)]
+            octant5 = data[(data[1] > 0) & (data[2] > 0) & (data[3] < 0)]
+            octant6 = data[(data[1] < 0) & (data[2] > 0) & (data[3] < 0)]
+            octant7 = data[(data[1] < 0) & (data[2] < 0) & (data[3] < 0)]
+            octant8 = data[(data[1] > 0) & (data[2] < 0) & (data[3] < 0)]
+            temp_array = np.vstack((octant1, octant2, octant3, octant4, octant5, octant6, octant7, octant8))
+            x_new[i] = temp_array
+        return x_new
+    elif method == 'permutation1':
+        indices = np.load('../global/permutation1/indices_%d.npy' % row_num)
+    elif method == 'permutation2':
+        indices = np.load('../global/permutation2/indices_%d.npy' % row_num)
+    for i in range(data_num):
+        x[i] = x[i][indices]
+    return x
 
-    elif col == 17:
-        # S1932,['dist'||'x', 'y', 'z'||'rsa'||'ph','temperature'||'C', 'H', 'O', 'N', 'other']
-        # group_num = 5
-        pchange = x[:,0,12:]
-        #print('列属性数目为：', col)
-        x_new = np.zeros(data_num*120*row*12).reshape(data_num,120,row,12)
-        nums = itertools.permutations([0,1, 2, 3, 4])
-        dict = {'0':[0],'1':[1,2,3],'2':[4],'3':[5,6],'4':[7,8,9,10,11]}
-        count = 0
-        for sequence in nums:
-            keys = [str(i) for i in sequence]
-            for k in range(data_num):
-                temp = x[k]
-                x_new[k,count,:,:] = temp[:,dict[keys[0]] + dict[keys[1]] + dict[keys[2]] + dict[keys[3]] + dict[keys[4]]]
-            count+=1
-        #print('x_new shape:', x_new.shape,'pcahnge shape:',pchange.shape)
-        return x_new, pchange
+def shuffle_data(x, y, ddg, random_seed):
+    indices = [i for i in range(x.shape[0])]
+    np.random.seed(random_seed)
+    np.random.shuffle(indices)
+    x = x[indices]
+    y = y[indices]
+    ddg = ddg[indices]
+    return x,y,ddg
 
-def octant(x):
-    x_new = np.zeros(x.shape)
-    for i in range(x.shape[0]):
-        if i % 500 == 0:
-            print('-----%dth mutation is being processed.'%i)
-        data = pd.DataFrame(x[i])
-        octant1 = data[(data[1] >= 0) & (data[2] >= 0) & (data[3] >= 0)]
-        octant2 = data[(data[1] < 0) & (data[2] > 0) & (data[3] > 0)]
-        octant3 = data[(data[1] < 0) & (data[2] < 0) & (data[3] > 0)]
-        octant4 = data[(data[1] > 0) & (data[2] < 0) & (data[3] > 0)]
-        octant5 = data[(data[1] > 0) & (data[2] > 0) & (data[3] < 0)]
-        octant6 = data[(data[1] < 0) & (data[2] > 0) & (data[3] < 0)]
-        octant7 = data[(data[1] < 0) & (data[2] < 0) & (data[3] < 0)]
-        octant8 = data[(data[1] > 0) & (data[2] < 0) & (data[3] < 0)]
-        temp_array = np.vstack((octant1,octant2,octant3,octant4,octant5,octant6,octant7,octant8))
-        x_new[i] = temp_array
-    return x_new
-def reshape_tensor(x_train, x_test, x_val, nn_model):
-    ## reshape array to Input shape
-    if nn_model == 0:
-        x_train = x_train.reshape((-1, x_train[1] * x_train[2]))
-        x_test = x_test.reshape((-1, x_test[1] * x_test[2]))
-        x_val = x_val.reshape((-1, x_val.shape[1], x_val.shape[2]))
-    elif nn_model == 1:
-        x_train = x_train.reshape((x_train.shape[0], x_train.shape[1], x_train.shape[2], 1))
-        x_test = x_test.reshape((x_test.shape[0], x_test.shape[1], x_test.shape[2], 1))
-        x_val = x_val.reshape((x_val.shape[0], x_val.shape[1], x_val.shape[2], 1))
-    elif nn_model ==2:
-        x_train = x_train.reshape((x_train.shape[0], x_train.shape[1], x_train.shape[2], 1))
-        x_test = x_test.reshape((x_test.shape[0], x_test.shape[1], x_test.shape[2], 1))
-        x_val = x_val.reshape((x_val.shape[0], x_val.shape[1], x_val.shape[2], 1))
+def split_val(x_train, y_train, ddg_train, ddg_test, random_seed):
 
-    return x_train, x_test, x_val
+    p_train_indices, n_train_indices = ddg_train >= 0, ddg_train < 0
+    x_p_train, x_n_train = x_train[p_train_indices], x_train[n_train_indices]
+    y_p_train, y_n_train = y_train[p_train_indices], y_train[n_train_indices]
+    ddg_p_train, ddg_n_train = ddg_train[p_train_indices], ddg_train[n_train_indices]
 
-def normalize(x_train, x_val, x_test, method=0):
+    num_p_test, num_n_test = sum(ddg_test >= 0), sum(ddg_test < 0)
+
+    x_p_val, x_n_val = x_p_train[:num_p_test], x_n_train[:num_n_test]
+    y_p_val, y_n_val = y_p_train[:num_p_test], y_n_train[:num_n_test]
+    ddg_p_val, ddg_n_val = ddg_p_train[:num_p_test], ddg_n_train[:num_n_test]
+
+    x_p_train, x_n_train = x_p_train[num_p_test:], x_n_train[num_n_test:]
+    y_p_train, y_n_train = y_p_train[num_p_test:], y_n_train[num_n_test:]
+    ddg_p_train, ddg_n_train = ddg_p_train[num_p_test:], ddg_n_train[num_n_test:]
+
+    x_val, y_val, ddg_val = np.vstack((x_p_val, x_n_val)), np.vstack((y_p_val, y_n_val)), np.hstack((ddg_p_val, ddg_n_val))
+    x_train, y_train, ddg_train = np.vstack((x_p_train,x_n_train)), np.vstack((y_p_train,y_n_train)),\
+                                  np.hstack((ddg_p_train,ddg_n_train))
+    ## shuffe data.
+    x_train_new, y_train_new, ddg_train_new = shuffle_data(x_train, y_train, ddg_train, random_seed=random_seed)
+    assert x_train_new.shape[0] + x_val.shape[0] == x_train.shape[0]
+    assert x_val.shape[0] == ddg_test.shape[0]
+
+    return x_train_new, y_train_new, ddg_train_new, x_val, y_val, ddg_val
+
+def oversampling(x_train, y_train):
+    train_num, train_row, train_col = x_train.shape
+    x_train = x_train.reshape((train_num, train_row * train_col))
+    y_train = y_train.reshape(train_num)
+
+    ros = RandomOverSampler()
+    x_train_new, y_train_new = ros.fit_sample(x_train, y_train)
+    x_train = x_train_new.reshape(-1,train_row,train_col)
+    y_train = y_train_new.reshape(-1,1)
+    positive_indices, negative_indices = y_train.reshape(-1, ) == 1, y_train.reshape(-1, ) == 0
+    assert x_train[positive_indices].shape[0] == x_train[negative_indices].shape[0]
+    assert x_train[positive_indices].shape[0] == x_train[negative_indices].shape[0]
+    return x_train, y_train
+
+def normalize(x_train, x_test, x_val, method = 'norm'):
     num_train, row_train, col_train = x_train.shape
     num_val, row_val, col_val = x_val.shape
     num_test, row_test, col_test = x_test.shape
@@ -97,7 +123,7 @@ def normalize(x_train, x_val, x_test, method=0):
     x_val = x_val.reshape((num_val*row_val, col_val))
     x_test = x_test.reshape((num_test * row_test, col_test))
 
-    if method == 0:
+    if method == 'norm':
         mean = x_train.mean(axis=0)
         std = x_train.std(axis=0)
         x_train -= mean
@@ -106,89 +132,31 @@ def normalize(x_train, x_val, x_test, method=0):
         x_val /= std
         x_test -= mean
         x_test /= std
-    elif method == 1:
+    elif method == 'max':
         max_ = x_train.max(axis=0)
         x_train /= max_
         x_val /= max_
         x_test /= max_
-    x_train = x_train.reshape((num_train,row_train,col_train))
-    x_val = x_val.reshape((num_val,row_val,col_val))
-    x_test = x_test.reshape((num_test,row_test,col_test))
+    x_train = x_train.reshape(num_train,row_train,col_train)
+    x_val = x_val.reshape(num_val,row_val,col_val)
+    x_test = x_test.reshape(num_test,row_test,col_test)
     return x_train, x_val, x_test
 
-def split_val(x_train,y_train,ddg_train,x_test,y_test,k):
-    ddg_train = ddg_train.reshape(-1,1) ## vstack不支持 0D
-    ## block this for efficiency
-    # print('-' * 10, '验证集切分之前')
-    # assert x_train[y_train.reshape(-1, ) == 1].shape[0] == y_train[y_train.reshape(-1, ) == 1].shape[0]
-    # print('训练样本正类个数:', y_train[y_train.reshape(-1, ) == 1].shape[0])
-    # assert x_train[y_train.reshape(-1, ) == 0].shape[0] == y_train[y_train.reshape(-1, ) == 0].shape[0]
-    # print('训练样本负类个数:', y_train[y_train.reshape(-1, ) == 0].shape[0])
-    # assert x_test[y_test.reshape(-1, ) == 1].shape[0] == y_test[y_test.reshape(-1, ) == 1].shape[0]
-    # print('test样本正类个数:', y_test[y_test.reshape(-1, ) == 1].shape[0])
-    # assert x_test[y_test.reshape(-1, ) == 0].shape[0] == y_test[y_test.reshape(-1, ) == 0].shape[0]
-    # print('test样本负类个数:', y_test[y_test.reshape(-1, ) == 0].shape[0])
+def reshape_tensor(x_train, x_test, x_val):
+    ## reshape array to Input shape
+    train_data_num, row_num, col_num = x_train.shape
+    test_data_num, val_data_num = x_test.shape[0], x_val.shape[0]
+    x_train = x_train.reshape(train_data_num, row_num, col_num, 1)
+    x_test = x_test.reshape(test_data_num, row_num, col_num, 1)
+    x_val = x_val.reshape(val_data_num, row_num, col_num, 1)
 
-    ## 切分验证集
-    #--------------------------------------
-    # ##方法1
-    # val_num = x_train.shape[0] // (k - 1)
-    # x_val = x_train[:val_num]
-    # y_val = y_train[:val_num]
-    # x_train = x_train[val_num:]
-    # y_train = y_train[val_num:]
-    ##方法2
-    #从训练数据中选出正类和负类数据
-    x_p_train = x_train[y_train.reshape(-1, ) == 1]
-    y_p_train = y_train[y_train.reshape(-1, ) == 1]
-    ddg_p_train = ddg_train[y_train.reshape(-1, ) == 1]
-    x_n_train = x_train[y_train.reshape(-1, ) == 0]
-    y_n_train = y_train[y_train.reshape(-1, ) == 0]
-    ddg_n_train = ddg_train[y_train.reshape(-1, ) == 0]
-    #计算测试数据中正类和负类个数
-    test_p_num = y_test[y_test.reshape(-1, ) == 1].shape[0]
-    test_n_num = y_test[y_test.reshape(-1, ) == 0].shape[0]
-    #按照测试数据的个数从训练数据中选出验证数据。
-    x_p_val = x_p_train[:test_p_num]
-    y_p_val = y_p_train[:test_p_num]
-    ddg_p_val = ddg_p_train[:test_p_num]
-    x_n_val = x_n_train[:test_n_num]
-    y_n_val = y_n_train[:test_n_num]
-    ddg_n_val = ddg_n_train[:test_n_num]
-    #将验证数据组合起来
-    x_val = np.vstack((x_p_val, x_n_val))
-    y_val = np.vstack((y_p_val, y_n_val))
-    ddg_val = np.vstack((ddg_p_val, ddg_n_val))
-    #将剩余的训练数据组合起来
-    x_p_train = x_p_train[test_p_num:]
-    y_p_train = y_p_train[test_p_num:]
-    ddg_p_train = ddg_p_train[test_p_num:]
-    x_n_train = x_n_train[test_n_num:]
-    y_n_train = y_n_train[test_n_num:]
-    ddg_n_train = ddg_n_train[test_n_num:]
-    x_train = np.vstack((x_p_train,x_n_train))
-    y_train = np.vstack((y_p_train,y_n_train))
-    ddg_train = np.vstack((ddg_p_train,ddg_n_train))
-    #再将ddg转换成 0D
-    ddg_train = ddg_train.reshape(-1)
-    ddg_val = ddg_val.reshape(-1)
+    return x_train, x_test, x_val
 
-    ## block this for efficiency
-    # print('-' * 10, '验证集切分之后')
-    # assert x_train[y_train.reshape(-1, ) == 1].shape[0] == y_train[y_train.reshape(-1, ) == 1].shape[0]
-    # print('训练样本正类个数:', y_train[y_train.reshape(-1, ) == 1].shape[0])
-    # assert x_train[y_train.reshape(-1, ) == 0].shape[0] == y_train[y_train.reshape(-1, ) == 0].shape[0]
-    # print('训练样本负类个数:', y_train[y_train.reshape(-1, ) == 0].shape[0])
-    # assert x_val[y_val.reshape(-1, ) == 1].shape[0] == y_val[y_val.reshape(-1, ) == 1].shape[0]
-    # print('val样本正类个数:', y_val[y_val.reshape(-1, ) == 1].shape[0])
-    # assert x_val[y_val.reshape(-1, ) == 0].shape[0] == y_val[y_val.reshape(-1, ) == 0].shape[0]
-    # print('val样本负类个数:', y_val[y_val.reshape(-1, ) == 0].shape[0])
-    # assert x_test[y_test.reshape(-1, ) == 1].shape[0] == y_test[y_test.reshape(-1, ) == 1].shape[0]
-    # print('test样本正类个数:', y_test[y_test.reshape(-1, ) == 1].shape[0])
-    # assert x_test[y_test.reshape(-1, ) == 0].shape[0] == y_test[y_test.reshape(-1, ) == 0].shape[0]
-    # print('test样本负类个数:', y_test[y_test.reshape(-1, ) == 0].shape[0])
+def split_delta_r(x_train):
+    x_train, delta_r_train = x_train[:, :, :-5], x_train[:, 0, -5:]
+    x_train = x_train[:, :, :, np.newaxis]
+    return x_train
 
-    return x_train,y_train,ddg_train,x_val,y_val,ddg_val
 
 if __name__ == '__main__':
     data = np.load('../datasets_array/S1925/k_neighbor/S1925_r_50.00_neighbor_50_class_5.npz')
@@ -196,8 +164,3 @@ if __name__ == '__main__':
     print('x_shape:',x.shape)
     # print(x[0,0:5,:])
     x_new, pchange = multi_channel(x)
-
-    x_new = octant(x)
-    print(x_new.shape)
-    print(pchange.shape)
-    # print(x_new[0, 0:5, :])
