@@ -108,7 +108,7 @@ if __name__ == '__main__':
     print('Sort row is done, sorting method is %s.' % sort_method)
 
     ## Cross validation.
-    print('Cross validation begin, total k is %d' % k)
+    print('Cross validation begin, total k is %d, nn_model is %.2f' % (k, nn_model))
     kfold_score, history_list = cross_validation(x, y, ddg, k, seed[1:], nn_model, normalize_method, train_ratio=0.7)
 
     print_result(nn_model,kfold_score)

@@ -10,7 +10,7 @@ import os
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 config = tf.ConfigProto()
 #config.gpu_options.per_process_gpu_memory_fraction = 0.3
 config.gpu_options.allow_growth=True
@@ -25,7 +25,7 @@ from build_model import build_model
 from processing import normalize, split_val, oversampling, reshape_tensor, split_delta_r
 
 def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, seed, nn_model, normalize_method):
-
+    verbose_flag = 0
     ## set dtype of x_train and x_test.
     # x_train = x_train.astype('float32')
     # x_test = x_test.astype('float32')
@@ -53,8 +53,7 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, seed, nn_
     ## =======================================================================
     ## ----------------------------- train -----------------------------------
     ## =======================================================================
-    print('train model begin, nn_model is %.2f' % nn_model)
-    verbose_flag = 0
+    print('training %s model ...' % nn_model)
     reduce_lr = ReduceLROnPlateau(monitor='loss', patience=5, mode='auto')
     if nn_model ==1.01:
         ## Add axis for network input.

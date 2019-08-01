@@ -14,7 +14,7 @@ from processing import split_delta_r
 
 def test_model(network,x_test, y_test, ddg_test, nn_model):
     ## test
-    print('Testing %s model ...' % nn_model)
+    print('testing %s model ...' % nn_model)
     if nn_model < 2:
         # test_loss, test_acc = network.evaluate(x_test, y_test)
         ## Calc evaluation metrics.
