@@ -98,10 +98,11 @@ def split_val(x_train, y_train, ddg_train, ddg_test, random_seed):
     ddg_p_train, ddg_n_train = ddg_p_train[num_p_test:], ddg_n_train[num_n_test:]
 
     x_val, y_val, ddg_val = np.vstack((x_p_val, x_n_val)), np.vstack((y_p_val, y_n_val)), np.hstack((ddg_p_val, ddg_n_val))
-    x_train, y_train, ddg_train = np.vstack((x_p_train,x_n_train)), np.vstack((y_p_train,y_n_train)),\
-                                  np.hstack((ddg_p_train,ddg_n_train))
+    x_train_new, y_train_new, ddg_train_new = np.vstack((x_p_train,x_n_train)), np.vstack((y_p_train,y_n_train)),\
+                                              np.hstack((ddg_p_train,ddg_n_train))
     ## shuffe data.
-    x_train_new, y_train_new, ddg_train_new = shuffle_data(x_train, y_train, ddg_train, random_seed=random_seed)
+    x_train_new, y_train_new, ddg_train_new = shuffle_data(x_train_new, y_train_new, ddg_train_new, random_seed=random_seed)
+
     assert x_train_new.shape[0] + x_val.shape[0] == x_train.shape[0]
     assert x_val.shape[0] == ddg_test.shape[0]
 
@@ -160,7 +161,7 @@ def reshape_tensor(x_train, x_test, x_val):
 def split_delta_r(x_train):
     x_train, delta_r_train = x_train[:, :, :-5], x_train[:, 0, -5:]
     x_train = x_train[:, :, :, np.newaxis]
-    return x_train
+    return x_train, delta_r_train
 
 def save_model(dataset_name, radius, k_neighbor, class_num, dist,network,test_acc,k_count,acc_threshold=0.86):
     ## Create model dir.
@@ -186,18 +187,18 @@ def save_model(dataset_name, radius, k_neighbor, class_num, dist,network,test_ac
                 dataset_name, radius,k_neighbor,class_num,test_acc,k_count))
 
 def print_result(nn_model, kfold_score):
-    print('-'*5, 'The average test results are showed below:')
+    print('+'*5, 'The average test results are showed below:')
     if nn_model < 2:
-        print('acc:', np.mean(kfold_score[:, 0]))
-        print('recall_p:', np.mean(kfold_score[:, 1]))
-        print('recall_n:', np.mean(kfold_score[:, 2]))
-        print('precision_p:', np.mean(kfold_score[:, 3]))
-        print('precision_n:', np.mean(kfold_score[:, 4]))
-        print('mcc:', np.mean(kfold_score[:, 5]))
+        print('--acc:', np.mean(kfold_score[:, 0]))
+        print('--recall_p:', np.mean(kfold_score[:, 1]))
+        print('--recall_n:', np.mean(kfold_score[:, 2]))
+        print('--precision_p:', np.mean(kfold_score[:, 3]))
+        print('--precision_n:', np.mean(kfold_score[:, 4]))
+        print('--mcc:', np.mean(kfold_score[:, 5]))
 
     elif nn_model > 2:
-        print('rho:', np.mean(kfold_score[:, 6]))
-        print('rmse:', np.mean(kfold_score[:, 7]))
+        print('--rho:', np.mean(kfold_score[:, 6]))
+        print('--rmse:', np.mean(kfold_score[:, 7]))
 
 def plotfigure(history_dict):
     loss_values = history_dict['loss']
