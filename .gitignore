@@ -1,6 +1,7 @@
 *.tar.gz
 *.swp
 .idea/
+.vscode/
 results/
 datasets_array/
 
