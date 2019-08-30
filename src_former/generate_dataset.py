@@ -252,10 +252,10 @@ def save_data_array(x,y,ddg_value,dataset_name, radius, k_neighbor, class_num, d
         os.mkdir(path_k_neighbor)
     if not os.path.exists(path_radius):
         os.mkdir(path_radius)
-    ## 打乱数据
-    x,y,ddg_value = shuffle_data(x,y,ddg_value)
-
-    print('-'*10,'数据已经打乱,开始写入磁盘...')
+    # ## 打乱数据
+    # x,y,ddg_value = shuffle_data(x,y,ddg_value)
+    #
+    # print('-'*10,'数据已经打乱,开始写入磁盘...')
     ## 存储dist数据
     if dist == 1:
         np.savez('../datasets_array/%s/dist/%s_dist_r_%.2f_neighbor_%d_class_%d.npz' % (
