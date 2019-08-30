@@ -283,7 +283,7 @@ if __name__ == '__main__':
     mutation_csv_path = dataset_path + '%s_new.csv' % dataset_name  # 描述突变信息的csv文件路径
 
     ## ==================== test function: get_df_dataset ====================
-    coord_csv_path = dataset_path + dataset_name + '_r_%.2f_neighbor_%d_onlyAtom_centerCA.csv' % (radius, k_neighbor)
+    coord_csv_path = dataset_path + 'src_former_' + dataset_name + '_r_%.2f_neighbor_%d_onlyAtom_centerCA.csv' % (radius, k_neighbor)
 
     df_dataset = get_df_dataset(coord_csv_path, atom_class=class_num) #包含了 原子类别向量 和 pchange 的df
 
