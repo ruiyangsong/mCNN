@@ -9,7 +9,11 @@ src_former/__pycache__/
 src_former/test.py
 src/test.py
 src/.idea/
+src/.vscode/
 src/__pycache__/
+
+src_former/.idea/
+src_former/.vscode/
 
 datasets/S1925/pdbS1925
 /datasets/S1925/*.csv
