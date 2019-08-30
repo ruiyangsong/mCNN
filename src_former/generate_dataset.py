@@ -263,12 +263,12 @@ def save_data_array(x,y,ddg_value,dataset_name, radius, k_neighbor, class_num, d
         print('-' * 10, '包含距离矩阵的张量数组已存储到本地磁盘！')
     ## 只考虑邻域
     elif k_neighbor != 0:
-        np.savez('../datasets_array/%s/k_neighbor/%s_r_%.2f_neighbor_%d_class_%d.npz' % (
+        np.savez('../datasets_array/%s/k_neighbor/src_former_%s_r_%.2f_neighbor_%d_class_%d.npz' % (
             dataset_name, dataset_name, radius, k_neighbor, class_num), x=x,y=y,ddg=ddg_value)  # (2648, 437, 15), (2648, 30, 15)
         print('-' * 10, '包含 邻域环境 的坐标数据的张量数组已存储到本地磁盘！')
     ## 只考虑近邻
     else:
-        np.savez('../datasets_array/%s/radius/%s_r_%.2f_neighbor_%d_class_%d.npz' % (
+        np.savez('../datasets_array/%s/radius/src_former_%s_r_%.2f_neighbor_%d_class_%d.npz' % (
             dataset_name, dataset_name, radius, k_neighbor, class_num), x=x,y=y,ddg=ddg_value)  # (2648, 437, 15), (2648, 30, 15)
         print('-' * 10, '包含 k近邻 的坐标数据的张量数组已存储到本地磁盘！')
 

@@ -229,7 +229,7 @@ if __name__ == '__main__':
     centerCA = True
     pca_model = 0
 
-    coord_csv_path = dataset_path+dataset_name+'_r_%.2f_neighbor_%d_onlyAtom_centerCA.csv'%(radius,k_neighbor)
+    coord_csv_path = dataset_path+'src_former'+dataset_name+'_r_%.2f_neighbor_%d_onlyAtom_centerCA.csv'%(radius,k_neighbor)
 
     f = open(mutation_csv_path, 'r'); mutations_df = pd.read_csv(f); f.close()
     temp_df = mutations_df.drop_duplicates('PDB', 'first', inplace=False)#保存副本
