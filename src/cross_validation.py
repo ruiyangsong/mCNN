@@ -63,7 +63,8 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
 
     ## k_fold cross validation.
     if k >= 3:
-        skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
+        # skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
+        skf = StratifiedKFold(n_splits=k, shuffle=False)
         for train_index, test_index in skf.split(x, y):
             print('%d is in progress, total %d' % (k_count, k))
             x_train, x_test = x[train_index], x[test_index]

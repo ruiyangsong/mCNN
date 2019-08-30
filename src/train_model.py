@@ -16,10 +16,6 @@ config = tf.ConfigProto()
 config.gpu_options.allow_growth=True
 set_session(tf.Session(config=config))
 
-import sys
-import numpy as np
-import pandas as pd
-from keras.callbacks import ReduceLROnPlateau
 from keras.utils import to_categorical
 from build_model import build_model
 from processing import normalize, split_val, oversampling, reshape_tensor, split_delta_r
@@ -54,7 +50,6 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, seed, nn_
     ## ----------------------------- train -----------------------------------
     ## =======================================================================
     print('training %s model ...' % nn_model)
-    reduce_lr = ReduceLROnPlateau(monitor='loss', patience=5, mode='auto')
     if nn_model ==1.01:
         ## Add axis for network input.
         x_train, x_test, x_val = reshape_tensor(x_train, x_test, x_val)
