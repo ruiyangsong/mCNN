@@ -113,7 +113,7 @@ def oversampling(x_train, y_train):
     x_train = x_train.reshape((train_num, train_row * train_col))
     y_train = y_train.reshape(train_num)
 
-    ros = RandomOverSampler()
+    ros = RandomOverSampler(random_state=10)
     x_train_new, y_train_new = ros.fit_sample(x_train, y_train)
     x_train = x_train_new.reshape(-1,train_row,train_col)
     y_train = y_train_new.reshape(-1,1)
@@ -146,7 +146,7 @@ def normalize(x_train, x_test, x_val, method = 'norm'):
     x_train = x_train.reshape(num_train,row_train,col_train)
     x_val = x_val.reshape(num_val,row_val,col_val)
     x_test = x_test.reshape(num_test,row_test,col_test)
-    return x_train, x_val, x_test
+    return x_train, x_test, x_val
 
 def reshape_tensor(x_train, x_test, x_val):
     ## reshape array to Input shape

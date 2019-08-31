@@ -18,7 +18,7 @@ def oversampling(x_train, y_train):
     x_train = x_train.reshape((train_num,train_row*train_col))
     y_train = y_train.reshape(train_num)
 
-    ros = RandomOverSampler()
+    ros = RandomOverSampler(random_state=10)
     x_train_new, y_train_new = ros.fit_sample(x_train, y_train)
 
     # ddg_train_new = []
