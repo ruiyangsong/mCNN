@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # name_dataset, radius, k_neighbor, num_class
-# generate radius dataset_array of S1925.
+
+## generate only radius dataset_array of S1925.
+# radius.
 python calculate_neighbor.py S1925 3 0 5
 python calculate_neighbor.py S1925 4 0 5
 python calculate_neighbor.py S1925 5 0 5

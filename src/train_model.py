@@ -28,16 +28,16 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, seed, nn_
 
     ## Split val data from train data
     x_train, y_train, ddg_train, x_val, y_val, ddg_val = split_val(x_train,y_train,ddg_train,ddg_test, seed)
-    print('split val done.')
+    # print('split val done.')
 
     ## OverSampling train data for classification task.
     if nn_model < 2:
         x_train, y_train = oversampling(x_train, y_train)
-        print('oversampling done.')
+        # print('oversampling done.')
 
     ## Normalization.
     x_train, x_test, x_val = normalize(x_train, x_test, x_val, normalize_method)
-    print('normalize done, normalize_method is %s.' % normalize_method)
+    # print('normalize done, normalize_method is %s.' % normalize_method)
 
     ## OneHot encoding for labels. Warnning: when labels are the same value, have to assign class number.
     y_train, y_test, y_val = to_categorical(y_train, 2), to_categorical(y_test, 2), to_categorical(y_val, 2)
@@ -49,7 +49,7 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, seed, nn_
     ## =======================================================================
     ## ----------------------------- train -----------------------------------
     ## =======================================================================
-    print('training %s model ...' % nn_model)
+    # print('training %s model ...' % nn_model)
     if nn_model ==1.01:
         ## Add axis for network input.
         x_train, x_test, x_val = reshape_tensor(x_train, x_test, x_val)

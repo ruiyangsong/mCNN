@@ -197,8 +197,8 @@ def print_result(nn_model, kfold_score):
         print('--mcc:', np.mean(kfold_score[:, 5]))
 
     elif nn_model > 2:
-        print('--rho:', np.mean(kfold_score[:, 6]))
-        print('--rmse:', np.mean(kfold_score[:, 7]))
+        print('--rho:', np.mean(kfold_score[:, 0]))
+        print('--rmse:', np.mean(kfold_score[:, 1]))
 
 def plotfigure(history_dict):
     loss_values = history_dict['loss']

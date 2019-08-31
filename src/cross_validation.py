@@ -66,7 +66,7 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
         # skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
         skf = StratifiedKFold(n_splits=k, shuffle=False)
         for train_index, test_index in skf.split(x, y):
-            print('%d is in progress, total %d' % (k_count, k))
+            print('%d-th fold is in progress.' % (k_count))
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y[train_index], y[test_index]
             ddg_train, ddg_test = ddg[train_index], ddg[test_index]
@@ -100,16 +100,20 @@ if __name__ == '__main__':
     nn_model = float(nn_model) # which CNN structure to choose.
     seed = [int(p_seed), int(k_seed), int(v_seed)] # seeds for permutation, split k_fold, split val.
 
+    ## print input info.
+    print('dataset_name: %s, radius: %.2f, k_neighbor: %d, class_num: %d, k-fold: %d, nn_model: %.2f,'
+          'normalize_method: %s, sort_method: %s, [permutation-seed, k-fold-seed, split-val-seed]: %r'
+          %(dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method, seed))
     ## load data
     x, y, ddg = load_data(dataset_name,radius,k_neighbor,class_num)
-    print('Loading data from hard drive is done.')
+    # print('Loading data from hard drive is done.')
 
     ## sort row of each mutation matrix.
     x = sort_row(x, sort_method, seed[0])
-    print('Sort row is done, sorting method is %s.' % sort_method)
+    # print('Sort row is done, sorting method is %s.' % sort_method)
 
     ## Cross validation.
-    print('Cross validation begin, total k is %d, nn_model is %.2f' % (k, nn_model))
+    print('%d-fold cross validation begin.' % (k, nn_model))
     kfold_score, history_list = cross_validation(x, y, ddg, k, seed[1:], nn_model, normalize_method, train_ratio=0.7)
 
     print_result(nn_model,kfold_score)
