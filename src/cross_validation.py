@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     ## print input info.
     print('dataset_name: %s, radius: %.2f, k_neighbor: %d, class_num: %d, k-fold: %d, nn_model: %.2f,'
-          '\nnormalize_method: %s, sort_method: %s, \n[permutation-seed, k-fold-seed, split-val-seed]: %r'
+          '\nnormalize_method: %s, sort_method: %s, \n[permutation-seed, k-fold-seed, split-val-seed]: %r\n'
           %(dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method, seed))
     ## load data
     x, y, ddg = load_data(dataset_name,radius,k_neighbor,class_num)
