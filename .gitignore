@@ -4,7 +4,7 @@
 .vscode/
 results/
 datasets_array*/
-datasets_array
+datasets_array*
 
 src_former/__pycache__/
 src_former/test.py
