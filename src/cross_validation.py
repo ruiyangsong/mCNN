@@ -102,7 +102,7 @@ if __name__ == '__main__':
 
     ## print input info.
     print('dataset_name: %s, radius: %.2f, k_neighbor: %d, class_num: %d, k-fold: %d, nn_model: %.2f,'
-          'normalize_method: %s, sort_method: %s, [permutation-seed, k-fold-seed, split-val-seed]: %r'
+          '\nnormalize_method: %s, sort_method: %s, \n[permutation-seed, k-fold-seed, split-val-seed]: %r'
           %(dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method, seed))
     ## load data
     x, y, ddg = load_data(dataset_name,radius,k_neighbor,class_num)
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     # print('Sort row is done, sorting method is %s.' % sort_method)
 
     ## Cross validation.
-    print('%d-fold cross validation begin.' % (k, nn_model))
+    print('%d-fold cross validation begin.' % (k))
     kfold_score, history_list = cross_validation(x, y, ddg, k, seed[1:], nn_model, normalize_method, train_ratio=0.7)
 
     print_result(nn_model,kfold_score)
