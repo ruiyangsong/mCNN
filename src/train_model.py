@@ -41,7 +41,10 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model,
         # print('oversampling done.')
 
     ## Normalization.
-    x_train, x_test, x_val = normalize(x_train, x_test, x_val, val_flag, normalize_method)
+    if val_flag == 1:
+        x_train, x_test, x_val = normalize(x_train, x_test, x_val, val_flag, normalize_method)
+    elif val_flag == 0:
+        x_train, x_test= normalize(x_train, x_test, x_val, val_flag, normalize_method)
     # print('normalize done, normalize_method is %s.' % normalize_method)
 
     ## OneHot encoding for labels. Warnning: when labels are the same value, have to assign class number.
