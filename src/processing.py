@@ -122,41 +122,44 @@ def oversampling(x_train, y_train):
     assert x_train[positive_indices].shape[0] == x_train[negative_indices].shape[0]
     return x_train, y_train
 
-def normalize(x_train, x_test, x_val, method = 'norm'):
+def normalize(x_train, x_test, x_val, val_flag = 1, method = 'norm'):
     num_train, row_train, col_train = x_train.shape
-    num_val, row_val, col_val = x_val.shape
     num_test, row_test, col_test = x_test.shape
     x_train = x_train.reshape((num_train * row_train, col_train))
-    x_val = x_val.reshape((num_val*row_val, col_val))
     x_test = x_test.reshape((num_test * row_test, col_test))
+    if val_flag == 1:
+        num_val, row_val, col_val = x_val.shape
+        x_val = x_val.reshape((num_val * row_val, col_val))
+
     if method == 'norm':
         mean = x_train.mean(axis=0)
         std = x_train.std(axis=0)
         x_train -= mean
         x_train /= std
-        x_val -= mean
-        x_val /= std
         x_test -= mean
         x_test /= std
+        if val_flag == 1:
+            x_val -= mean
+            x_val /= std
     elif method == 'max':
         max_ = x_train.max(axis=0)
         x_train /= max_
-        x_val /= max_
         x_test /= max_
+        if val_flag == 1:
+            x_val /= max_
     x_train = x_train.reshape(num_train,row_train,col_train)
-    x_val = x_val.reshape(num_val,row_val,col_val)
     x_test = x_test.reshape(num_test,row_test,col_test)
-    return x_train, x_test, x_val
+    if val_flag == 1:
+        x_val = x_val.reshape(num_val, row_val, col_val)
+        return x_train, x_test, x_val
+    elif val_flag == 0:
+        return x_train, x_test
 
-def reshape_tensor(x_train, x_test, x_val):
+def reshape_tensor(x_):
     ## reshape array to Input shape
-    train_data_num, row_num, col_num = x_train.shape
-    test_data_num, val_data_num = x_test.shape[0], x_val.shape[0]
-    x_train = x_train.reshape(train_data_num, row_num, col_num, 1)
-    x_test = x_test.reshape(test_data_num, row_num, col_num, 1)
-    x_val = x_val.reshape(val_data_num, row_num, col_num, 1)
-
-    return x_train, x_test, x_val
+    data_num, row_num, col_num = x_.shape
+    x_ = x_.reshape(data_num, row_num, col_num, 1)
+    return x_
 
 def split_delta_r(x_train):
     x_train, delta_r_train = x_train[:, :, :-5], x_train[:, 0, -5:]

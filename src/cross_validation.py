@@ -13,7 +13,7 @@ from processing import *
 from train_model import train_model
 from test_model import test_model
 
-def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, train_ratio=0.7):
+def cross_validation(x, y, ddg, k, nn_model, normalize_method, random_seed, flag, train_ratio=0.7):
     '''
     :param x: 3D numpy array, stored numerical representation of this dataset.
     :param y: 1D numpy array, labels of x.
@@ -23,11 +23,12 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
            k == 1 --> blind test.
            k == 2 --> when giving k_fold data manually.
            k >= 3 --> kfold cross validation.
-    :param random_seed: int, random seed for shuffle k_fold and split_val.
     :param nn_model: float, which network structure to choose.
            nn_model == 1.xx --> classification task.
            nn_model == 2.xx --> regression task.
     :param normalize_method: str, 'max' or 'norm'.
+    :param random_seed: tuple, random seed for shuffle k_fold and split_val.
+    :param flag: tuple, flag for val_data and verbose.
     :param train_ratio: float, split ratio for blind test. 0.7 is the default option.
     :return: label balanced train data and test data.
     '''
@@ -63,8 +64,8 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
 
     ## k_fold cross validation.
     if k >= 3:
-        # skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
-        skf = StratifiedKFold(n_splits=k, shuffle=False)
+        skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
+        # skf = StratifiedKFold(n_splits=k, shuffle=False)
         for train_index, test_index in skf.split(x, y):
             print('%d-th fold is in progress.' % (k_count))
             x_train, x_test = x[train_index], x[test_index]
@@ -72,7 +73,7 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
             ddg_train, ddg_test = ddg[train_index], ddg[test_index]
             ## train model on each fold.
             network, history_dict, x_test, y_test, ddg_test = train_model(
-                x_train, y_train, ddg_train, x_test, y_test, ddg_test, v_seed, nn_model, normalize_method)
+                x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model, normalize_method, v_seed, flag)
 
             history_list.append(history_dict)
 
@@ -91,30 +92,35 @@ def cross_validation(x, y, ddg, k, random_seed, nn_model, normalize_method, trai
 if __name__ == '__main__':
     ## Input parameters.
     dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method,\
-    p_seed, k_seed, v_seed = sys.argv[1:]
+    p_seed, k_seed, v_seed, val_flag, verbose_flag = sys.argv[1:]
 
     radius = float(radius)
     k_neighbor = int(k_neighbor)
     class_num = int(class_num) # class number of atoms.
     k = int(k) # kfold
     nn_model = float(nn_model) # which CNN structure to choose.
-    seed = [int(p_seed), int(k_seed), int(v_seed)] # seeds for permutation, split k_fold, split val.
+    seed_tuple = (int(p_seed), int(k_seed), int(v_seed)) # seeds for permutation, split k_fold, split val.
+    flag_tuple = (int(val_flag), int(verbose_flag))
 
     ## print input info.
     print('dataset_name: %s, radius: %.2f, k_neighbor: %d, class_num: %d, k-fold: %d, nn_model: %.2f,'
-          '\nnormalize_method: %s, sort_method: %s, \n[permutation-seed, k-fold-seed, split-val-seed]: %r\n'
-          %(dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method, seed))
+          '\nnormalize_method: %s, sort_method: %s,'
+          '\n(permutation-seed, k-fold-seed, split-val-seed): %r,'
+          '\n(val_flag, verbose_flag): %r.'
+          %(dataset_name, radius, k_neighbor, class_num, k, nn_model,
+            normalize_method, sort_method, seed_tuple, flag_tuple))
     ## load data
     x, y, ddg = load_data(dataset_name,radius,k_neighbor,class_num)
     # print('Loading data from hard drive is done.')
 
     ## sort row of each mutation matrix.
-    x = sort_row(x, sort_method, seed[0])
+    x = sort_row(x, sort_method, seed_tuple[0])
     # print('Sort row is done, sorting method is %s.' % sort_method)
 
     ## Cross validation.
     print('%d-fold cross validation begin.' % (k))
-    kfold_score, history_list = cross_validation(x, y, ddg, k, seed[1:], nn_model, normalize_method, train_ratio=0.7)
+    kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method,
+                                                 seed_tuple[1:], flag_tuple, train_ratio=0.7)
 
     print_result(nn_model,kfold_score)
     ## plot.
