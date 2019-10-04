@@ -41,12 +41,12 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0')
     # print(len(set(lst)))
     fasta_name = '%s.fasta'%seqname
     g = open(fasta_name, 'w+')
-    g.writelines('>%s.fasta|mdl:%s|chain:%s|pos:%s|mt_res:%s'%(seqname, mdlid, chainid, position, mtaa))
-    print(lst)
+    g.writelines('>%s.fasta|mdl:%s|chain:%s|pos:%s|mt_res:%s\n'%(seqname, mdlid, chainid, position, mtaa))
+    # print(lst)
     g.writelines(''.join(aa for aa in lst))
     g.close()
 
 if __name__ == '__main__':
-    print(sys.argv[1:])
+    # print(sys.argv[1:])
     seqname, filename, mdlid, chainid, wtflag, position, mtaa = sys.argv[1:]
     pdb2seq(seqname, filename, mdlid, chainid, wtflag, position, mtaa)
