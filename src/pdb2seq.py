@@ -42,6 +42,7 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0')
     fasta_name = '%s.fasta'%seqname
     g = open(fasta_name, 'w+')
     g.writelines('>%s.fasta|mdl:%s|chain:%s|pos:%s|mt_res:%s'%(seqname, mdlid, chainid, position, mtaa))
+    print(lst)
     g.writelines(''.join(aa for aa in lst))
     g.close()
 
