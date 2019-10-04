@@ -34,7 +34,8 @@ os.system('cp %s/%s.pdb ./data'%(datadir,filename))
 os.system('cp %s/pdb2seq.py .'%funcdir)
 # os.system('%s pdb2seq.py >> ./log/%s.log'%(app,tag))
 # os.system('conda activate bio')
-os.system('python pdb2seq.py %s %s %d %s %s %s %s'%(seqname, filename, mdlid, chainid, wtflag, position, mtaa))
+os.system('python pdb2seq.py %s %s %d %s %s %s %s >> ./log/%s.log'
+          %(seqname, filename, mdlid, chainid, wtflag, position, mtaa, tag))
 # os.system('mv -f %s %s'%(tmpdir, outdir))
 #----------END----------
 endtime = shell('date')
