@@ -15,7 +15,7 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0')
     lst = []
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure(filename, './data/' + filename + '.pdb')
-    model = structure[mdlid]
+    model = structure[int(mdlid)]
     chain = model[chainid]
     for residue in chain:
         res_id = residue.get_id()
