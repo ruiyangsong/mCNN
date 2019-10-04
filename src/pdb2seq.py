@@ -17,22 +17,22 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0')
     structure = parser.get_structure(filename, './data/' + filename + '.pdb')
     model = structure[int(mdlid)]
     chain = model[chainid]
-    for residue in chain:
-        res_id = residue.get_id()
-        if wtflag=='WT':
+    if wtflag == 'WT':
+        for residue in chain:
+            res_id = residue.get_id()
             if res_id[0] == ' ':
                 long_name = chain[res_id].get_resname()
-                assert len(long_name) == 3
                 short_name = aa_dict[long_name[0]+long_name[1].lower()+long_name[2].lower()]
                 lst.append(short_name)
-        elif wtflag=='MT':
-            if position.isdigit():
-                mutid = (' ',int(position),' ')
-            else:
-                mutid = (' ',int(position[:-1]),position[-1])
+    if wtflag=='MT':
+        if position.isdigit():
+            mutid = (' ',int(position),' ')
+        else:
+            mutid = (' ',int(position[:-1]),position[-1])
+        for residue in chain:
+            res_id = residue.get_id()
             if res_id[0] == ' ' and res_id != mutid:
                 long_name = chain[res_id].get_resname()
-                assert len(long_name) == 3
                 short_name = aa_dict[long_name[0]+long_name[1].lower()+long_name[2].lower()]
             elif res_id == mutid:
                 short_name = mtaa
