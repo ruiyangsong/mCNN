@@ -46,6 +46,7 @@ def main():
         a = a.replace('!WTFLAG!', wtflag)
         a = a.replace('!CHAINID!', chainid)
         a = a.replace('!POSITION!', position)
+        a = a.replace('!MTAA!', mtaa)
 
 
         if not os.path.exists(tmpdir):
@@ -74,7 +75,6 @@ def main():
         seqname = '%s/MT_%s_%s_%04d' % (outdir, dataset_name, filename, i + 1)
 
         position = ' '
-        mtaa = '0'
         # print(filename, chainid, outdir, tag)
         # ---- construct based on tmp ----
         f = open('./pdb2seq_tmp.py', 'r')
