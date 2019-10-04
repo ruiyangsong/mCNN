@@ -20,7 +20,7 @@ aa_dict = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C',
 def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', wtaa = '0',mtaa = '0'):
     lst = []
     parser = PDBParser(PERMISSIVE=1)
-    structure = parser.get_structure(filename,'../datasets/%s/pdb%s/%s.pdb'%(filename,dataset_name,dataset_name))
+    structure = parser.get_structure(filename,'../datasets/%s/pdb%s/%s.pdb'%(dataset_name,dataset_name,filename))
     model = structure[int(mdlid)]
     chain = model[chainid]
     if wtflag == 'WT':
