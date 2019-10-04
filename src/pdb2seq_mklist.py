@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys, os, time
 import pandas as pd
@@ -103,7 +103,7 @@ def main():
         g.write(a)
         g.close()
         os.system('/public/home/sry/bin/getQ.pl')
-        os.system('chmod 777 %s' % run_pdb2seq)
+        os.system('chmod 755 %s' % run_pdb2seq)
         walltime = 'walltime = 24:00:00'
         os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, tag, run_pdb2seq))
         print('%s submitted\n' % run_pdb2seq)
