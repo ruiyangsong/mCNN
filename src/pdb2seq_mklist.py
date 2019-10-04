@@ -26,7 +26,7 @@ def main():
         tmpdir = '/tmp/%s/%s' % (user, tag)  # /tmp/sry/pdb2seq_S2648_WT0001
         seqname = '%s/WT_%s_%s_%04d'%(outdir,dataset_name,filename,i+1)
         wtflag = 'WT'
-        position = ' '
+        position = '0'
         mtaa = '0'
         # print(filename, chainid, outdir, tag)
         # ---- construct based on tmp ----
@@ -74,7 +74,6 @@ def main():
         tmpdir = '/tmp/%s/%s' % (user, tag)
         seqname = '%s/MT_%s_%s_%04d' % (outdir, dataset_name, filename, i + 1)
 
-        position = ' '
         # print(filename, chainid, outdir, tag)
         # ---- construct based on tmp ----
         f = open('./pdb2seq_tmp.py', 'r')

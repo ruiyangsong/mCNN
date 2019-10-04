@@ -11,7 +11,7 @@ aa_dict = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C',
            'Leu': 'L', 'Lys': 'K', 'Met': 'M', 'Phe': 'F', 'Pro': 'P',
            'Ser': 'S', 'Thr': 'T', 'Trp': 'W', 'Tyr': 'Y', 'Val': 'V'} # from wiki
 
-def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position=' ', mtaa = '0'):
+def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0'):
     lst = []
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure(filename, filename + '.pdb')
