@@ -14,7 +14,7 @@ aa_dict = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C',
 def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0'):
     lst = []
     parser = PDBParser(PERMISSIVE=1)
-    structure = parser.get_structure(filename, filename + '.pdb')
+    structure = parser.get_structure(filename, '../data/' + filename + '.pdb')
     model = structure[mdlid]
     chain = model[chainid]
     for residue in chain:
