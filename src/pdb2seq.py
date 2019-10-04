@@ -37,7 +37,7 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', mtaa = '0')
             elif res_id == mutid:
                 short_name = mtaa
             lst.append(short_name)
-    # print(lst)
+    print(lst)
     # print(len(set(lst)))
     fasta_name = '%s.fasta'%seqname
     g = open(fasta_name, 'w+')
