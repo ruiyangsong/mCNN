@@ -9,7 +9,7 @@ from Bio.PDB.PDBParser import PDBParser
 warnings.simplefilter('ignore', BiopythonWarning)
 
 dataset_name = 'S2648'
-path_csv_mutation = '../datasets/%s/%s_new_test.csv'%(dataset_name, dataset_name)
+path_csv_mutation = '../datasets/%s/%s_new.csv'%(dataset_name, dataset_name)
 
 datadir = '/public/home/sry/mCNN/datasets/%s/pdb%s'%(dataset_name, dataset_name) #pdbS2648
 mdlid=0
@@ -20,7 +20,7 @@ aa_dict = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C',
 def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', wtaa = '0',mtaa = '0'):
     lst = []
     parser = PDBParser(PERMISSIVE=1)
-    structure = parser.get_structure(filename,'../datasets/S2648/pdbS2648/' + filename + '.pdb')
+    structure = parser.get_structure(filename,'../datasets/%s/pdb%s/%s.pdb'%(filename,dataset_name,dataset_name))
     model = structure[int(mdlid)]
     chain = model[chainid]
     if wtflag == 'WT':
