@@ -44,8 +44,9 @@ def main():
 
         a = a.replace('!SEQNAME!', seqname)
         a = a.replace('!WTFLAG!', wtflag)
+        a = a.replace('!CHAINID!', chainid)
         a = a.replace('!POSITION!', position)
-        a = a.replace('!MTAA!', mtaa)
+
 
         if not os.path.exists(tmpdir):
             os.system('mkdir -p %s/qsub_log' % tmpdir)
@@ -90,6 +91,7 @@ def main():
 
         a = a.replace('!SEQNAME!', seqname)
         a = a.replace('!WTFLAG!', wtflag)
+        a = a.replace('!CHAINID!', chainid)
         a = a.replace('!POSITION!', position)
         a = a.replace('!MTAA!', mtaa)
 
