@@ -12,5 +12,6 @@ for blastname in blastname_lst:
     os.system('cp %s %s/%s/'%(seq,datadir,blastname))
     blast_out = '%s/%s/blast.out'%(datadir,blastname)
     msa_aln = '%s/%s/msa.aln'%(datadir,blastname)
-    print(blast_out,msa_aln,seq)
+    # print(blast_out,msa_aln,seq)
+    os.system('chmod 755 ./alignblast.pl')
     os.system('./alignblast.pl %s %s -Q %s -psi'%(blast_out,msa_aln,seq))
