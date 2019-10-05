@@ -10,17 +10,17 @@ def shell(cmd):
 user = 'sry'
 # app = '/public/application/ncbi-blast-2.3.0+/bin/psiblast'
 
-#f = open('../shell/from_caobx/calc_all.sh')
-f = open('test.py')
+f = open('../shell/from_caobx/calc_all.sh')
+#f = open('test.py')
 lines = f.readlines()
 f.close()
 for line in lines:
     line = line.strip('\n')
     lst = line.split(' ')
     tag = lst[2] + '_' + lst[3] + '_' + lst[4]
-    print(tag)
+    #print(tag)
     # outdir = '/public/home/sry/mCNN/datasets_array/%s'%tag
-    outdir = '../datasets_array/%s' % tag
+    outdir = '../datasets_array/run_clac/%s' % tag
     os.system('mkdir -p %s'%(outdir))
     walltime = 'walltime=24:00:00'
     errfile = '%s/qsub.err'%outdir
@@ -31,8 +31,8 @@ for line in lines:
     g.writelines('#!/usr/bin/env python\n')
     # g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
     # g.writelines("echo 'path:' `pwd`\n")
-    g.writelines('import os\nos.chdir("~/mCNN/src")\nprint(os.getcwd())\n')
-    g.writelines('os.system(%s)'%line)
+    g.writelines('import os\nos.chdir("/public/home/sry/mCNN/src")\nprint(os.getcwd())\n')
+    g.writelines('os.system("%s")'%line)
     # g.writelines("echo 'end at:' `date`\n")
     g.close()
 
