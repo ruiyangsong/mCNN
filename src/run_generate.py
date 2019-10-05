@@ -10,8 +10,8 @@ def shell(cmd):
 user = 'sry'
 # app = '/public/application/ncbi-blast-2.3.0+/bin/psiblast'
 
-f = open('../shell/from_caobx/calc_all.sh')
-# f = open('test.py')
+#f = open('../shell/from_caobx/calc_all.sh')
+f = open('test.py')
 lines = f.readlines()
 f.close()
 for line in lines:
@@ -28,6 +28,7 @@ for line in lines:
     g = open(run_calc, 'w+')
     g.writelines('#!/usr/bin/bash\n')
     g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
+    g.writelines("echo 'path:' `pwd`\n")
     g.writelines(line)
     g.writelines("echo 'end at:' `date`\n")
     g.close()
