@@ -15,6 +15,7 @@ f = open('test.py')
 lines = f.readlines()
 f.close()
 for line in lines:
+    line = line.strip('\n')
     lst = line.split(' ')
     tag = lst[2] + '_' + lst[3] + '_' + lst[4]
     print(tag)
