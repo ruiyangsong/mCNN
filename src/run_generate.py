@@ -32,7 +32,7 @@ for line in lines:
     # g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
     # g.writelines("echo 'path:' `pwd`\n")
     g.writelines('import os\nos.chdir("~/mCNN/src")\nprint(os.getcwd())\n')
-    g.writelines('os.system(%s)'%line[:-1])
+    g.writelines('os.system(%s)'%line)
     # g.writelines("echo 'end at:' `date`\n")
     g.close()
 
