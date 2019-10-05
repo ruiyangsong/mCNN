@@ -24,14 +24,17 @@ for line in lines:
     walltime = 'walltime=24:00:00'
     errfile = '%s/qsub.err'%outdir
     outfile = '%s/qsub.out'%outdir
-    run_calc = '%s/run_calc_%s.sh'%(outdir,tag)
+    run_calc = '%s/run_calc_%s.py'%(outdir,tag)
+
     g = open(run_calc, 'w+')
-    g.writelines('#!/usr/bin/bash\n')
-    g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
-    g.writelines("echo 'path:' `pwd`\n")
-    g.writelines(line)
-    g.writelines("echo 'end at:' `date`\n")
+    g.writelines('#!/usr/bin/env python\n')
+    # g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
+    # g.writelines("echo 'path:' `pwd`\n")
+    g.writelines('import os\nos.chdir("~/mCNN/src")\nprint(os.getcwd())\n')
+    g.writelines('os.system(%s)'%line)
+    # g.writelines("echo 'end at:' `date`\n")
     g.close()
+
     os.system('chmod 755 %s' % run_calc)
     os.system('/public/home/sry/bin/getQ.pl')
     os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, tag, run_calc))
