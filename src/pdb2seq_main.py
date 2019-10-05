@@ -50,7 +50,7 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', wtaa = '0',
     fasta_name = '%s.fasta'%seqname
     g = open(fasta_name, 'w+')
     g.writelines('>%s.fasta|user:sry|date:%s|mdl:%s|chain:%s|pos:%s|wt_res:%s|mt_res:%s\n'
-                 %(seqname[-14:], time.strftime("%a %b %d %H:%M:%S %Y",time.localtime()),
+                 %(seqname, time.strftime("%a %b %d %H:%M:%S %Y",time.localtime()),
                    mdlid, chainid, position, wtaa, mtaa))
     # print(len(lst))
     # print(lst)
