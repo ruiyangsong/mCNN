@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os,sys
-# dataset_name = sys.argv[1]
-dataset_name = 'S2648'
+dataset_name = sys.argv[1]
+# dataset_name = 'S2648'
 datadir = '../msa/psiblast%s'%dataset_name #pdbS2648
 blastname_lst = [x for x in os.listdir(datadir) if os.path.isdir('%s/%s'%(datadir,x))]
 for blastname in blastname_lst:
