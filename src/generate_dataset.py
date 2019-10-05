@@ -10,7 +10,7 @@ import sys
 import os
 import numpy as np
 import pandas as pd
-from transform_data_array import transform_data_array
+# from transform_data_array import transform_data_array
 
 def get_df_dataset(df_coord, atom_class=5):
     '''
