@@ -10,7 +10,7 @@ def shell(cmd):
 user = 'sry'
 # app = '/public/application/ncbi-blast-2.3.0+/bin/psiblast'
 
-f = open('../shell/from_caobx/calc_all.sh')
+f = open('../shell/hp/calc_all.sh')
 #f = open('test.py')
 lines = f.readlines()
 f.close()
