@@ -33,10 +33,10 @@ for blastname in blastname_lst:
     # df = pd.read_table(msa_count,delim_whitespace=True,index_col=0)
     # df.to_csv('%s/%s/msa.csv'%(datadir, blastname))
     countarr = np.loadtxt(msa_count,dtype=str)
-    sub_countarr = countarr[1:,2:].astype(int)
+    sub_countarr = countarr[1:,2:].astype(float)
     sub_freqarr = (sub_countarr.T/np.sum(sub_countarr,axis=1)).T
     sub_freqarr_str = sub_freqarr.astype(str)
     freqarr = countarr.copy()
     freqarr[1:, 2:] = sub_freqarr_str
     np.savetxt(msa_freq,freqarr,fmt='%s',delimiter=' ')
-    np.savez(msa_cnt_frq, cnt = countarr, frq = freqarr)
+    np.savez(msa_cnt_frq, cnt = countarr, frq = freqarr, cnt_sub =sub_countarr, frq_sub = sub_freqarr)
