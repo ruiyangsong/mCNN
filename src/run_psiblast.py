@@ -6,8 +6,8 @@ def shell(cmd):
     res=os.popen(cmd).readlines()[0].strip()
     return res
 
-# dataset_name = sys.argv[1]
-dataset_name = 'S2648'
+dataset_name = sys.argv[1]
+# dataset_name = 'S2648'
 user = 'sry'
 app = '/public/application/ncbi-blast-2.3.0+/bin/psiblast'
 #libdir = '/public/library/uniprot20'
