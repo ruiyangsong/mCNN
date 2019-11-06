@@ -3,23 +3,24 @@
 '''
 ** Extract ATOM in pdb file, Calculate the distance from MT site, Deposit to csv file **
 ** 10/10/2019.
-** sry.
+** --sry.
 '''
 import os, argparse, warnings
 import numpy as np
 import pandas as pd
 from Bio import BiopythonWarning
 from Bio.PDB.PDBParser import PDBParser
+from processing import str2bool
 
-def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = False):
+def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = False, center = 'CA', filter_res_atom=1):
     '''
-    :param PDBDIR:
-    :param CHAIN:
-    :param POSITION:
-    :param MODEL:
-    :param HETATM:
-    :param NUCIC:
-    :return:
+    :param PDBDIR: PDB file dir.
+    :param CHAIN: MT chain.
+    :param POSITION: MT position.
+    :param MODEL: Model number in pdb file.
+    :param HETATM: If consider HETATM atoms.
+    :param NUCIC: If consider NUCLEIC atoms.
+    :return: csv file which stored ATOM section and distances from alpha-C.
     '''
     if POSITION.isdigit():
         INODE = ' '
@@ -27,7 +28,7 @@ def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = F
     else:
         INODE = POSITION[-1]
         POSID = int(POSITION[:-1])
-
+    MT_pos = (' ',POSID,INODE)
     aa_dict = {'Ala': 'A', 'Arg': 'R', 'Asn': 'N', 'Asp': 'D', 'Cys': 'C',
                'Gln': 'Q', 'Glu': 'E', 'Gly': 'G', 'His': 'H', 'Ile': 'I',
                'Leu': 'L', 'Lys': 'K', 'Met': 'M', 'Phe': 'F', 'Pro': 'P',
@@ -39,9 +40,15 @@ def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = F
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure(pdbid, PDBDIR)
     model = structure[MODEL]
-    center_coord = model[CHAIN][(' ',POSID,INODE)]['CA'].get_coord()
-    # def not_het(tup):
-    #     return tup[0] == ' '
+    if center == 'CA':
+        center_coord = model[CHAIN][MT_pos]['CA'].get_coord()
+    elif center == 'geometric':
+        center_coord = np.array([0, 0, 0])
+        MT_res = model[CHAIN][MT_pos]
+        for atom in MT_res:
+            if atom.get_name()[0] != 'H':
+                center_coord = center_coord + atom.get_coord()
+        center_coord = center_coord / len(MT_res)
     for chain in model:
         chain_name = chain.get_id()
         res_id_lst = [res.get_id() for res in chain]
@@ -51,10 +58,15 @@ def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = F
         if not HETATM:
             res_id_lst = list(filter(lambda tup: tup[0] == ' ', res_id_lst))  # NOT consider hetatm atoms.
             # res_id_lst = list(filter(not_het,res_id_lst)) # NOT consider hetatm atoms.
-        print('After filter NOT_HET, the res_number is:',len(res_id_lst))
+        print('After filter NOT_HET, the total res_number is:',len(res_id_lst))
         if not NUCLEIC:
             res_id_lst = [tup for tup in res_id_lst if tup[0] == ' ' and chain[tup].get_resname() in [aa.upper() for aa in aa_dict.keys()]] # NOT consider nucleic acid atoms.
-        print('After filter NOT_NUC, the res_number is:',len(res_id_lst))
+        print('After filter NOT_NUC, the total res_number is:',len(res_id_lst))
+        ## filter residue which contains only one atom.
+        res_id_lst = [tup for tup in res_id_lst if len(chain[tup]) > filter_res_atom]# res_id_lst = [tup for tup in res_id_lst if len(list(chain[tup].get_atoms())) > filter_res_atom]
+        assert MT_pos in res_id_lst
+        print('After filter only one atom, the total res_number is:', len(res_id_lst))
+
         res_list = [chain[res_id] for res_id in res_id_lst]
         for res in res_list:
             res_name = res.get_resname()
@@ -63,6 +75,8 @@ def CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL = 0, HETATM = False, NUCLEIC  = F
             for atom in res:
                 full_name, coord, occupancy, b_factor = atom.get_name(), atom.get_coord(), atom.get_occupancy(), atom.get_bfactor()
                 name = full_name.strip()[0]
+                if name == 'H':
+                    continue
                 dist = np.linalg.norm(center_coord - coord)
                 x,y,z = coord
                 temp_array = np.array([chain_name,res_name,het,pos_id,inode,full_name,name,dist,x,y,z,occupancy,b_factor])
@@ -77,8 +91,11 @@ def save_csv(DF, FILENAME, OUTDIR='.'):
 
 if __name__ == '__main__':
     ## input parameters in shell.
+    MODEL = 0
+    HETATM = False
+    NUCLEIC = False
     parser = argparse.ArgumentParser()
-    parser.description = '* Calculate distances between C-alpha at MT site with all the other atoms.\n' \
+    parser.description = '* Calculate distances between Center at MT site with all the other atoms.\n' \
                          'Detailed introduction of pdb format refers to:\n' \
                          'http://www.cgl.ucsf.edu/chimera/docs/UsersGuide//tutorials/framepdbintro.html\n' \
                          'http://www.wwpdb.org/documentation/file-format-content/format33/v3.3.html'
@@ -88,17 +105,16 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--outdir',    type=str,  help='The output directory, default="."')
     parser.add_argument('-n', '--filename',  type=str,  help='The output file name, default="The name of pdb file"')
     parser.add_argument('-d', '--model',     type=int,  help='Which model to extract atoms from, default=0')
-    parser.add_argument('-het','--hetatm',   type=bool, help='Whether consider the HETATM atoms, default=False')
-    parser.add_argument('-nuc', '--nucleic', type=bool, help='Whether consider the nucleic acid atoms, default=False')
+    parser.add_argument('-het','--hetatm',   type=str,  help='Whether consider the HETATM atoms, default=False')
+    parser.add_argument('-nuc', '--nucleic', type=str,  help='Whether consider the nucleic acid atoms, default=False')
+    parser.add_argument('--filter',          type=int,  help='The minimal number of atoms a residue have', default=1)
+    parser.add_argument('-C','--center',     type=str,  help='MT center type, default = "CA"',choices=['CA','geometric'], default='CA')
     args     = parser.parse_args()
     PDBDIR   = args.pdbdir
     CHAIN    = args.chain
     POSITION = args.position
     OUTDIR = '.'
     FILENAME = PDBDIR.split('/')[-1][:-4]
-    MODEL  = 0
-    HETATM = False
-    NUCLEIC  = False
     if args.outdir:
         OUTDIR = args.outdir
         if not os.path.exists(OUTDIR):
@@ -106,13 +122,16 @@ if __name__ == '__main__':
     if args.model:
         MODEL = args.model
     if args.hetatm:
-        HETATM = args.hetatm
+        HETATM = str2bool(args.hetatm)
     if args.nucleic:
-        NUCLEIC = args.nucleic
+        NUCLEIC = str2bool(args.nucleic)
+    if args.filter:
+        FILTER = args.filter
     if FILENAME == '':
         FILENAME = PDBDIR.split('/')[-2][:-4]
     if args.filename:
         FILENAME = args.filename
-
-    df = CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL, HETATM, NUCLEIC)
+    if args.center:
+        CENTER = args.center
+    df = CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL, HETATM, NUCLEIC,center=CENTER, filter_res_atom=FILTER)
     save_csv(df, FILENAME, OUTDIR=OUTDIR)
