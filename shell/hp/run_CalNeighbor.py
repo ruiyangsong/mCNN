@@ -3,20 +3,21 @@
 
 'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
 
-import os, sys, time
+import os, time, argparse
 import pandas as pd
 
-dataset_name = sys.argv[1]
-# dataset_name = 'S1925'
-# MT_csvdir = '/home/ruiyang/HardDrive/Archive/projects/mCNN/ieee_access/supplymentary_data/datasets/%s/%s_new.csv'%(dataset_name,dataset_name)
-# outpath = '/home/ruiyang/HardDrive/Archive/projects/mCNN/ieee_access/supplymentary_data/datasets/%s/csv_pdb%s'%(dataset_name,dataset_name)
-# pdbpath = '/home/ruiyang/HardDrive/Archive/projects/mCNN/ieee_access/supplymentary_data/datasets/%s/pdb%s'%(dataset_name,dataset_name)
-# app = '/home/ruiyang/HardDrive/Archive/projects/mCNN/ieee_access/supplymentary_data/src/CalNeighbor.py'
+parser = argparse.ArgumentParser()
+parser.add_argument('dataset_name',type=str,help='dataset name')
+parser.add_argument('center', type=str, choices=['CA','geometric'], default='CA', help='The MT site center type')
+args = parser.parse_args()
+dataset_name = args.dataset_name
+center = args.center
 
 MT_csvdir = '/public/home/sry/mCNN/datasets/%s/%s_new.csv'%(dataset_name,dataset_name)
-outpath = '/public/home/sry/mCNN/datasets/%s/csv_pdb%s'%(dataset_name,dataset_name)
+outpath = '/public/home/sry/mCNN/datasets/%s/csv_pdb%s_%s'%(dataset_name,dataset_name,center)
 pdbpath = '/public/home/sry/mCNN/datasets/%s/pdb%s'%(dataset_name,dataset_name)
 app = '/public/home/sry/mCNN/src/CalNeighbor.py'
+
 f = open(MT_csvdir, 'r')
 MT_df = pd.read_csv(f)
 f.close()
@@ -45,10 +46,10 @@ for i in range(len_df):
     g.writelines('dataset_name=\"%s\"\n' % dataset_name)
     g.writelines('echo $dataset_name\n')
     g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
-    g.writelines('%s %s %s %s -o %s -n %s\n' % (app, pdbdir,chain,position,outdir,filename))
+    g.writelines('%s %s %s %s %s -o %s -C %s\n' % (app, pdbdir,chain,position,filename,outdir,center))
     g.writelines("echo 'end at:' `date`\n")
     g.close()
     os.system('chmod 755 %s' % run_CalNeighbor)
     os.system('/public/home/sry/bin/getQ.pl')
     os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, tag, run_CalNeighbor))
-    time.sleep(1)
+    time.sleep(0.1)
