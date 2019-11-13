@@ -113,11 +113,57 @@ aa_atom_pharm_dict = {'ALA':
                           {'N'   :[0,0,0,1,0,1,0,0], 'C'   :[0,0,0,1,0,0,0,0], 'O'   :[0,0,0,1,1,0,0,0], 'CA'  :[0,0,0,1,0,0,0,0],
                            'CB'  :[1,0,0,1,0,0,0,0], 'CG1' :[1,0,0,1,0,0,0,0], 'CG2' :[1,0,0,1,0,0,0,0]}
                       }
+
+aa_atom_hp_dict = {'ALA':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0]},
+                   'ARG':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD':[0,1], 'CZ':[0,1]},
+                   'ASN':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[0,1]},
+                   'ASP':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[0,1]},
+                   'CYS':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'SG':[1,0]},
+                   'GLN':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD':[0,1]},
+                   'GLU':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD':[0,1]},
+                   'GLY':
+                       {'C':[0,1], 'CA':[0,1]},
+                   'HIS':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[0,1], 'CD2' :[0,1], 'CE1':[0,1]},
+                   'ILE':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG2':[1,0], 'CG1':[1,0], 'CD1':[1,0]},
+                   'LEU':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD1' :[1,0], 'CD2':[1,0]},
+                   'LYS':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD'  :[1,0], 'CE' :[0,1]},
+                   'MET':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'SD'  :[1,0], 'CE' :[1,0]},
+                   'PHE':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG':[1,0], 'CD1' :[1,0], 'CD2':[1,0], 'CE1':[1,0], 'CE2':[1,0], 'CZ':[1,0]},
+                   'PRO':
+                       {'N':[0,1], 'C' :[0,1], 'CD':[0,1], 'CA':[0,1], 'CB'  :[1,0], 'CG' :[1,0]},
+                   'SER':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[0,1]},
+                   'THR':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[0,1], 'CG2':[1,0]},
+                   'TRP':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG' :[1,0], 'CD2':[1,0], 'CE2':[0,1], 'CE3':[1,0], 'CD1':[0,1], 'CZ2':[1,0], 'CZ3' :[1,0], 'CH2' :[1,0]},
+                   'TYR':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG' :[1,0], 'CD1':[1,0], 'CD2':[1,0], 'CE1':[1,0], 'CE2':[1,0], 'CZ' :[0,1]},
+                   'VAL':
+                       {'C':[0,1], 'CA':[0,1], 'CB':[1,0], 'CG1':[1,0], 'CG2' :[1,0]}
+                      }
+
 aa_pharm_dict = {'A':[1,0,0,5,1,1,0,0],  'R':[2,2,0,9,1,4,0,0],  'N':[1,0,0,8,2,2,0,0],  'D':[1,0,2,6,3,1,0,0],
                  'C':[2,0,0,6,1,1,0,1],  'Q':[2,0,0,9,2,2,0,0],  'E':[2,0,2,7,3,1,0,0],  'G':[0,0,0,4,1,1,0,0],
                  'H':[1,2,0,8,3,3,5,0],  'I':[4,0,0,8,1,1,0,0],  'L':[4,0,0,8,1,1,0,0],  'K':[3,1,0,8,1,2,0,0],
                  'M':[4,0,0,8,1,1,0,1],  'F':[7,0,0,11,1,1,6,0], 'P':[2,0,0,7,1,0,0,0],  'S':[0,0,0,6,2,2,0,0],
                  'T':[1,0,0,7,2,2,0,0],  'W':[7,0,0,14,1,2,9,0], 'Y':[6,0,0,12,2,2,6,0], 'V':[3,0,0,7,1,1,0,0]}
+
+aa_hp_dict = {'A':[1,2], 'R':[2,4], 'N':[1,3], 'D':[1,3], 'C':[2,2], 'Q':[2,3], 'E':[2,3], 'G':[0,2], 'H':[1,5], 'I':[4,2],
+              'L':[4,2], 'K':[3,3], 'M':[4,2], 'F':[7,2], 'P':[2,4], 'S':[0,3], 'T':[1,3], 'W':[7,4], 'Y':[6,3], 'V':[3,2]}
 
 aa_vec_dict = {}  # aa_vec_dict = {'aa_name':[vec_of_atom_number by class], ...}
 ## Calc aa_vec_dict.
@@ -144,7 +190,7 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
 
     if feature == 'rsa':
         secondarylst = []
-        salst = []
+        salst  = []
         rsalst = []
         asalst = []
         philst = []
@@ -152,35 +198,66 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
         f = open(sadir, 'r')
         lines = [x.split() for x in f.readlines() if x[0:3] == 'ASG']
         f.close()
+        secondary_last = 'C' # for unassigned residues.
         for i in range(len_df):
             atom_chain, atom_res, atom_het, atom_posid, atom_inode, atom_full_name, atom_name = df.iloc[i, :].values[0:7]
             atom_position = str(atom_het) + str(atom_posid) + str(atom_inode)
             atom_position = atom_position.strip()
             targetlst = list(filter(lambda x: x[2] == atom_chain and x[3] == atom_position, lines))
+            if len(targetlst) > 0:
+                target = targetlst[0]
+                resname = aa_321dict[target[1][0] + target[1][1].lower() + target[1][2].lower()]
+                secondary = target[5]
+                phi, psi, sa = float(target[7]), float(target[8]), float(target[9])
+                rsa = 100 * sa / ASA_dict[resname]
+                if rsa > 100:
+                    rsa = 100
+                asa = ASA_dict[resname]
+                secondarylst.append(secondary)
+                salst.append(sa)
+                rsalst.append(rsa)
+                asalst.append(asa)
+                philst.append(phi)
+                psilst.append(psi)
+                secondary_last = secondary
+            else:
+                print(secondary_last)
+                secondarylst.append(secondary_last)
+                resname = aa_321dict[atom_res]
+                asa = ASA_dict[resname]
+                salst.append(asa/2)
+                rsalst.append(50)
+                asalst.append(asa)
+                philst.append(0)
+                psilst.append(0)
+
+            # print('-'*10)
+            # print(atom_chain)
+            # print(atom_position)
+            # print(atom_full_name,atom_name)
             # print(targetlst)
-            assert len(targetlst) == 1
-            target = targetlst[0]
-            resname = aa_321dict[target[1][0]+target[1][1].lower()+target[1][2].lower()]
-            secondary = target[5]
-            phi, psi, sa = float(target[7]), float(target[8]), float(target[9])
-            rsa = 100*sa/ASA_dict[resname]
-            if rsa > 100:
-                rsa = 100
-            asa = ASA_dict[resname]
-            secondarylst.append(secondary)
-            salst.append(sa)
-            rsalst.append(rsa)
-            asalst.append(asa)
-            philst.append(phi)
-            psilst.append(psi)
+            # assert len(targetlst) == 1
+            # target = targetlst[0]
+            # resname = aa_321dict[target[1][0]+target[1][1].lower()+target[1][2].lower()]
+            # secondary = target[5]
+            # phi, psi, sa = float(target[7]), float(target[8]), float(target[9])
+            # rsa = 100*sa/ASA_dict[resname]
+            # if rsa > 100:
+            #     rsa = 100
+            # asa = ASA_dict[resname]
+            # secondarylst.append(secondary)
+            # salst.append(sa)
+            # rsalst.append(rsa)
+            # asalst.append(asa)
+            # philst.append(phi)
+            # psilst.append(psi)
         temp_df_sec = pd.DataFrame(np.array(secondarylst).reshape(len_df,1))
-        temp_df_sa = pd.DataFrame(np.array(salst).reshape(len_df, 1))
+        temp_df_sa  = pd.DataFrame(np.array(salst).reshape(len_df, 1))
         temp_df_rsa = pd.DataFrame(np.array(rsalst).reshape(len_df, 1))
         temp_df_asa = pd.DataFrame(np.array(asalst).reshape(len_df, 1))
         temp_df_phi = pd.DataFrame(np.array(philst).reshape(len_df, 1))
         temp_df_psi = pd.DataFrame(np.array(psilst).reshape(len_df, 1))
         df.insert(7, 'secondary', temp_df_sec)
-        # df['secondary'] = temp_df_sec
         ## OneHot encoding for Secondary Structure.
         temp_df = pd.DataFrame(np.zeros((len_df, 1)))
         df['s_G'] = temp_df
@@ -203,10 +280,6 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
         df['phi'] = temp_df_phi
         df['psi'] = temp_df_psi
         return df
-    # if feature == 'rsa':
-    #     temp_df = pd.DataFrame(np.ones((len_df,1)) * rsa)
-    #     df['rsa'] = temp_df
-    #     return df
 
     if feature == 'thermo':
         temp_df_ph = pd.DataFrame(np.ones((len_df, 1)) * pH)
@@ -239,9 +312,25 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
             except:
                 print('dataset_name: %s, pdb: %s, wtaa: %s, mtchain: %s, mtposition: %s, mtaa: %s, serial: %s'%(dataset_name, pdb, wtaa, mtchain, mtposition, mtaa, serial))
                 print('atom full name: %s'%atom_full_name)
-                pharmlst.append(aa_pharm_dict_tmp[atom_full_name[0]])
+                pharmlst.append(aa_pharm_dict_tmp[atom_full_name[0]]) #for unassigned atom in xscore, such as OXT.
         pharm_df = pd.DataFrame(np.array(pharmlst).reshape(len_df,8), columns = atom_class)
         df = pd.concat([df, pharm_df], axis=1)
+        return df
+
+    if feature == 'hp':
+        atom_class = ['hydrophobic_bak', 'polar']
+        hplst = []
+        for i in range(len_df):
+            atom_chain, atom_res, atom_het, atom_posid, atom_inode, atom_full_name, atom_name = df.iloc[i, :].values[0:7]
+            aa_hp_dict_tmp = aa_atom_hp_dict[atom_res.upper()]
+            try:
+                hplst.append(aa_hp_dict_tmp[atom_full_name])
+            except:
+                print('dataset_name: %s, pdb: %s, wtaa: %s, mtchain: %s, mtposition: %s, mtaa: %s, serial: %s' % (dataset_name, pdb, wtaa, mtchain, mtposition, mtaa, serial))
+                print('atom full name: %s' % atom_full_name)
+                hplst.append([0,0]) # for unassigned atom in xscore at HP classification.
+        hp_df = pd.DataFrame(np.array(hplst).reshape(len_df, 2), columns=atom_class)
+        df = pd.concat([df, hp_df], axis=1)
         return df
 
     if feature == 'mass':
@@ -278,6 +367,14 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
         df['daromatic']    = temp_df * pharm_delta_r[6]
         df['dsulphur']     = temp_df * pharm_delta_r[7]
         return df
+
+    if feature == 'hp_deltar':
+        hp_delta_r = np.array(aa_hp_dict[mtaa]) - np.array(aa_hp_dict[wtaa])
+        temp_df = pd.DataFrame(np.ones((len_df, 1)))
+        df['dhydrophobic_bak'] = temp_df * hp_delta_r[0]
+        df['dpolar'] = temp_df * hp_delta_r[1]
+        return df
+
     if feature == 'msa':
         entropylst = []
         WTmsalst = []
@@ -327,7 +424,7 @@ if __name__ == '__main__':
     parser.add_argument('csvdir',            type=str,   help='The input directory of a csv file to which going to append')
     parser.add_argument('filename',          type=str,   help='The output file name, consist of The index of each mutation')
     parser.add_argument('-o', '--outdir',    type=str,   default='.', help='The output directory, default="."')
-    parser.add_argument('-f', '--feature',   nargs='*',  type=str,    choices=['rsa','thermo','onehot','pharm','mass','deltar','pharm_deltar','msa','ddg'], default='', help='The feature to append, default=""')
+    parser.add_argument('-f', '--feature',   nargs='*',  type=str,    choices=['rsa','thermo','onehot','pharm', 'hp', 'mass','deltar','pharm_deltar','hp_deltar', 'msa','ddg'], default='', help='The feature to append, default=""')
     parser.add_argument('-S', '--sadir',     type=str,   help='The SA output directory of this pdb file')
     parser.add_argument('-t', '--thermo',    nargs=2,    type=float,  help='The pH and Temperature value to append')
     parser.add_argument('-d', '--ddg',       type=str,   help='The DDG value to append')

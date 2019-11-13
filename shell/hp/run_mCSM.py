@@ -15,7 +15,8 @@ outpath = '/public/home/sry/mCNN/datasets_array/%s/mCSM'%dataset_name
 class_numlst = [2,8]
 centerlst = ['CA','geometric']
 minimum = 0.1
-maximunlst = [5,6,7,8,9,10,11,12,13,15,15]
+maximunlst = [5,6,7,8,9,10,11,12,13,14,15]
+# maximunlst = [14]
 steplst    = [0.5, 1, 1.5, 2]
 
 for class_num in class_numlst:
@@ -23,7 +24,7 @@ for class_num in class_numlst:
         for maximum in maximunlst:
             for step in steplst:
                 tag = '%s_min_%s_max_%s_step_%s_center_%s_class_%s'%(dataset_name,minimum,maximum,step,center,class_num)
-                outdir = '%s/%s' % (outpath, tag)
+                outdir = '%s/%s/%s' % (outpath, center, tag)
                 if not os.path.exists('%s/qsublog' % outdir):
                     os.system('mkdir -p %s/qsublog' % outdir)
                 walltime = 'walltime=24:00:00'

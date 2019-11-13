@@ -46,6 +46,7 @@ def test_model(network,x_test, y_test, ddg_test, nn_model):
         #test_mse_score, test_mae_score = network.evaluate(x_test, ddg_test)
         #print('test_mse_score:%f,test_mae_score:%f'%(test_mse_score, test_mae_score))
         ## Clac pearson_coeff and rmse.
+        ddg_test = ddg_test.reshape(-1)
         ddg_pred = network.predict(x_test, batch_size=32, verbose=0)  # 测试数据的ddg值
         ddg_pred = ddg_pred.reshape(-1)
         ## save ddg_real ad ddg_pre to npz array.

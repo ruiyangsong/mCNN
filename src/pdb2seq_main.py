@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+'file name format: WT_pdb_chain_serial | MT_pdb_wtaa_chain_position_mtaa_serial'
+
 import pandas as pd
 import sys, time
 import warnings
@@ -41,7 +43,7 @@ def pdb2seq(seqname, filename, mdlid, chainid, wtflag, position='0', wtaa = '0',
                     indexlst.append(index)
                     lst.append(short_name)
                 except:
-                    pass
+                    return 0
                     # print('nucleic acid occurs in WT,filename:%s|chain_id:%s|res_id:%s|long_name:%s'%(filename,chain.get_id(),res_id,long_name))
 
             # print(lst)

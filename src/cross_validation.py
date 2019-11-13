@@ -6,14 +6,13 @@
 # author    : ruiyang
 # email     : ww_sry@163.com
 
-import sys
-import numpy as np
+import argparse
 from sklearn.model_selection import StratifiedKFold
 from processing import *
 from train_model import train_model
 from test_model import test_model
 
-def cross_validation(x, y, ddg, k, nn_model, normalize_method, random_seed, flag, train_ratio=0.7):
+def cross_validation(x, y, ddg, k, nn_model, normalize_method, random_seed, flag,oversample, CUDA, epoch, batch_size, train_ratio=0.7):
     '''
     :param x: 3D numpy array, stored numerical representation of this dataset.
     :param y: 1D numpy array, labels of x.
@@ -65,62 +64,93 @@ def cross_validation(x, y, ddg, k, nn_model, normalize_method, random_seed, flag
     ## k_fold cross validation.
     if k >= 3:
         skf = StratifiedKFold(n_splits = k, shuffle = True, random_state = k_seed)
-        # skf = StratifiedKFold(n_splits=k, shuffle=False)
         for train_index, test_index in skf.split(x, y):
             print('%d-th fold is in progress.' % (k_count))
-            x_train, x_test = x[train_index], x[test_index]
-            y_train, y_test = y[train_index], y[test_index]
-            ddg_train, ddg_test = ddg[train_index], ddg[test_index]
+            x_train, y_train, ddg_train, x_test, y_test, ddg_test = x[train_index], y[train_index], ddg[train_index], x[test_index], y[test_index], ddg[test_index]
             ## train model on each fold.
-            network, history_dict, x_test, y_test, ddg_test = train_model(
-                x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model, normalize_method, v_seed, flag)
-
+            network, history_dict, x_test, y_test, ddg_test = train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model, normalize_method, v_seed, flag, oversample, CUDA, epoch, batch_size)
             history_list.append(history_dict)
-
             ## test model on each fold.
             if nn_model < 2:
-                acc, recall_p, recall_n, precision_p, precision_n, mcc = test_model(
-                    network, x_test, y_test, ddg_test, nn_model)
+                # classification model
+                acc, recall_p, recall_n, precision_p, precision_n, mcc = test_model(network, x_test, y_test, ddg_test, nn_model)
                 kfold_score[k_count - 1, :] = [acc, recall_p, recall_n, precision_p, precision_n, mcc]
             elif nn_model > 2:
+                # regression model
                 pearson_coeff, rmse = test_model(network, x_test, y_test, ddg_test, nn_model)
                 kfold_score[k_count - 1, :2] = [pearson_coeff, rmse]
             k_count += 1
-
     return kfold_score, history_list
 
 if __name__ == '__main__':
     ## Input parameters.
-    dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method,\
-    p_seed, k_seed, v_seed, val_flag, verbose_flag = sys.argv[1:]
-
-    radius = float(radius)
-    k_neighbor = int(k_neighbor)
-    class_num = int(class_num) # class number of atoms.
-    k = int(k) # kfold
-    nn_model = float(nn_model) # which CNN structure to choose.
-    seed_tuple = (int(p_seed), int(k_seed), int(v_seed)) # seeds for permutation, split k_fold, split val.
-    flag_tuple = (int(val_flag), int(verbose_flag))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dataset_name',        type=str,     help='dataset_name.',required=True)
+    parser.add_argument('-r', '--radius',      type=float,   default=4, help='The neighborhood radius, default = 4')
+    parser.add_argument('-k', '--k_neighbor',  type=int,     default=50,help='First k neighbors around Alpha-C atom at the mutant site, default = 50.')
+    parser.add_argument('-c', '--class_num',   type=int,     default=2, choices=[2,5,8], help = 'different classes of Atoms, default = 2.')
+    parser.add_argument('-K', '--Kfold',       type=int,     help='Fold numbers to cross validation.', required=True)
+    parser.add_argument('-m', '--model',       type=float,   help='Network model to chose.', required=True)
+    parser.add_argument('-n', '--normalize',   type=str,     choices=['norm','max'], default='norm',help='normalize_method to choose, default = norm.')
+    parser.add_argument('-s', '--sort',        type=str,     choices=['chain','distance','octant','permutation','permutation1','permutation2'], default='chain',help='row sorting methods to choose, default = chain.')
+    parser.add_argument('-d', '--random_seed', type=int,     nargs=3, help='permutation-seed, k-fold-seed, split-val-seed.')
+    parser.add_argument('-v', '--val_ver',     type=int,     nargs=2, choices=[0,1],         help='if split val and the verbose flag.')
+    parser.add_argument('-O', '--oversample',  type=str,     default='False', help='if consider oversampling, default = False.')
+    parser.add_argument('-C', '--CUDA',        type=str,     default='0', choices=['0','1','2','3'],      help='Which gpu card to use, default = "0"')
+    parser.add_argument('-E', '--epoch',       type=int,     help='training epoch, default is 10.')
+    parser.add_argument('-B', '--batch_size',  type=int,     help='training batch size, default is 64.')
+    args = parser.parse_args()
+    dataset_name = args.dataset_name
+    if args.radius:
+        radius = args.radius
+    if args.k_neighbor:
+        k_neighbor = args.k_neighbor
+    if args.class_num:
+        class_num = args.class_num
+    if args.Kfold:
+        k = args.Kfold
+    if args.model:
+        nn_model = args.model
+    if args.normalize:
+        normalize_method = args.normalize
+    if args.sort:
+        sort_method = args.sort
+    if args.random_seed:
+        seed_tuple = tuple(args.random_seed)
+    if args.val_ver:
+        flag_tuple = tuple(args.val_ver)
+    if args.oversample:
+        oversample = str2bool(args.oversample)
+    if args.CUDA:
+        CUDA = args.CUDA
+    if args.epoch:
+        epoch = args.epoch
+    if args.batch_size:
+        batch_size = args.batch_size
 
     ## print input info.
     print('dataset_name: %s, radius: %.2f, k_neighbor: %d, class_num: %d, k-fold: %d, nn_model: %.2f,'
-          '\nnormalize_method: %s, sort_method: %s,'
+          '\nnormalize_method: %s,'
+          '\nsort_method: %s,'
           '\n(permutation-seed, k-fold-seed, split-val-seed): %r,'
           '\n(val_flag, verbose_flag): %r.'
-          %(dataset_name, radius, k_neighbor, class_num, k, nn_model,
-            normalize_method, sort_method, seed_tuple, flag_tuple))
+          '\noversample: %r'
+          '\nCUDA: %r'
+          '\nepoch: %r'
+          '\nbatch_size: %r'
+          %(dataset_name, radius, k_neighbor, class_num, k, nn_model, normalize_method, sort_method, seed_tuple, flag_tuple, oversample, CUDA, epoch, batch_size))
+
     ## load data
     x, y, ddg = load_data(dataset_name,radius,k_neighbor,class_num)
     # print('Loading data from hard drive is done.')
 
     ## sort row of each mutation matrix.
-    x = sort_row(x, sort_method, seed_tuple[0])
+    x = sort_row(x, sort_method, seed_tuple[0]) # chain sorting return self!
     # print('Sort row is done, sorting method is %s.' % sort_method)
 
     ## Cross validation.
     print('%d-fold cross validation begin.' % (k))
-    kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method,
-                                                 seed_tuple[1:], flag_tuple, train_ratio=0.7)
+    kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method, seed_tuple[1:], flag_tuple,oversample, CUDA, epoch, batch_size, train_ratio=0.7)
 
     print_result(nn_model,kfold_score)
     ## plot.
