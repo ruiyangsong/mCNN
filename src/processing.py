@@ -13,36 +13,69 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import itertools
 from imblearn.over_sampling import RandomOverSampler
+from sklearn.decomposition import PCA
 
-def load_data(dataset_name, radius, k_neighbor, class_num):
-    '''
-    :param dataset_name: str, name of the dataset.
-    :param radius: float, radius of the environment.
-    :param k_neighbor: int, k neighboring atoms.
-    :param class_num: int, class number of atom category.
-    :return: numpy array of x, y and ddg.
-    '''
-    if k_neighbor != 0:
-        data = np.load('../datasets_array/%s/k_neighbor/%s_r_%.2f_neighbor_%d_class_%d.npz'
-                       % (dataset_name, dataset_name, radius, k_neighbor, class_num))
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
     else:
-        data = np.load('../datasets_array/%s/radius/%s_r_%.2f_neighbor_%d_class_%d.npz'
-                       % (dataset_name, dataset_name, radius, k_neighbor, class_num))
+        raise ValueError
+
+def read_csv(csvdir):
+    f = open(csvdir, 'r')
+    df = pd.read_csv(f)
+    f.close
+    return df
+
+def save_data_array(x,y,ddg_value,filename,outdir):
+    if not os.path.exists(outdir):
+        os.system('mkdir -p %s'%outdir)
+    np.savez('%s/%s.npz' % (outdir,filename), x=x,y=y,ddg=ddg_value)
+    print('The 3D array which stored numerical representation has stored in local hard drive.')
+
+def transform(coord_array_before,center_coord):
+    assert len(coord_array_before) >= 3  # row number.
+    pca_model = PCA(n_components=3)
+    pca_model.fit(coord_array_before)
+    coord_array_after = pca_model.transform(coord_array_before)
+    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
+    coord_array_after = coord_array_after - center_coord_after
+    return coord_array_after
+
+## function for appending mCSM array
+def append_mCSM(x_mCNN, x_mCSM):
+    xlst = []
+    for i in range(len(x_mCNN)):
+        x = x_mCNN[i]
+        x_m = x_mCSM[i]
+        arr = np.hstack((x, np.dot(np.ones((x.shape[0], 1)), x_m.reshape(1, -1))))
+        xlst.append(arr)
+    return np.array(xlst)
+
+def load_data(dir):
+    data = np.load(dir)
     x = data['x']
     y = data['y']
     ddg = data['ddg']
-    assert x.shape[0] == ddg.shape[0]
-    assert x.shape[0] == y.shape[0]
     return x,y,ddg
 
-def sort_row(x, method = 'distance', p_seed = 0):
+def sort_row(x, method = 'chain', p_seed = 0):
     '''
     :param x: 3D tensor of this dataset, the axis are: data_num, row_num and col_nm.
     :param method: str, row sorting method.
     :return: 3D tensor after sort.
     '''
+    if method == 'chain':
+        return x
     data_num, row_num, col_num = x.shape
     if method == 'distance':
+        for i in range(data_num):
+            indices = x[i,:,0].argsort()
+            x[i] = x[i,[indices]]
         return x
     elif method == 'octant':
         x_new = np.zeros(x.shape)
@@ -81,7 +114,8 @@ def shuffle_data(x, y, ddg, random_seed):
     return x,y,ddg
 
 def split_val(x_train, y_train, ddg_train, ddg_test, random_seed):
-
+    # print(ddg_train.shape)
+    ddg_train, ddg_test = ddg_train.reshape(-1), ddg_test.reshape(-1)
     p_train_indices, n_train_indices = ddg_train >= 0, ddg_train < 0
     x_p_train, x_n_train = x_train[p_train_indices], x_train[n_train_indices]
     y_p_train, y_n_train = y_train[p_train_indices], y_train[n_train_indices]
@@ -109,13 +143,17 @@ def split_val(x_train, y_train, ddg_train, ddg_test, random_seed):
     return x_train_new, y_train_new, ddg_train_new, x_val, y_val, ddg_val
 
 def oversampling(x_train, y_train):
-    train_num, train_row, train_col = x_train.shape
-    x_train = x_train.reshape((train_num, train_row * train_col))
+    train_shape = x_train.shape
+    train_num,train_col = train_shape[0], train_shape[-1]
+    x_train = x_train.reshape(train_num, -1)
     y_train = y_train.reshape(train_num)
 
     ros = RandomOverSampler(random_state=10)
     x_train_new, y_train_new = ros.fit_sample(x_train, y_train)
-    x_train = x_train_new.reshape(-1,train_row,train_col)
+    if len(train_shape) == 3:
+        x_train = x_train_new.reshape(-1,train_shape[1],train_col)
+    else:
+        x_train = x_train_new
     y_train = y_train_new.reshape(-1,1)
     positive_indices, negative_indices = y_train.reshape(-1, ) == 1, y_train.reshape(-1, ) == 0
     assert x_train[positive_indices].shape[0] == x_train[negative_indices].shape[0]
@@ -123,42 +161,50 @@ def oversampling(x_train, y_train):
     return x_train, y_train
 
 def normalize(x_train, x_test, x_val, val_flag = 1, method = 'norm'):
-    num_train, row_train, col_train = x_train.shape
-    num_test, row_test, col_test = x_test.shape
-    x_train = x_train.reshape((num_train * row_train, col_train))
-    x_test = x_test.reshape((num_test * row_test, col_test))
+    train_shape, test_shape = x_train.shape, x_test.shape
+    col_train = x_train.shape[-1]
+    col_test  = x_test.shape[-1]
+    x_train   = x_train.reshape((-1, col_train))
+    x_test    = x_test.reshape((-1, col_test))
+
     if val_flag == 1:
-        num_val, row_val, col_val = x_val.shape
-        x_val = x_val.reshape((num_val * row_val, col_val))
+        val_shape = x_val.shape
+        col_val   = x_val.shape[-1]
+        x_val     = x_val.reshape((-1, col_val))
 
     if method == 'norm':
         mean = x_train.mean(axis=0)
-        std = x_train.std(axis=0)
+        std  = x_train.std(axis=0)
+        std[np.argwhere(std==0)] = 0.01
         x_train -= mean
         x_train /= std
-        x_test -= mean
-        x_test /= std
+        x_test  -= mean
+        x_test  /= std
         if val_flag == 1:
             x_val -= mean
             x_val /= std
     elif method == 'max':
         max_ = x_train.max(axis=0)
+        max_[np.argwhere(max_ == 0)] = 0.01
         x_train /= max_
-        x_test /= max_
+        x_test  /= max_
         if val_flag == 1:
             x_val /= max_
-    x_train = x_train.reshape(num_train,row_train,col_train)
-    x_test = x_test.reshape(num_test,row_test,col_test)
+
+    x_train = x_train.reshape(train_shape)
+    x_test  = x_test.reshape(test_shape)
+
     if val_flag == 1:
-        x_val = x_val.reshape(num_val, row_val, col_val)
+        x_val = x_val.reshape(val_shape)
         return x_train, x_test, x_val
     elif val_flag == 0:
         return x_train, x_test
 
 def reshape_tensor(x_):
     ## reshape array to Input shape
-    data_num, row_num, col_num = x_.shape
-    x_ = x_.reshape(data_num, row_num, col_num, 1)
+    # data_num, row_num, col_num = x_.shape
+    # x_ = x_.reshape(data_num, row_num, col_num, 1)
+    x_ = x_[...,np.newaxis]
     return x_
 
 def split_delta_r(x_train):
