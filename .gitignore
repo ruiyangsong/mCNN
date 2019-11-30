@@ -1,5 +1,6 @@
 *.tar.gz
 *.swp
+*.pdb
 note.md
 .idea/
 .vscode/
@@ -31,3 +32,6 @@ datasets/S2648/
 /datasets/S2648/*.csv
 !S2648.csv
 !S2648_new.csv
+
+TrRosetta/
+tmp/

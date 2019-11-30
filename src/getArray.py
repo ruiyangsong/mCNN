@@ -14,10 +14,10 @@ parser.add_argument('-r', '--radius',     nargs='*', type=float,      help='All 
 parser.add_argument('-k', '--k_neighbor', nargs='*', type=int,        help='All the k_neighbors, separated with space')
 parser.add_argument('-C', '--center',     type=str,  default='CA',    choices=['CA','geometric'], required=True, help='The MT site center type')
 parser.add_argument('-T', '--PCA',        type=str,  default='False', help='If consider PCA transform, default = False.')
-parser.add_argument('--mCNN', type=str,   choices=['only','append'],  default='only',help='only is mCNN; append is append mCSM to mCNN, i.e. mCNN and mCSM, default is only')
-parser.add_argument('--max',  type=float, help='max range of wildtype environment')
-parser.add_argument('--step', type=float, help='cut off step')
-parser.add_argument('--class_num',        type=int,  choices=[2,8],   help='atom classification scheme')
+# parser.add_argument('--mCNN', type=str,   choices=['only','append'],  default='only',help='only is mCNN; append is append mCSM to mCNN, i.e. mCNN and mCSM, default is only')
+# parser.add_argument('--max',  type=float, help='max range of wildtype environment')
+# parser.add_argument('--step', type=float, help='cut off step')
+# parser.add_argument('--class_num',        type=int,  choices=[2,8],   help='atom classification scheme')
 args = parser.parse_args()
 dataset_name = args.dataset_name
 if args.radius:
@@ -28,14 +28,15 @@ if args.center:
     center = args.center
 if args.PCA:
     pca = str2bool(args.PCA)
-if args.mCNN:
-    mCNN = args.mCNN
-if args.max:
-    maximum = args.max
-if args.step:
-    step = args.step
-if args.class_num:
-    class_num = args.class_num
+# if args.mCNN:
+#     mCNN = args.mCNN
+# if args.max:
+#     maximum = args.max
+# if args.step:
+#     step = args.step
+# if args.class_num:
+#     class_num = args.class_num
+
 # print('dataset_name: %s'
 #       '\nradiuslst: %r'
 #       '\nk_neighborlst: %r'
@@ -49,10 +50,11 @@ outdir_k = '/public/home/sry/mCNN/datasets_array/%s/k_neighbor'%dataset_name
 outdir_r = '/public/home/sry/mCNN/datasets_array/%s/radius'%dataset_name
 outdir_k_append = '/public/home/sry/mCNN/datasets_array/%s/append_k_neighbor'%dataset_name
 outdir_r_append = '/public/home/sry/mCNN/datasets_array/%s/append_radius'%dataset_name
-## mCSM array directory
-mCSMpath = '/public/home/sry/mCNN/datasets_array/%s/mCSM/%s'%(dataset_name,center)
-mCSMpathlst = [mCSMpath + '/' + x for x in os.listdir(mCSMpath)]
-mCSMdirlst  = [x + '/' + [y for y in os.listdir(x) if y[-3:]=='npz'][0] for x in mCSMpathlst]
+# ## mCSM array directory
+# mCSMpath = '/public/home/sry/mCNN/datasets_array/%s/mCSM/%s'%(dataset_name,center)
+# mCSMpathlst = [mCSMpath + '/' + x for x in os.listdir(mCSMpath)]
+# mCSMdirlst  = [x + '/' + [y for y in os.listdir(x) if y[-3:]=='npz'][0] for x in mCSMpathlst]
+
 ## csv_feature directory
 csv_path = '/public/home/sry/mCNN/datasets/%s/csv_feature%s_%s'%(dataset_name,dataset_name,center)
 csvdirlst = [csv_path+'/'+x+'/'+x+'.csv' for x in os.listdir(csv_path)]

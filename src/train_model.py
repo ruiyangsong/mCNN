@@ -107,14 +107,15 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model,
     elif nn_model == 2.02:
         x_train, delta_r_train = split_delta_r(x_train)
         x_test, delta_r_test = split_delta_r(x_test)
+        delta_r_train,delta_r_test = reshape_tensor(delta_r_train),reshape_tensor(delta_r_test)
         x_test = [x_test, delta_r_test]
         if val_flag == 1:
             x_val, delta_r_val = split_delta_r(x_val)
-            history = network.fit({'structure': x_train, 'delta_r': delta_r_train}, ddg_train,
+            history = network.fit({'mCNN': x_train, 'mCSM': delta_r_train}, ddg_train,
                                   validation_data=([x_val, delta_r_val], ddg_val),
                                   epochs=epoch, batch_size=batch_size, verbose=verbose_flag, shuffle=True)
         elif val_flag == 0:
-            history = network.fit({'structure': x_train, 'delta_r': delta_r_train}, ddg_train,
+            history = network.fit({'mCNN': x_train, 'mCSM': delta_r_train}, ddg_train,
                                   epochs=epoch, batch_size=batch_size, verbose=verbose_flag, shuffle=True)
         history_dict = history.history
 
@@ -122,7 +123,7 @@ def train_model(x_train, y_train, ddg_train, x_test, y_test, ddg_test, nn_model,
         ## Add axis for network input.
         x_train, x_test = reshape_tensor(x_train), reshape_tensor(x_test)
         if val_flag == 1:
-            x_val = reshape(x_val)
+            x_val = reshape_tensor(x_val)
             history = network.fit(x_train, ddg_train, validation_data=(x_val, ddg_val), epochs=epoch, batch_size=batch_size, verbose=verbose_flag, shuffle=True)
         elif val_flag == 0:
             history = network.fit(x_train, ddg_train, epochs=epoch, batch_size=batch_size, verbose=verbose_flag, shuffle=True)

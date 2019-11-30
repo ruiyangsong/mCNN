@@ -4,7 +4,8 @@
 ** Append features to each atom in csv file, which obtained by CalNeighbor.py **
 ** 10/10/2019.
 ** sry.
-The csv column index are: [chain,res,het,posid,inode,full_name,dist,x,y,z,occupancy,b_factor]
+- The csv column index are: [chain,res,het,posid,inode,full_name,dist,x,y,z,occupancy,b_factor]
+- Stride secondary classification: https://ssbio.readthedocs.io/en/latest/instructions/stride.html
 '''
 import os, argparse
 import numpy as np
@@ -187,6 +188,30 @@ def calEntropy(blastdir,position):
     return rv, entropy
 
 def append_feature(df,feature,filename,pH,T,ddg,sadir):
+    def random_dihedral():
+        phi = 0
+        psi = 0
+        r = np.random.random()
+        if (r <= 0.135):
+            phi = -140
+            psi = 153
+        elif (r > 0.135 and r <= 0.29):
+            phi = -72
+            psi = 145
+        elif (r > 0.29 and r <= 0.363):
+            phi = -122
+            psi = 117
+        elif (r > 0.363 and r <= 0.485):
+            phi = -82
+            psi = -14
+        elif (r > 0.485 and r <= 0.982):
+            phi = -61
+            psi = -41
+        else:
+            phi = 57
+            psi = 39
+        return (phi, psi)
+
     len_df = len(df)
     dataset_name, pdb, wtaa, mtchain, mtposition, mtaa, serial = filename.split('_')
 
@@ -229,29 +254,10 @@ def append_feature(df,feature,filename,pH,T,ddg,sadir):
                 salst.append(asa/2)
                 rsalst.append(0.5)
                 asalst.append(asa)
-                philst.append(-71.05034549)# average of S2648
-                psilst.append(69.74606526)# average of S2648
+                phi, psi = random_dihedral()
+                philst.append(phi)
+                psilst.append(psi)
 
-            # print('-'*10)
-            # print(atom_chain)
-            # print(atom_position)
-            # print(atom_full_name,atom_name)
-            # print(targetlst)
-            # assert len(targetlst) == 1
-            # target = targetlst[0]
-            # resname = aa_321dict[target[1][0]+target[1][1].lower()+target[1][2].lower()]
-            # secondary = target[5]
-            # phi, psi, sa = float(target[7]), float(target[8]), float(target[9])
-            # rsa = 100*sa/ASA_dict[resname]
-            # if rsa > 100:
-            #     rsa = 100
-            # asa = ASA_dict[resname]
-            # secondarylst.append(secondary)
-            # salst.append(sa)
-            # rsalst.append(rsa)
-            # asalst.append(asa)
-            # philst.append(phi)
-            # psilst.append(psi)
         temp_df_sec = pd.DataFrame(np.array(secondarylst).reshape(len_df,1))
         temp_df_sa  = pd.DataFrame(np.array(salst).reshape(len_df, 1))
         temp_df_rsa = pd.DataFrame(np.array(rsalst).reshape(len_df, 1))
