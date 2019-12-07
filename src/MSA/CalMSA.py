@@ -24,16 +24,16 @@ class CalculateMSA(object):
         self.alignblast   = '%s/mCNN/src/MSA/alignblast.pl'%homedir
         self.libdir       = '/library/nr/nr'
 
-        self.wild_pdb_path = '%s/mCNN/dataset/%s/pdb' %(homedir, dataset_name)
+        self.pdb_path = '%s/mCNN/dataset/%s/pdb' %(homedir, dataset_name)
         self.ref_pdb_path  = '%s/mCNN/dataset/%s/feature/rosetta/ref_output' % (homedir, dataset_name)
         self.mut_pdb_path  = '%s/mCNN/dataset/%s/feature/rosetta/mut_output' % (homedir, dataset_name)
         self.wild_seq_path = '%s/mCNN/dataset/%s/feature/msa/wild' % (homedir, dataset_name)
-        self.ref_seq_path  = '%s/mCNN/dataset/%s/feature/msa/ref' % (homedir, dataset_name)
+        self.mut_seq_path  = '%s/mCNN/dataset/%s/feature/msa/ref' % (homedir, dataset_name)
 
         if not os.path.exists(self.wild_seq_path):
             os.makedirs(self.wild_seq_path)
-        if not os.path.exists(self.ref_seq_path):
-            os.makedirs(self.ref_seq_path)
+        if not os.path.exists(self.mut_seq_path):
+            os.makedirs(self.mut_seq_path)
 
     def pdb2seq(self,flag):
         tag_name_dict = {'wild': [],'mutant':[x for x in os.listdir(self.pdbpath)]}

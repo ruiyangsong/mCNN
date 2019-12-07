@@ -122,8 +122,8 @@ class RosettaEnergy(object):
     @log
     def run_ref(self):
         mt_csv_dir_rewrite = '%s/%s.csv' % (self.outpath_global, self.dataset_name) ## the rewrite mt_csv
-        qsub_ref(self.homedir, self.refdir, self.outpath_pdb_mdl0, self.outpath_ref, mt_csv_dir_rewrite)
-        ref_tag = 'rosetta_ref'
+        qsub_ref(self.homedir, self.refdir, self.outpath_pdb_mdl0, self.outpath_ref, mt_csv_dir_rewrite,self.dataset_name)
+        ref_tag = 'rosetta_ref_%s'%self.dataset_name
         jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
         while jobs > 0:
             time.sleep(self.sleep_time)
@@ -134,13 +134,13 @@ class RosettaEnergy(object):
     @log
     def run_mut(self):
         mt_csv_dir_rewrite = '%s/%s.csv' % (self.outpath_global, self.dataset_name)  ## the rewrite mt_csv
-        qsub_mut(self.homedir, self.mutdir, self.outpath_ref, self.outpath_mut, mt_csv_dir_rewrite)
+        qsub_mut(self.homedir, self.mutdir, self.outpath_ref, self.outpath_mut, mt_csv_dir_rewrite,self.dataset_name)
 
-        ref_tag = 'rosetta_mut'
-        jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
+        mut_tag = 'rosetta_mut_%s'%self.dataset_name
+        jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
         while jobs > 0:
             time.sleep(self.sleep_time)
-            jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
+            jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
         print('---get mutant done!')
         self.mut_tagdirlst = [self.outpath_mut + '/' + x for x in os.listdir(self.outpath_mut)]
 
