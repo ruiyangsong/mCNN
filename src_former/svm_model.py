@@ -7,10 +7,9 @@
 # email     : ww_sry@163.com
 # ------------------------------
 
-import sys
 import numpy as np
 from sklearn import svm
-from train_model import load_data
+from Network.train_model import load_data
 from sklearn.model_selection import StratifiedKFold
 
 

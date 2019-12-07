@@ -7,13 +7,88 @@
 # email     : ww_sry@163.com
 # ------------------------------
 
-import os
+import os, time, functools
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import itertools
-from imblearn.over_sampling import RandomOverSampler
 
+aa_321dict = {'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C',
+              'GLN': 'Q', 'GLU': 'E', 'GLY': 'G', 'HIS': 'H', 'ILE': 'I',
+              'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 'PRO': 'P',
+              'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V'}  # from wiki
+
+aa_123dict = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'C': 'CYS',
+              'Q': 'GLN', 'E': 'GLU', 'G': 'GLY', 'H': 'HIS', 'I': 'ILE',
+              'L': 'LEU', 'K': 'LYS', 'M': 'MET', 'F': 'PHE', 'P': 'PRO',
+              'S': 'SER', 'T': 'THR', 'W': 'TRP', 'Y': 'TYR', 'V': 'VAL'}
+
+def log(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        print('\n@call %s()' % func.__name__)
+        start = time.time()
+        res = func(*args, **kw)
+        print('runtime: %f seconds.' % (time.time() - start))
+        return res
+    return wrapper
+
+def check_qsub():
+    user = shell('whoami')
+    jobs = int(shell('qzy | grep %s | wc -l' % user))
+    while jobs > 0:
+        time.sleep(30)
+        jobs = int(shell('qzy | grep %s | wc -l' % user))
+    print('-' * 10, 'qsub done!')
+
+def split_tag(dir):
+    tag = dir.split('/')[-1]
+    if tag == '':
+        tag = dir.split('/')[-1]
+    return tag
+
+def shell(cmd):
+    res=os.popen(cmd).readlines()[0].strip()
+    return res
+
+def PDBparser(pdbdir,MDL=0,write=0,outpath=None):
+    import warnings
+    from Bio.PDB import PDBIO, Select
+    from Bio import BiopythonWarning
+    from Bio.PDB.PDBParser import PDBParser
+    warnings.simplefilter('ignore', BiopythonWarning)
+    pdbid = pdbdir[-8:-4]
+    parser = PDBParser(PERMISSIVE=1)
+    structure = parser.get_structure(pdbid, pdbdir)
+    model = structure[MDL]
+    if write == 1:
+        if outpath == None:
+            raise RuntimeError('out path is None!')
+        class ModelSelect(Select):
+            def accept_model(self, model):
+                if model.get_id() == 0:
+                    return True
+                else:
+                    return False
+
+            def accept_chain(self, chain):
+                """Overload this to reject chains for output."""
+                return 1
+
+            def accept_residue(self, residue):
+                if residue.get_resname() in aa_123dict.values():
+                    return True
+                else:
+                    return False
+
+            def accept_atom(self, atom):
+                """Overload this to reject atoms for output."""
+                return 1
+        io = PDBIO()
+        io.set_structure(structure)
+        io.save('%s/%s.pdb' % (outpath,pdbid), ModelSelect(), preserve_atom_numbering=True)
+        structure_new = parser.get_structure('mdl0', '%s/%s.pdb' % (outpath,pdbid))
+        model = structure_new[MDL]
+    return model
+    
 def str2bool(v):
     if isinstance(v, bool):
        return v
@@ -36,28 +111,31 @@ def save_data_array(x,y,ddg_value,filename,outdir):
     np.savez('%s/%s.npz' % (outdir,filename), x=x,y=y,ddg=ddg_value)
     print('The 3D array which stored numerical representation has stored in local hard drive.')
 
-def load_data(dataset_name, radius, k_neighbor, class_num):
-    '''
-    :param dataset_name: str, name of the dataset.
-    :param radius: float, radius of the environment.
-    :param k_neighbor: int, k neighboring atoms.
-    :param class_num: int, class number of atom category.
-    :return: numpy array of x, y and ddg.
-    '''
-    if class_num in [2,8]:
-        data = np.load('../datasets_array/%s/mCSM/S2648_min_0.0_max_8.0_step_2.0_center_geometric_class_2.npz'%dataset_name)
-    elif k_neighbor != 0:
-        data = np.load('../datasets_array/%s/k_neighbor/%s_neighbor_%d.npz'%(dataset_name, dataset_name, k_neighbor))
-        # data = np.load('../datasets_array/%s/k_neighbor/%s_r_%.2f_neighbor_%d_class_%d.npz'% (dataset_name, dataset_name, radius, k_neighbor, class_num))
-    else:
-        data = np.load('../datasets_array/%s/radius/%s_neighbor_%d.npz' %(dataset_name, dataset_name, radius))
-        # data = np.load('../datasets_array/%s/radius/%s_r_%.2f_neighbor_%d_class_%d.npz'% (dataset_name, dataset_name, radius, k_neighbor, class_num))
+def transform(coord_array_before,center_coord):
+    from sklearn.decomposition import PCA
+    assert len(coord_array_before) >= 3  # row number.
+    pca_model = PCA(n_components=3)
+    pca_model.fit(coord_array_before)
+    coord_array_after = pca_model.transform(coord_array_before)
+    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
+    coord_array_after = coord_array_after - center_coord_after
+    return coord_array_after
 
+## function for appending mCSM array
+def append_mCSM(x_mCNN, x_mCSM):
+    xlst = []
+    for i in range(len(x_mCNN)):
+        x = x_mCNN[i]
+        x_m = x_mCSM[i]
+        arr = np.hstack((x, np.dot(np.ones((x.shape[0], 1)), x_m.reshape(1, -1))))
+        xlst.append(arr)
+    return np.array(xlst)
+
+def load_data(dir):
+    data = np.load(dir)
     x = data['x']
     y = data['y']
     ddg = data['ddg']
-    assert x.shape[0] == ddg.shape[0]
-    assert x.shape[0] == y.shape[0]
     return x,y,ddg
 
 def sort_row(x, method = 'chain', p_seed = 0):
@@ -140,9 +218,10 @@ def split_val(x_train, y_train, ddg_train, ddg_test, random_seed):
     return x_train_new, y_train_new, ddg_train_new, x_val, y_val, ddg_val
 
 def oversampling(x_train, y_train):
+    from imblearn.over_sampling import RandomOverSampler
     train_shape = x_train.shape
     train_num,train_col = train_shape[0], train_shape[-1]
-    x_train = x_train.reshape((train_num, -1))
+    x_train = x_train.reshape(train_num, -1)
     y_train = y_train.reshape(train_num)
 
     ros = RandomOverSampler(random_state=10)
@@ -205,7 +284,7 @@ def reshape_tensor(x_):
     return x_
 
 def split_delta_r(x_train):
-    x_train, delta_r_train = x_train[:, :, :-5], x_train[:, 0, -5:]
+    x_train, delta_r_train = x_train[:, :, :99], x_train[:, 0, 99:]
     x_train = x_train[:, :, :, np.newaxis]
     return x_train, delta_r_train
 
@@ -247,6 +326,7 @@ def print_result(nn_model, kfold_score):
         print('--rmse:', np.mean(kfold_score[:, 1]))
 
 def plotfigure(history_dict):
+    import matplotlib.pyplot as plt
     loss_values = history_dict['loss']
     val_loss_values = history_dict['val_loss']
     epochs = range(1, len(loss_values) + 1)

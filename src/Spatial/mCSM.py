@@ -22,6 +22,9 @@ def cal_mCSM(df, maximum=8, minimum=0, step=2, class_num=2):
     if class_num == 2:
         atom_class = ['hydrophobic_bak', 'polar']
         delta_r    = ['dhydrophobic_bak', 'dpolar']
+        #########################
+        # pay attention here!!! #
+        #########################
         df = df.loc[(df.hydrophobic_bak != 0) | (df.polar != 0), :]
 
     class_num   = len(atom_class)

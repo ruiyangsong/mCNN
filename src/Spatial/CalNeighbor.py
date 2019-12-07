@@ -130,4 +130,4 @@ if __name__ == '__main__':
         CENTER = args.center
     df, center_coord = CalNeighbor(PDBDIR, CHAIN, POSITION, MODEL, HETATM, NUCLEIC,center=CENTER, filter_res_atom=FILTER)
     save_csv(df, FILENAME, OUTDIR=OUTDIR)
-    np.save('%s/center_coord.npy' % OUTDIR)
+    np.save('%s/center_coord.npy'%OUTDIR,center_coord)

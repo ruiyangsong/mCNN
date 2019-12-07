@@ -27,7 +27,7 @@ for class_num in class_numlst:
                 outdir = '%s/%s/%s' % (outpath, center, tag)
                 if not os.path.exists('%s/qsublog' % outdir):
                     os.system('mkdir -p %s/qsublog' % outdir)
-                walltime = 'walltime=24:00:00'
+                walltime = 'walltime=240:00:00'
                 errfile = '%s/qsublog/err' % outdir
                 outfile = '%s/qsublog/out' % outdir
                 run_CalmCSM = '%s/run_CalmCSM.sh' % (outdir)

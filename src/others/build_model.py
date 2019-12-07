@@ -51,10 +51,11 @@ def binary_focal_loss(gamma=2, alpha=0.25):
     return binary_focal_loss_fixed
 
 def build_model(nn_model,sample_size):
+    print('sample_size: ',sample_size)
     try:
         row_num,col_num = sample_size
     except:
-        pass
+        col_num = sample_size[0]
     ## 序贯模型使用network, API模型使用model.
     network = models.Sequential()
 
@@ -84,7 +85,7 @@ def build_model(nn_model,sample_size):
 
     if nn_model == 1.02:
         #print('SingleNet-M classification')
-        input1 = layers.Input(shape=(row_num,col_num-5,1),name='structure')
+        input1 = layers.Input(shape=(row_num,99,1),name='mCNN')
         conv1 = layers.Conv2D(16,(5,3),activation='relu')(input1)
         conv2 = layers.Conv2D(32, (5, 3),activation='relu')(conv1)
         pool1 = layers.MaxPooling2D(pool_size=(2,2),padding='same')(conv2)
@@ -93,7 +94,8 @@ def build_model(nn_model,sample_size):
         flat1 = layers.Flatten()(pool2)
         drop  = layers.Dropout(0.3)(flat1)
         dense1 = layers.Dense(128, activation='relu')(drop)
-        input2 = layers.Input(shape=(5,),name='delta_r')
+
+        input2 = layers.Input(shape=(col_num-99,),name='mCSM')
         dense2 = layers.Dense(128, activation='relu')(input2)
 
         added = layers.concatenate([dense1, dense2],axis=-1)
@@ -109,12 +111,16 @@ def build_model(nn_model,sample_size):
 
     if nn_model == 1.03:
         #conv1D model for mCSM.
-        network.add(layers.Conv1D(filters=16,kernel_size=3,activation='relu',input_shape=(17,1)))
-        network.add(layers.Conv1D(filters=32,kernel_size=3,activation='relu'))
+        network.add(layers.Conv1D(filters=16,kernel_size=3,activation='relu',padding='same',input_shape=(col_num,1)))
+        network.add(layers.Conv1D(filters=32,kernel_size=3,activation='relu',padding='same'))
+        network.add(layers.MaxPool1D(pool_size=2))
+        network.add(layers.Conv1D(filters=64,kernel_size=3,activation='relu'))
+        network.add(layers.MaxPool1D(pool_size=2))
+        network.add(layers.Conv1D(filters=128,kernel_size=3,activation='relu'))
         network.add(layers.MaxPool1D(pool_size=2))
         network.add(layers.Flatten())
-        network.add(layers.Dense(32,activation='relu'))
-        network.add(layers.Dropout(0.1))
+        network.add(layers.Dense(128,activation='relu'))
+        network.add(layers.Dropout(0.3))
         network.add(layers.Dense(2, activation='softmax'))
         # print(network.summary())
         adam = optimizers.adam(lr=1e-4, decay=1e-5)
@@ -149,32 +155,41 @@ def build_model(nn_model,sample_size):
 
     if nn_model == 2.02:
         #print('SingleNet-M regression')
-        input1 = layers.Input(shape=(row_num,col_num-5,1),name='structure')
+        input1 = layers.Input(shape=(row_num,99,1),name='mCNN')
         conv1 = layers.Conv2D(16,(5,3),activation='relu')(input1)
         conv2 = layers.Conv2D(32, (5, 3),activation='relu')(conv1)
-        pool1 = layers.MaxPooling2D(pool_size=(2,2),padding='same')(conv2)
-        conv3 = layers.Conv2D(64, (5, 3),activation='relu',kernel_regularizer=regularizers.l2(0.01))(pool1)
+        pool1 = layers.MaxPooling2D(pool_size=(2,2))(conv2)
+        conv3 = layers.Conv2D(64, (5, 3),activation='relu')(pool1)
         pool2 = layers.MaxPooling2D(pool_size=(2,2))(conv3)
         flat1 = layers.Flatten()(pool2)
-        drop = layers.Dropout(0.3)(flat1)
-        dense1 = layers.Dense(128, activation='relu')(drop)
-        input2 = layers.Input(shape=(5,),name='delta_r')
-        dense2 = layers.Dense(128, activation='relu')(input2)
+        dense1 = layers.Dense(128, activation='relu')(flat1)
+        drop1 = layers.Dropout(0.5)(dense1)
+        dense2 = layers.Dense(16, activation='relu')(drop1)
+        drop_2 = layers.Dropout(0.3)(dense2)
 
-        added = layers.concatenate([dense1, dense2],axis=-1)
+        input2 = layers.Input(shape=(col_num-99,),name='mCSM')
+        conv1  = layers.Conv1D(16,3,activation='relu')(input2)
+        conv2  = layers.Conv1D(32,3,activation='relu')(conv1)
+        pool1  = layers.MaxPooling1D(pool_size=2)(conv2)
+        flat   = layers.Flatten()(pool1)
+        dense1 = layers.Dense(32,activation='relu')(flat)
+        drop_1  = layers.Dropout(0.1)(dense1)
+
+        added = layers.concatenate([drop_2, drop_1],axis=-1)
         out = layers.Dense(1)(added)
         model = models.Model(inputs=[input1, input2], outputs=out)
 
         #model.summary()
         # rmsp = optimizers.RMSprop(lr=0.0008)
-        model.compile(optimizer='rmsprop',  # 'rmsprop'
+        adam = optimizers.adam(lr=1e-4, decay=1e-5)
+        model.compile(optimizer=adam,  # 'rmsprop'
                       loss='mse',
                       metrics=['mae']) # accuracy
         return model
 
     if nn_model == 2.03:
         #conv1D model for mCSM.
-        network.add(layers.Conv1D(filters=16,kernel_size=3,activation='relu',input_shape=(17,1)))
+        network.add(layers.Conv1D(filters=16,kernel_size=3,activation='relu',input_shape=(col_num,1)))
         network.add(layers.Conv1D(filters=32,kernel_size=3,activation='relu'))
         network.add(layers.MaxPool1D(pool_size=2))
         network.add(layers.Flatten())
