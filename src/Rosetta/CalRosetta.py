@@ -5,21 +5,24 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 from run_rosetta import qsub_ref, qsub_mut
-from mCNN.processing import read_csv, PDBparser, aa_123dict, shell, split_tag, log
+from mCNN.processing import read_csv, PDBparser, aa_123dict, shell, split_tag, log, check_qsub
 
 
 def main():
-    dataset_name = sys.argv[1]
+    dataset_name, flag = sys.argv[1:]
     HOMEdir = shell('echo $HOME')
 
     ROS = RosettaEnergy(dataset_name, HOMEdir)
-    ROS.mapping_pos()
-    ROS.rewrite_mtcsv()
-    ROS.run_ref()
-    ROS.run_mut()
-    ROS.check_result()
-    ROS.get_energy()
-    # ROS.test()
+    if flag == 'first':
+        ROS.get_mdl0()# mdl0 are needed by others, split two steps for parallel computing
+    elif flag == 'second':
+        ROS.run_ref()
+        ROS.mapping_pos()
+        ROS.rewrite_mtcsv()
+        ROS.run_mut()
+        ROS.check_result()
+        ROS.get_energy()
+        # ROS.test()
 
 class RosettaEnergy(object):
     def __init__(self, dataset_name, homedir):
@@ -53,16 +56,36 @@ class RosettaEnergy(object):
             os.makedirs(self.outpath_mut)
 
     @log
+    def get_mdl0(self):
+        pdbdirlst = [self.pdbpath + '/' + x for x in os.listdir(self.pdbpath)]
+        for pdbdir in pdbdirlst:
+            PDBparser(pdbdir, MDL=0, write=1, outpath=self.outpath_pdb_mdl0) # only consider standard amino acid residues.
+        print('---get mdl0 done!')
+
+    @log
+    def run_ref(self):
+        ref_tag = 'rosetta_ref_%s' % self.dataset_name
+        qsub_ref(self.homedir, self.refdir, self.outpath_pdb_mdl0, self.outpath_ref, ref_tag)
+
+        # jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
+        # while jobs > 0:
+        #     time.sleep(self.sleep_time)
+        #     jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
+        # print('---get refine done!')
+        check_qsub(tag = ref_tag, sleep_time = self.sleep_time)
+        self.ref_tagdirlst = [self.outpath_ref + '/' + x for x in os.listdir(self.outpath_ref)]
+
+    @log
     def mapping_pos(self):
         '''get the mapping csv for each pdb file, only consider the standard residues'''
-        pdbdirlst = [self.pdbpath + '/' + x for x in os.listdir(self.pdbpath)]
+        pdbdirlst = [self.outpath_ref + '/' + x +'/'+x+'_ref.pdb' for x in os.listdir(self.outpath_ref)]
         for pdbdir in pdbdirlst:
             chain_id_lst = []
             pos_old_dict = {}
             pos_new_dict = {}
-            pdbid = pdbdir[-8:-4]
+            pdbid = pdbdir.split('/')[-1][0:4]
 
-            model = PDBparser(pdbdir,MDL=0,write=1,outpath=self.outpath_pdb_mdl0) #only consider standard amino acid residues.
+            model = PDBparser(pdbdir,MDL=0,write=0)
 
             for chain in model:
                 chain_id   = chain.get_id()
@@ -120,28 +143,18 @@ class RosettaEnergy(object):
         print('---rewrite mutant csv file done!')
 
     @log
-    def run_ref(self):
-        mt_csv_dir_rewrite = '%s/%s.csv' % (self.outpath_global, self.dataset_name) ## the rewrite mt_csv
-        qsub_ref(self.homedir, self.refdir, self.outpath_pdb_mdl0, self.outpath_ref, mt_csv_dir_rewrite,self.dataset_name)
-        ref_tag = 'rosetta_ref_%s'%self.dataset_name
-        jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
-        while jobs > 0:
-            time.sleep(self.sleep_time)
-            jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
-        print('---get refine done!')
-        self.ref_tagdirlst = [self.outpath_ref + '/' + x for x in os.listdir(self.outpath_ref)]
-
-    @log
     def run_mut(self):
         mt_csv_dir_rewrite = '%s/%s.csv' % (self.outpath_global, self.dataset_name)  ## the rewrite mt_csv
-        qsub_mut(self.homedir, self.mutdir, self.outpath_ref, self.outpath_mut, mt_csv_dir_rewrite,self.dataset_name)
+        mut_tag = 'rosetta_mut_%s' % self.dataset_name
+        qsub_mut(self.homedir, self.mutdir, self.outpath_ref, self.outpath_mut, mt_csv_dir_rewrite, mut_tag)
 
-        mut_tag = 'rosetta_mut_%s'%self.dataset_name
-        jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
-        while jobs > 0:
-            time.sleep(self.sleep_time)
-            jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
-        print('---get mutant done!')
+
+        # jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
+        # while jobs > 0:
+        #     time.sleep(self.sleep_time)
+        #     jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
+        # print('---get mutant done!')
+        check_qsub(tag=mut_tag, sleep_time=self.sleep_time)
         self.mut_tagdirlst = [self.outpath_mut + '/' + x for x in os.listdir(self.outpath_mut)]
 
     @log
@@ -157,7 +170,7 @@ class RosettaEnergy(object):
                 self.mut_tagdirlst.remove(dir)
                 flag += 1
         if flag > 0:
-            print('ERROE of mutant occurs %s time(s)!' % flag)
+            print('!!!ERROE of mutant occurs %s time(s)!!!' % flag)
 
         ## check mapping from pdbid_mut.pdb
         for path in self.mut_tagdirlst:
@@ -177,7 +190,7 @@ class RosettaEnergy(object):
                 print('[ERROR] Check ERROR! Locates at: %s'%path)
         if self.check_count > 0:
             raise RuntimeError('ERROR of mapping occurs %s time(s)!' % self.check_count)
-        print('---check rosetta refine and mutant results done!')
+        print('---stay cool with mapping, check rosetta refine and mutant results done!')
 
     @log
     def get_energy(self):

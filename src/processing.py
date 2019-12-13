@@ -31,13 +31,12 @@ def log(func):
         return res
     return wrapper
 
-def check_qsub():
-    user = shell('whoami')
-    jobs = int(shell('qzy | grep %s | wc -l' % user))
+def check_qsub(tag,sleep_time):
+    jobs = int(shell('qzy | grep %s | wc -l' % tag))
     while jobs > 0:
-        time.sleep(30)
-        jobs = int(shell('qzy | grep %s | wc -l' % user))
-    print('-' * 10, 'qsub done!')
+        time.sleep(sleep_time)
+        jobs = int(shell('qzy | grep %s | wc -l' % tag))
+    print('---qsub %s done!'%tag)
 
 def split_tag(dir):
     tag = dir.split('/')[-1]
@@ -55,7 +54,7 @@ def PDBparser(pdbdir,MDL=0,write=0,outpath=None):
     from Bio import BiopythonWarning
     from Bio.PDB.PDBParser import PDBParser
     warnings.simplefilter('ignore', BiopythonWarning)
-    pdbid = pdbdir[-8:-4]
+    pdbid = pdbdir.split('/')[-1][0:4]
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure(pdbid, pdbdir)
     model = structure[MDL]
@@ -85,8 +84,8 @@ def PDBparser(pdbdir,MDL=0,write=0,outpath=None):
         io = PDBIO()
         io.set_structure(structure)
         io.save('%s/%s.pdb' % (outpath,pdbid), ModelSelect(), preserve_atom_numbering=True)
-        structure_new = parser.get_structure('mdl0', '%s/%s.pdb' % (outpath,pdbid))
-        model = structure_new[MDL]
+        # structure_new = parser.get_structure('mdl0', '%s/%s.pdb' % (outpath,pdbid))
+        # model = structure_new[MDL]
     return model
     
 def str2bool(v):
@@ -110,16 +109,6 @@ def save_data_array(x,y,ddg_value,filename,outdir):
         os.system('mkdir -p %s'%outdir)
     np.savez('%s/%s.npz' % (outdir,filename), x=x,y=y,ddg=ddg_value)
     print('The 3D array which stored numerical representation has stored in local hard drive.')
-
-def transform(coord_array_before,center_coord):
-    from sklearn.decomposition import PCA
-    assert len(coord_array_before) >= 3  # row number.
-    pca_model = PCA(n_components=3)
-    pca_model.fit(coord_array_before)
-    coord_array_after = pca_model.transform(coord_array_before)
-    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
-    coord_array_after = coord_array_after - center_coord_after
-    return coord_array_after
 
 ## function for appending mCSM array
 def append_mCSM(x_mCNN, x_mCSM):

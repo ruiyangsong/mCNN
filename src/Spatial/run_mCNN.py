@@ -6,6 +6,16 @@
 import os, time, argparse
 import pandas as pd
 
+HOMEdir = shell('echo $HOME')
+self.mt_csv_dir           = '%s/mCNN/dataset/%s/%s.csv' % (self.homedir, self.dataset_name, self.dataset_name)# for calc wild_neighbor, the primary key of mutant_neighbor was used here is tags of rosetta mut_output
+        self.rosetta_ref_pdb_path = '%s/mCNN/dataset/%s/feature/rosetta/ref_output' % (self.homedir, self.dataset_name)
+        self.rosetta_mut_pdb_path = '%s/mCNN/dataset/%s/feature/rosetta/mut_output' %(self.homedir, self.dataset_name)
+
+        self.wild_output          = '%s/mCNN/dataset/%s/feature/mCNN/wild' %(self.homedir, self.dataset_name)
+        self.mutant_output        = '%s/mCNN/dataset/%s/feature/mCNN/mutant' %(self.homedir, self.dataset_name)
+
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('dataset_name',type=str,help='dataset name')
 parser.add_argument('center', type=str, choices=['CA','geometric'], default='CA', help='The MT site center type')
