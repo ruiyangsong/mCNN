@@ -30,7 +30,6 @@ def main():
     parser.add_argument('-t', '--thermo',     type=float, required=True,   nargs=2,         help='The pH and Temperature value to append')
     parser.add_argument('-d', '--ddg',        type=str,   required=True,   help='The DDG value to append')
 
-
     args = parser.parse_args()
     # -----------------------------parameters for NeighborCalculator-----------------------------
     pdbdir     = args.pdbdir
