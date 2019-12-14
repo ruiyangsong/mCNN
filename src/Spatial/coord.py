@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 '''
 ** Extract ATOM rows in pdb file, Calculate the distance from MT site, Deposit them to csv file **
 ** 10/10/2019.
@@ -8,26 +9,32 @@
 import os, argparse
 import numpy as np
 import pandas as pd
-from processing import str2bool, PDBparser, shell, aa_321dict,log,check_qsub
+from mCNN.processing import str2bool, PDBparser, shell, aa_321dict,log,check_qsub,read_csv
 
 def main():
+    print(os.getcwd())
+
+    # os.system('rm -r /public/home/sry/mCNN/dataset/test/feature/mCNN/*')
     parser = argparse.ArgumentParser()
     # -----------------------------parameters for NeighborCalculator-----------------------------
     parser.add_argument('-p', '--pdbdir',     type=str,   required=True,   help='the input pdb file directory')
-    parser.add_argument('-t', '--mutant_tag', type=str,   required=True,   help='the mutant primary key of one pdb (do not considr pos_new eg.: 1VQB_V_A_70_C)')
+    parser.add_argument('-tag', '--mutant_tag', type=str,   required=True,   help='the mutant primary key of one pdb (do not considr pos_new eg.: 1VQB_V_A_70_C)')
     parser.add_argument('-k', '--k_neighbor', type=int,   required=True,   help='All the k_neighbors, separated with space')
     parser.add_argument('-c', '--center',     type=str,   choices=['CA', 'geometric'], default='CA', help='The MT site center type')
     parser.add_argument('-P', '--PCA',        type=str,   default='False', help='if PCA, default is False')
     #-----------------------------parameters for FeatureGenerator-----------------------------
-    parser.add_argument('--filename',         type=str,   required=True,   help='The output file name, consist of The index of each mutation')
-    parser.add_argument('-o', '--outdir',     type=str,   required=True,   help='The output directory, default="."')
+    parser.add_argument('-o', '--outdir',     type=str,   required=True,   help='The output directory')
+    parser.add_argument('-n', '--filename',   type=str,   required=True,   help='The name of output csv file')
+
+    parser.add_argument('-f', '--feature',    type=str,   required=True,   nargs='+',
+                        choices=['rsa', 'thermo', 'onehot', 'pharm', 'hp', 'mass', 'deltar', 'pharm_deltar','hp_deltar', 'msa', 'energy', 'ddg'],
+                        help='The feature to append, default=""')
     parser.add_argument('--wtblastdir',       type=str,   required=True,   help='wt blast dir')
     parser.add_argument('--mtblastdir',       type=str,   required=True,   help='mt blast dir')
-    parser.add_argument('-f', '--feature',    type=str,   required=True,   nargs='*',
-                        choices=['rsa', 'thermo', 'onehot', 'pharm', 'hp', 'mass', 'deltar', 'pharm_deltar','hp_deltar', 'msa', 'ddg'],
-                        help='The feature to append, default=""')
+    parser.add_argument('--energydir',        type=str,   required=True,   help='energy table dir')
+    parser.add_argument('--mappingdir',       type=str,   required=True,   help='pos mapping csv file dir')
     parser.add_argument('-S', '--sadir',      type=str,   required=True,   help='The SA output directory of this pdb file')
-    parser.add_argument('-t', '--thermo',     type=float, required=True,   nargs=2,         help='The pH and Temperature value to append')
+    parser.add_argument('-t', '--thermo',     type=str,   required=True,   nargs=2,         help='The pH and Temperature value to append')
     parser.add_argument('-d', '--ddg',        type=str,   required=True,   help='The DDG value to append')
 
     args = parser.parse_args()
@@ -38,15 +45,18 @@ def main():
     center = args.center
     pca = str2bool(args.PCA)
     # -----------------------------parameters for FeatureGenerator-----------------------------
-    FILENAME = args.filename
     OUTDIR = args.outdir
     if not os.path.exists(OUTDIR):
         os.mkdir(OUTDIR)
-    WTBLASTDIR=args.wtblastdir
-    MTBLASTDIR=args.wtblastdir
+    FILENAME   = args.filename
     featurelst = args.feature
+    WTBLASTDIR = args.wtblastdir
+    MTBLASTDIR = args.wtblastdir
+    ENERGYDIR = args.energydir
+    MAPPINGDIR = args.mappingdir
+
     SADIR = args.sadir
-    THERMO = args.thermo
+    THERMO = [float(x) for x in args.thermo]
     DDG = float(args.ddg)
 
     #########################################
@@ -56,7 +66,8 @@ def main():
     NC.ParsePDB()
     df_neighbor = NC.CalNeighbor()
 
-    FG = FeatureGenerator(df_neighbor,mutant_tag,FILENAME,OUTDIR,featurelst, THERMO[0], THERMO[1], DDG, SADIR,WTBLASTDIR,MTBLASTDIR)
+    df_neighbor.reset_index(drop=True, inplace=True)
+    FG = FeatureGenerator(df_neighbor,mutant_tag,OUTDIR,FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR,WTBLASTDIR,MTBLASTDIR,ENERGYDIR,MAPPINGDIR)
     FG.append_feature()
     FG.save_csv()
 
@@ -82,6 +93,7 @@ class NeighborCalculator(object):
         coord_array_after = coord_array_after - center_coord_after
         return coord_array_after
 
+    @log
     def ParsePDB(self):
         df_pdb = pd.DataFrame(
             {'chain': [], 'res': [], 'het': [], 'posid': [], 'inode': [], 'full_name': [], 'atom_name': [],
@@ -101,7 +113,7 @@ class NeighborCalculator(object):
         if self.center == 'CA':
             center_coord = model[mtchain][MT_pos]['CA'].get_coord()
         elif self.center == 'geometric':
-            atomcoordlst = [atom.get_coord() for atom in model[mtchain][MT_pos] if not atom.get_name()[0] in ('H','D')]# do not consider H and D atoms.
+            atomcoordlst = [atom.get_coord() for atom in model[mtchain][MT_pos] if not atom.get_name()[0] in ('0','1','2','3','4','5','6','7','8','9','H','D')]# do not consider H and D atoms.
             center_coord = np.array([0, 0, 0])
             for atomcoord in atomcoordlst:
                 center_coord = center_coord + atomcoord
@@ -121,9 +133,11 @@ class NeighborCalculator(object):
                 for atom in res:
                     full_name, coord, occupancy, b_factor = atom.get_name(), atom.get_coord(), atom.get_occupancy(), atom.get_bfactor()
                     name = full_name.strip()[0]
+                    if name in ('0','1','2','3','4','5','6','7','8','9','H','D'):
+                        continue
                     dist = np.linalg.norm(center_coord - coord)
                     x,y,z = coord
-                    temp_array = np.array([chain_name,res_name,het,pos_id,inode,full_name,name,dist,x,y,z,occupancy,b_factor]).reshape(1, len(temp_array))
+                    temp_array = np.array([chain_name,res_name,het,pos_id,inode,full_name,name,dist,x,y,z,occupancy,b_factor]).reshape(1, -1)
                     temp_df = pd.DataFrame(temp_array)
                     temp_df.columns = df_pdb.columns
                     df_pdb = pd.concat([df_pdb, temp_df], axis=0, ignore_index=True)
@@ -131,13 +145,16 @@ class NeighborCalculator(object):
         self.df_pdb = df_pdb
         self.center_coord = center_coord
 
+    @log
     def CalNeighbor(self):
+        print('The k_number number is: %s'%self.k_neighbor)
         dist_arr = self.df_pdb.loc[:,'dist'].values
         assert len(dist_arr) >= self.k_neighbor
         indices  = sorted(dist_arr.argsort()[:self.k_neighbor])
         df_neighbor = self.df_pdb.iloc[indices,:]
 
         if self.pca:
+            print('Transform coords with PCA.')
             coord_arr = df_neighbor.loc[:, ['x', 'y', 'z']]
             coord_arr_transform = self.transform(coord_array_before=coord_arr,center_coord=self.center_coord)
             df_copy = df_neighbor.copy()
@@ -147,22 +164,30 @@ class NeighborCalculator(object):
         return df_neighbor
 
 class FeatureGenerator(object):
-    def __init__(self,df,mutant_tag,filename,outdir,feature_lst,pH,T,ddg,sadir,wtblastdir,mtblastdir):
+    def __init__(self,df,mutant_tag,outdir,filename,feature_lst,pH,T,ddg,sadir,wtblastdir,mtblastdir,energydir,mappingdir):
         self.df          = df
         self.mutant_tag  = mutant_tag
         self.feature_lst = feature_lst
-        self.filename    = filename
         self.outdir      = outdir
+        self.filename    = filename
         self.pH          = pH
         self.T           = T
         self.ddg         = ddg
         self.sadir       = sadir
         self.wtblastdir  = wtblastdir
         self.mtblastdir  = mtblastdir
+        self.energydir   = energydir
+        self.mappingdir  = mappingdir
         self.init_constant()
 
-
+    @log
     def init_constant(self):
+        self.energy_name_lst = ['fa_atr',              'fa_rep',      'fa_sol',    'fa_intra_rep',         'fa_intra_sol_xover4',
+                                'lk_ball_wtd',         'fa_elec',     'pro_close', 'hbond_sr_bb',          'hbond_lr_bb',
+                                'hbond_bb_sc',         'hbond_sc',    'dslf_fa13', 'atom_pair_constraint', 'angle_constraint',
+                                'dihedral_constraint', 'omega',       'fa_dun',    'p_aa_pp',              'yhh_planarity',
+                                'ref',                 'rama_prepro', 'total']
+
         self.stride_secondary = {'H':'H',
                                  'G':'H',
                                  'I':'H',
@@ -334,8 +359,7 @@ class FeatureGenerator(object):
                 aa_vec.append(0)
             self.aa_vec_dict[aa_name] = aa_vec
 
-    def calEntropy(self, blastdir, position):
-        filedir = '%s/msa.cnt_frq.npz' % blastdir
+    def calEntropy(self, filedir, position):
         data = np.load(filedir, allow_pickle=True)
         frq = data['frq']
         position_index = frq[1:, 1]
@@ -367,11 +391,12 @@ class FeatureGenerator(object):
             psi = 39
         return (phi, psi)
 
+    @log
     def append_feature(self):
         len_df = len(self.df)
         pdbid, wtaa, mtchain, mtpos, mtaa = self.mutant_tag.split('_')
         for feature in self.feature_lst:
-
+            print('<--->appending %s'%feature)
             if feature == 'rsa':
                 secondarylst = []
                 salst = []
@@ -421,16 +446,12 @@ class FeatureGenerator(object):
                 temp_df_phi = pd.DataFrame(np.array(philst).reshape(len_df, 1))
                 temp_df_psi = pd.DataFrame(np.array(psilst).reshape(len_df, 1))
                 self.df.insert(7, 'secondary', temp_df_sec)
+
                 ## OneHot encoding for Secondary Structure.
-                temp_df = pd.DataFrame(np.zeros((len_df, 1)))
                 ## Consider 7 types of secondary structure.
-                self.df['s_H'] = temp_df
-                self.df['s_G'] = temp_df
-                self.df['s_I'] = temp_df
-                self.df['s_E'] = temp_df
-                self.df['s_B'] = temp_df
-                self.df['s_T'] = temp_df
-                self.df['s_C'] = temp_df
+                temp_df = pd.DataFrame(np.zeros((len_df,7)), columns=['s_H','s_G','s_I','s_E','s_B','s_T','s_C'])
+                self.df = pd.concat([self.df, temp_df], axis=1)
+
                 self.df.loc[self.df.secondary == 'H', 's_H'] = 1
                 self.df.loc[self.df.secondary == 'G', 's_G'] = 1
                 self.df.loc[self.df.secondary == 'I', 's_I'] = 1
@@ -440,9 +461,10 @@ class FeatureGenerator(object):
                 self.df.loc[self.df.secondary == 'C', 's_C'] = 1
 
                 ##consider 3 types of secondary structure (Helix, Strand, Coil), denoted by (H, S, C).
-                self.df['s_Helix'] = temp_df
-                self.df['s_Strand'] = temp_df
-                self.df['s_Coil'] = temp_df  # {'H':'H','G':'H','I':'H','E':'E','B':'C','T':'C','C':'C'}
+                # {'H':'H','G':'H','I':'H','E':'E','B':'C','T':'C','C':'C'}
+                temp_df = pd.DataFrame(np.zeros((len_df, 3)), columns=['s_Helix', 's_Strand', 's_Coil'])
+                self.df = pd.concat([self.df, temp_df], axis=1)
+
                 self.df.loc[self.df.secondary == 'H', 's_Helix'] = 1
                 self.df.loc[self.df.secondary == 'G', 's_Helix'] = 1
                 self.df.loc[self.df.secondary == 'I', 's_Helix'] = 1
@@ -457,22 +479,19 @@ class FeatureGenerator(object):
                 self.df['asa'] = temp_df_asa
                 self.df['phi'] = temp_df_phi
                 self.df['psi'] = temp_df_psi
-                # return df
 
             if feature == 'thermo':
                 temp_df_ph = pd.DataFrame(np.ones((len_df, 1)) * self.pH)
                 temp_df_t = pd.DataFrame(np.ones((len_df, 1)) * self.T)
                 self.df['ph'] = temp_df_ph
                 self.df['temperature'] = temp_df_t
-                # return df
+                # print(self.df)
 
             if feature == 'onehot':
                 # columnlst = list(df.columns) # chain,res,het,posid,inode,full_name,dist,x,y,z,occupancy,b_factor
-                temp_df = pd.DataFrame(np.zeros((len_df, 1)))
-                self.df['C'] = temp_df
-                self.df['O'] = temp_df
-                self.df['N'] = temp_df
-                self.df['Other'] = temp_df
+                temp_df = pd.DataFrame(np.zeros((len_df, 4)), columns=['C', 'O', 'N', 'Other'])
+                self.df = pd.concat([self.df, temp_df], axis=1)
+
                 self.df.loc[self.df.atom_name == 'C', 'C'] = 1
                 self.df.loc[self.df.atom_name == 'O', 'O'] = 1
                 self.df.loc[self.df.atom_name == 'N', 'N'] = 1
@@ -489,7 +508,7 @@ class FeatureGenerator(object):
                         pharmlst.append(aa_pharm_dict_tmp[atom_full_name])
                     except:
                         print('\n[WARNING] atom do not assigned by pharm, pdbid: %s, atom_chain: %s, atom_pos: %s, atom_res: %s'
-                              %(self.mutant_tag.split('_')[0], atom_chain, str(atom_posid)+str(atom_inode), atom_res))
+                              %(pdbid, atom_chain, str(atom_posid)+str(atom_inode), atom_res))
                         print('atom full name: %s' % atom_full_name)
                         pharmlst.append(aa_pharm_dict_tmp[atom_full_name[0]])  # for unassigned atom in xscore, such as OXT.
                 pharm_df = pd.DataFrame(np.array(pharmlst).reshape(len_df, 8), columns=atom_class)
@@ -506,7 +525,7 @@ class FeatureGenerator(object):
                         hplst.append(aa_hp_dict_tmp[atom_full_name])
                     except:
                         print('\n[WARNING] atom do not assigned by hp, pdbid: %s, atom_chain: %s, atom_pos: %s, atom_res: %s'
-                              %(self.mutant_tag.split('_')[0], atom_chain, str(atom_posid)+str(atom_inode), atom_res))
+                              %(pdbid, atom_chain, str(atom_posid)+str(atom_inode), atom_res))
                         print('atom full name: %s' % atom_full_name)
                         hplst.append([0, 0])  # for unassigned atom in xscore at HP classification.
                 hp_df = pd.DataFrame(np.array(hplst).reshape(len_df, 2), columns=atom_class)
@@ -514,11 +533,8 @@ class FeatureGenerator(object):
                 # return df
 
             if feature == 'mass':
-                temp_df = pd.DataFrame(np.zeros((len_df, 1)))
-                self.df['C_mass'] = temp_df
-                self.df['O_mass'] = temp_df
-                self.df['N_mass'] = temp_df
-                self.df['S_mass'] = temp_df
+                temp_df = pd.DataFrame(np.zeros((len_df, 4)), columns=['C_mass','O_mass','N_mass','S_mass'])
+                self.df = pd.concat([self.df, temp_df], axis=1)
                 self.df.loc[self.df.atom_name == 'C', 'C_mass'] = self.aa_atom_mass['C']
                 self.df.loc[self.df.atom_name == 'O', 'O_mass'] = self.aa_atom_mass['O']
                 self.df.loc[self.df.atom_name == 'N', 'N_mass'] = self.aa_atom_mass['N']
@@ -577,8 +593,38 @@ class FeatureGenerator(object):
                 WTcols = ['WT_' + aa for aa in cols]
                 WTmsadf = pd.DataFrame(np.array(WTmsalst).reshape(len_df, 21), columns=WTcols)
                 MTmsadf = pd.DataFrame(np.array(MTmsalst).reshape(len_df, 21), columns=MTcols)
-                df = pd.concat([self.df, WTmsadf, MTmsadf], axis=1)
-                return df
+                self.df = pd.concat([self.df, WTmsadf, MTmsadf], axis=1)
+
+            if feature == 'energy':
+                temp_df = pd.DataFrame(np.ones((len_df, len(self.energy_name_lst))),columns=self.energy_name_lst)
+
+                self.df = pd.concat([self.df, temp_df], axis=1)
+                df_map    = read_csv(self.mappingdir)
+                df_map[['POSITION_OLD']] = df_map[['POSITION_OLD']].astype(str)
+                # df_map[['POSITION_NEW']] == df_map[['POSITION_NEW']].astype(str)
+
+                df_energy = read_csv(self.energydir)
+                df_energy.insert(0, 'res', df_energy.iloc[:,0])
+                for i in range(len(df_energy)):
+                    df_energy.iloc[i,0] = df_energy.iloc[i,0][:3]
+                    df_energy.iloc[i,1] = df_energy.iloc[i, 1].split('_')[-1]
+
+                for i in range(len_df):
+                    atom_chain, atom_res, het, posid, inode = self.df.iloc[i,:5]
+
+                    # print('atom_chain: %s, atom_res: %s, het: %s, posid: %s, inode: %s' % (
+                    # atom_chain, atom_res, het, posid, inode))
+
+                    map_new = df_map.loc[(df_map.CHAIN==atom_chain) & (df_map.POSITION_OLD==(str(het)+str(posid)+str(inode)).strip()),:].values[0,-1]
+
+                    energy = df_energy.loc[(df_energy.res==atom_res) & (df_energy.label==str(map_new)),:]
+                    temp_df.iloc[i,:] = energy.iloc[:,2:].values.reshape(1,-1)
+
+
+
+
+
+
 
             if feature == 'ddg':
                 temp_df = pd.DataFrame(np.ones((len_df, 1)) * self.ddg)
