@@ -5,7 +5,7 @@
 其中不考虑rosetta mut 失败的条目（根据rosetta结果反向去mt_csv 中查找ddg温度等特征指标）
 '''
 
-'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
+#'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
 
 import os, sys, time, argparse
 from mCNN.processing import str2bool, shell, read_csv
@@ -40,9 +40,11 @@ class QsubRunner(object):
         self.pca           = pca
         self.feature       = featurelst
 
-        self.app         = '%s/mCNN/src/Spatial/mCNN.py' % homedir
+        self.app           = '%s/mCNN/src/Spatial/coord.py' % homedir
 
         self.mt_csv_dir  = '%s/mCNN/dataset/%s/%s.csv' % (homedir, dataset_name, dataset_name)  # after drop duplicates, #PDB,WILD_TYPE,CHAIN,POSITION,MUTANT,PH,TEMPERATURE,DDG
+        self.map_csv_dir = '%s/mCNN/dataset/%s/feature/rosetta/global_output/mapping' % (homedir, dataset_name)  # after drop duplicates, #PDB,WILD_TYPE,CHAIN,POSITION,MUTANT,PH,TEMPERATURE,DDG
+
         self.ref_pdb_dir = '%s/mCNN/dataset/%s/feature/rosetta/ref_output' % (homedir, dataset_name)
         self.mut_pdb_dir = '%s/mCNN/dataset/%s/feature/rosetta/mut_output' % (homedir, dataset_name)
 
@@ -66,12 +68,13 @@ class QsubRunner(object):
 
     def runner(self):
         df_mt = read_csv(self.mt_csv_dir)
+        df_mt[['POSITION']] = df_mt[['POSITION']].astype(str)#
         for rosetta_mut_tag in os.listdir(self.mut_pdb_dir):
             pdbid, wtaa, chain, pos, _, mtaa = rosetta_mut_tag.split('_')
             mutant_tag = '_'.join([pdbid, wtaa, chain, pos, mtaa])
             try:
                 ph, T, ddg = df_mt.loc[(df_mt.PDB==pdbid) & (df_mt.WILD_TYPE==wtaa) & (df_mt.CHAIN==chain) &
-                                       (df_mt.POSITION==pos) & (df_mt.MUTANT==mtaa),:].values
+                                       (df_mt.POSITION==pos) & (df_mt.MUTANT==mtaa),:].values[0,-3:]
                 thermo = str(ph) + ' ' + str(T)
             except:
                 print('[ERROR] mutation %s index failed in %s'%(mutant_tag,self.mt_csv_dir))
@@ -90,12 +93,13 @@ class QsubRunner(object):
         wt_blast_dir = '%s/mdl0_wild/%s/%s/msa.cnt_frq.npz'%(self.msa_dir,pdbid,chain)
         mt_blast_dir = '%s/mdl0_mutant/%s/msa.cnt_frq.npz'%(self.msa_dir,mutant_tag)
         energy_dir   = '%s/%s/energy.csv' % (self.ref_pdb_dir, pdbid)
+        mapping_dir  = '%s/%s.csv'%(self.map_csv_dir,pdbid)
         sa_dir       = '%s/wild/%s.stride' % (self.stride_dir, pdbid)
         # -----------------------------qsub-----------------------------
-        filename = 'center_%s_pca_%s_neighbor_%s'
+        filename = 'center_%s_pca_%s_neighbor_%s'%(self.center,self.pca,k_neighbor)
 
         qsubid = 'mCNN_wild_%s_%s' % (mutant_tag,filename)
-        csv_outdir = '%s/%s/' % (self.wild_csv_outdir, mutant_tag)
+        csv_outdir = '%s/%s' % (self.wild_csv_outdir, mutant_tag)
         qsublog_outdir = '%s/%s/%s' % (self.wild_qsublog_outdir, mutant_tag,filename)
         if not os.path.exists(csv_outdir):
             os.makedirs(csv_outdir)
@@ -111,8 +115,8 @@ class QsubRunner(object):
         g.writelines('#!/usr/bin/bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s -S %s -t %s -d %s\n'
-            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, self.pca, csv_outdir, filename, self.feature, wt_blast_dir,mt_blast_dir,energy_dir, sa_dir, thermo, ddg))
+            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
+            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, self.pca, csv_outdir, filename, self.feature, wt_blast_dir,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
@@ -128,9 +132,10 @@ class QsubRunner(object):
         wt_blast_dir = '%s/mdl0_wild/%s/%s/msa.cnt_frq.npz' % (self.msa_dir, pdbid, chain)
         mt_blast_dir = '%s/mdl0_mutant/%s/msa.cnt_frq.npz' % (self.msa_dir, mutant_tag)
         energy_dir = '%s/%s/energy.csv' % (self.mut_pdb_dir, rosetta_mut_tag)
+        mapping_dir = '%s/%s.csv' % (self.map_csv_dir, pdbid)
         sa_dir = '%s/mutant/%s.stride' % (self.stride_dir, pdbid)
         # -----------------------------qsub-----------------------------
-        filename = 'center_%s_pca_%s_neighbor_%s'
+        filename = 'center_%s_pca_%s_neighbor_%s'%(self.center,self.pca,k_neighbor)
 
         qsubid = 'mCNN_mutant_%s_%s' % (mutant_tag,filename)
         csv_outdir = '%s/%s/' % (self.mutant_csv_outdir, mutant_tag)
@@ -149,9 +154,9 @@ class QsubRunner(object):
         g.writelines('#!/usr/bin/bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s -S %s -t %s -d %s\n'
+            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
             % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, self.pca, csv_outdir, filename, self.feature,
-               wt_blast_dir, mt_blast_dir, energy_dir, sa_dir, thermo, ddg))
+               wt_blast_dir, mt_blast_dir, energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
