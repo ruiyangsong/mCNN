@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import os, argparse, itertools
 import numpy as np
-from processing import read_csv, save_data_array
+from mCNN.processing import read_csv, save_data_array
 from scipy.spatial.distance import pdist, squareform
 
 def cal_mCSM(df, maximum=8, minimum=0, step=2, class_num=2):
@@ -73,31 +73,31 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.description = 'A script to calculate mCSM and mutant features'
     parser.add_argument('dataset_name')
-    parser.add_argument('-o', '--outdir', type=str, help='output dir')
-    parser.add_argument('--min',       type=str, required=True, help='The minimum distance from mutant center')
-    parser.add_argument('--max',       type=float, required=True, help='The maximum distance from mutant center')
-    parser.add_argument('--step',      type=float, required=True, help='The cutoff step')
-    parser.add_argument('--center',    type=str,   required=True, choices=['CA','geometric'], default='geometric', help='The MT center type, default is "CA"')
-    parser.add_argument('--class_num', type=int,   default=2,     help='atom classification number, default is 2')
+    parser.add_argument('csv_feature_dir', type=str, help='eg:~/mCNN/dataset/S1925/feature/mCNN/wild/csv')
+    parser.add_argument('-o', '--outdir', type=str, required=True, help='output dir')
+    parser.add_argument('--min',          type=str, required=True, help='The minimum distance from mutant center')
+    parser.add_argument('--max',          type=str, required=True, help='The maximum distance from mutant center')
+    parser.add_argument('--step',         type=str, required=True, help='The cutoff step')
+    parser.add_argument('--center',       type=str, required=True, choices=['CA','geometric'], default='geometric', help='The MT center type, default is "CA"')
+    parser.add_argument('--class_num',    type=int,   default=2,     help='atom classification number, default is 2')
     args = parser.parse_args()
-    dataset_name = args.dataset_name
 
-    if args.outdir:
-        outdir = args.outdir
-    if args.min:
-        minimum = float(args.min)
-    if args.max:
-        maximum = args.max
-    if args.step:
-        step = args.step
-    if args.center:
-        center = args.center
-    if args.class_num:
-        class_num = args.class_num
+    dataset_name = args.dataset_name
+    csv_feature_dir = args.df_feature_dir
+    outdir = args.outdir
+    minimum = float(args.min)
+    maximum = float(args.max)
+    step = float(args.step)
+    center = args.center
+    class_num = args.class_num
     # outdir = '/public/home/sry/mCNN/datasets_array/%s/mCSM/%s' % (dataset_name, center)
-    filename       = '%s_min_%s_max_%s_step_%s_center_%s_class_%s'%(dataset_name,minimum,maximum,step,center,class_num)
-    feature_path   = '/public/home/sry/mCNN/datasets/%s/csv_feature%s_%s' % (dataset_name, dataset_name, center)
-    feature_dirlst = [feature_path+'/'+x+'/'+x+'.csv' for x in os.listdir(feature_path)]
+    filename       = 'min_%.1f_max_%.1f_step_%.1f_center_%s_class_%s'%(minimum,maximum,step,center,class_num)
+
+    # feature_path   = '/public/home/sry/mCNN/datasets/%s/csv_feature%s_%s' % (dataset_name, dataset_name, center)
+
+    feature_dirlst = [csv_feature_dir +'/'+x+'/center_%s_pca_.csv' for x in os.listdir(csv_feature_dir)]
+
+
     feature_all    = []
     ylst           = []
     ddglst         = []

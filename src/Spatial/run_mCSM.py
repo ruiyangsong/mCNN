@@ -8,9 +8,10 @@ parser.add_argument('dataset_name')
 args = parser.parse_args()
 dataset_name = args.dataset_name
 
-app = '/public/home/sry/mCNN/src/mCSM.py'
+app = '/public/home/sry/mCNN/src/Spatial/mCSM.py'
 os.system('chmod 755 %s' % app)
-outpath = '/public/home/sry/mCNN/datasets_array/%s/mCSM'%dataset_name
+wild_outpath = '/public/home/sry/mCNN/dataset/%s/feature/mCSM/wild'%dataset_name
+mutant_outpath = '/public/home/sry/mCNN/dataset/%s/feature/mCSM/mutant'%dataset_name
 
 class_numlst = [2,8]
 centerlst = ['CA','geometric']
@@ -19,12 +20,13 @@ maximunlst = [5,6,7,8,9,10,11,12,13,14,15]
 # maximunlst = [14]
 steplst    = [0.5, 1, 1.5, 2]
 
+# for wild structure
 for class_num in class_numlst:
     for center in centerlst:
         for maximum in maximunlst:
             for step in steplst:
-                tag = '%s_min_%s_max_%s_step_%s_center_%s_class_%s'%(dataset_name,minimum,maximum,step,center,class_num)
-                outdir = '%s/%s/%s' % (outpath, center, tag)
+                tag = 'wild_min_%.1f_max_%.1f_step_%.1f_center_%s_class_%s'%(minimum,maximum,step,center,class_num)
+                outdir = '%s/%s/%s' % (wild_outpath, center, tag)
                 if not os.path.exists('%s/qsublog' % outdir):
                     os.system('mkdir -p %s/qsublog' % outdir)
                 walltime = 'walltime=240:00:00'
@@ -45,3 +47,4 @@ for class_num in class_numlst:
                 os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, tag, run_CalmCSM))
                 time.sleep(0.1)
 
+# for mutant_structure

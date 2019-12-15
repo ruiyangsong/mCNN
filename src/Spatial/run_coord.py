@@ -8,7 +8,7 @@
 #'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
 
 import os, sys, time, argparse
-from mCNN.processing import str2bool, shell, read_csv
+from mCNN.processing import shell, read_csv
 
 def main():
     homedir    = shell('echo $HOME')
@@ -19,25 +19,22 @@ def main():
     parser.add_argument('dataset_name',       type=str, help='dataset name')
     parser.add_argument('-k', '--k_neighbor', type=int, required=True, nargs='+', help='The feature to append, default=""')
     parser.add_argument('-C', '--center',     type=str, choices=['CA','geometric'], default='CA', help='The MT site center type, default is CA.')
-    parser.add_argument('-P', '--PCA',        type=str, default='False', help='if consider PCA, default is False')
     args = parser.parse_args()
     dataset_name  = args.dataset_name
     k_neighborlst = args.k_neighbor
     center        = args.center
-    pca           = str2bool(args.PCA)
 
-    QR = QsubRunner(homedir,dataset_name,k_neighborlst,center,pca,featurelst)
+    QR = QsubRunner(homedir,dataset_name,k_neighborlst,center,featurelst)
     QR.runner()
 
 
 #-----------------------------------------------------------------------------------------------------------------------
 class QsubRunner(object):
-    def __init__(self,homedir,dataset_name,k_neighborlst,center,pca,featurelst):
+    def __init__(self,homedir,dataset_name,k_neighborlst,center,featurelst):
         self.homedir       = homedir
         self.dataset_name  = dataset_name
         self.k_neighborlst = k_neighborlst
         self.center        = center
-        self.pca           = pca
         self.feature       = featurelst
 
         self.app           = '%s/mCNN/src/Spatial/coord.py' % homedir
@@ -96,7 +93,7 @@ class QsubRunner(object):
         mapping_dir  = '%s/%s.csv'%(self.map_csv_dir,pdbid)
         sa_dir       = '%s/wild/%s.stride' % (self.stride_dir, pdbid)
         # -----------------------------qsub-----------------------------
-        filename = 'center_%s_pca_%s_neighbor_%s'%(self.center,self.pca,k_neighbor)
+        filename = 'center_%s_neighbor_%s'%(self.center,k_neighbor)
 
         qsubid = 'mCNN_wild_%s_%s' % (mutant_tag,filename)
         csv_outdir = '%s/%s' % (self.wild_csv_outdir, mutant_tag)
@@ -115,8 +112,8 @@ class QsubRunner(object):
         g.writelines('#!/usr/bin/bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, self.pca, csv_outdir, filename, self.feature, wt_blast_dir,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
+            '%s -p %s -tag %s -k %s -c %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
+            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, csv_outdir, filename, self.feature, wt_blast_dir,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
@@ -135,7 +132,7 @@ class QsubRunner(object):
         mapping_dir = '%s/%s.csv' % (self.map_csv_dir, pdbid)
         sa_dir = '%s/mutant/%s.stride' % (self.stride_dir, pdbid)
         # -----------------------------qsub-----------------------------
-        filename = 'center_%s_pca_%s_neighbor_%s'%(self.center,self.pca,k_neighbor)
+        filename = 'center_%s_neighbor_%s'%(self.center,k_neighbor)
 
         qsubid = 'mCNN_mutant_%s_%s' % (mutant_tag,filename)
         csv_outdir = '%s/%s/' % (self.mutant_csv_outdir, mutant_tag)
@@ -154,8 +151,8 @@ class QsubRunner(object):
         g.writelines('#!/usr/bin/bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -P %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, self.pca, csv_outdir, filename, self.feature,
+            '%s -p %s -tag %s -k %s -c %s -o %s -n %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
+            % (self.app, pdbdir, mutant_tag, k_neighbor, self.center, csv_outdir, filename, self.feature,
                wt_blast_dir, mt_blast_dir, energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()

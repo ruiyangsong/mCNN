@@ -9,7 +9,7 @@
 import os, argparse
 import numpy as np
 import pandas as pd
-from mCNN.processing import str2bool, PDBparser, shell, aa_321dict,log,check_qsub,read_csv
+from mCNN.processing import PDBparser, shell, aa_321dict,log,check_qsub,read_csv
 
 def main():
     print(os.getcwd())
@@ -21,7 +21,6 @@ def main():
     parser.add_argument('-tag', '--mutant_tag', type=str,   required=True,   help='the mutant primary key of one pdb (do not considr pos_new eg.: 1VQB_V_A_70_C)')
     parser.add_argument('-k', '--k_neighbor', type=int,   required=True,   help='All the k_neighbors, separated with space')
     parser.add_argument('-c', '--center',     type=str,   choices=['CA', 'geometric'], default='CA', help='The MT site center type')
-    parser.add_argument('-P', '--PCA',        type=str,   default='False', help='if PCA, default is False')
     #-----------------------------parameters for FeatureGenerator-----------------------------
     parser.add_argument('-o', '--outdir',     type=str,   required=True,   help='The output directory')
     parser.add_argument('-n', '--filename',   type=str,   required=True,   help='The name of output csv file')
@@ -43,7 +42,6 @@ def main():
     mutant_tag = args.mutant_tag
     k_neighbor = args.k_neighbor
     center = args.center
-    pca = str2bool(args.PCA)
     # -----------------------------parameters for FeatureGenerator-----------------------------
     OUTDIR = args.outdir
     if not os.path.exists(OUTDIR):
@@ -62,15 +60,16 @@ def main():
     ####################################################################################################################
     ## main program begins here
     ####################################################################################################################
-    NC = NeighborCalculator(pdbdir,mutant_tag,k_neighbor,center,pca)
+    NC = NeighborCalculator(pdbdir,mutant_tag,k_neighbor,center)
     df_pdb, center_coord = NC.ParsePDB()
 
     df_pdb.reset_index(drop=True, inplace=True)
-    FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR,
-                          WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR)
-    df_feature = FG.append_feature()
 
-    save_csv(df=df_feature,outdir=OUTDIR,filename='center_%s_pca_%s'%(center,pca))
+    if not os.path.exists('%s/center_%s.csv'%(OUTDIR,center)):
+        FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR, WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR)
+        df_feature = FG.append_feature()
+
+    save_csv(df=df_feature,outdir=OUTDIR,filename='center_%s'%center)
 
     df_neighbor = NC.CalNeighbor(df_feature,center_coord)
     df_neighbor.reset_index(drop=True, inplace=True)
@@ -82,23 +81,12 @@ def save_csv(df,outdir,filename):
     df.to_csv('%s/%s.csv'%(outdir,filename),index=False)
 
 class NeighborCalculator(object):
-    def __init__(self,pdbdir,mutant_tag,k_neighbor,center,pca):
+    def __init__(self,pdbdir,mutant_tag,k_neighbor,center):
         self.pdbdir       = pdbdir
         self.mutant_tag   = mutant_tag
 
         self.k_neighbor   = k_neighbor
         self.center       = center
-        self.pca          = pca
-
-    def transform(self, coord_array_before, center_coord):
-        from sklearn.decomposition import PCA
-        assert len(coord_array_before) >= 3  # row number.
-        pca_model = PCA(n_components=3)
-        pca_model.fit(coord_array_before)
-        coord_array_after = pca_model.transform(coord_array_before)
-        center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
-        coord_array_after = coord_array_after - center_coord_after
-        return coord_array_after
 
     @log
     def ParsePDB(self):
@@ -162,14 +150,6 @@ class NeighborCalculator(object):
         indices  = sorted(dist_arr.argsort()[:self.k_neighbor])
         df_neighbor = df_feature.iloc[indices,:]
 
-        if self.pca:
-            print('Transform coords with PCA.')
-            coord_arr = df_neighbor.loc[:, ['x', 'y', 'z']]
-            coord_arr_transform = self.transform(coord_array_before=coord_arr,center_coord=center_coord)
-            df_copy = df_neighbor.copy()
-            df_copy.loc[:, ['x', 'y', 'z']] = coord_arr_transform
-            del df_neighbor
-            return df_copy
         return df_neighbor
 
 class FeatureGenerator(object):
@@ -634,7 +614,6 @@ class FeatureGenerator(object):
                 self.df['ddg'] = temp_df
                 # return df
         return self.df
-
 
 if __name__ == '__main__':
     main()
