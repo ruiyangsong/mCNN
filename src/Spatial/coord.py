@@ -120,7 +120,8 @@ class NeighborCalculator(object):
         if self.center == 'CA':
             center_coord = model[mtchain][MT_pos]['CA'].get_coord()
         elif self.center == 'geometric':
-            atomcoordlst = [atom.get_coord() for atom in model[mtchain][MT_pos] if not atom.get_name()[0] in ('0','1','2','3','4','5','6','7','8','9','H','D')]# do not consider H and D atoms.
+            # atomcoordlst = [atom.get_coord() for atom in model[mtchain][MT_pos] if not atom.get_name()[0] in ('0','1','2','3','4','5','6','7','8','9','H','D')]# do not consider H and D atoms.
+            atomcoordlst = [atom.get_coord() for atom in model[mtchain][MT_pos] if atom.get_name()[0] in ('C','O','N','S')]
             center_coord = np.array([0, 0, 0])
             for atomcoord in atomcoordlst:
                 center_coord = center_coord + atomcoord
@@ -140,7 +141,8 @@ class NeighborCalculator(object):
                 for atom in res:
                     full_name, coord, occupancy, b_factor = atom.get_name(), atom.get_coord(), atom.get_occupancy(), atom.get_bfactor()
                     name = full_name.strip()[0]
-                    if name in ('0','1','2','3','4','5','6','7','8','9','H','D'):
+                    # if name in ('0','1','2','3','4','5','6','7','8','9','H','D'):
+                    if not name in ('C','O','N','S'):
                         continue
                     dist = np.linalg.norm(center_coord - coord)
                     x,y,z = coord
