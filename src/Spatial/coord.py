@@ -605,12 +605,9 @@ class FeatureGenerator(object):
                 self.df = pd.concat([self.df, WTmsadf, MTmsadf], axis=1)
 
             if feature == 'energy':
-                temp_df = pd.DataFrame(np.ones((len_df, len(self.energy_name_lst))),columns=self.energy_name_lst)
-
-                self.df = pd.concat([self.df, temp_df], axis=1)
+                temp_df = pd.DataFrame(np.zeros((len_df, len(self.energy_name_lst))),columns=self.energy_name_lst)
                 df_map    = read_csv(self.mappingdir)
                 df_map[['POSITION_OLD']] = df_map[['POSITION_OLD']].astype(str)
-                # df_map[['POSITION_NEW']] == df_map[['POSITION_NEW']].astype(str)
 
                 df_energy = read_csv(self.energydir)
                 df_energy.insert(0, 'res', df_energy.iloc[:,0])
@@ -629,6 +626,7 @@ class FeatureGenerator(object):
                     energy = df_energy.loc[(df_energy.res==atom_res) & (df_energy.label==str(map_new)),:]
                     temp_df.iloc[i,:] = energy.iloc[:,2:].values.reshape(1,-1)
 
+                self.df = pd.concat([self.df, temp_df], axis=1)
 
 
             if feature == 'ddg':
