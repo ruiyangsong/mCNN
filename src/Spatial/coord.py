@@ -59,17 +59,27 @@ def main():
     THERMO = [float(x) for x in args.thermo]
     DDG = float(args.ddg)
 
-    #########################################
+    ####################################################################################################################
     ## main program begins here
-    #########################################
+    ####################################################################################################################
     NC = NeighborCalculator(pdbdir,mutant_tag,k_neighbor,center,pca)
-    NC.ParsePDB()
-    df_neighbor = NC.CalNeighbor()
+    df_pdb, center_coord = NC.ParsePDB()
 
+    df_pdb.reset_index(drop=True, inplace=True)
+    FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR,
+                          WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR)
+    df_feature = FG.append_feature()
+
+    save_csv(df=df_feature,outdir=OUTDIR,filename='center_%s_pca_%s'%(center,pca))
+
+    df_neighbor = NC.CalNeighbor(df_feature,center_coord)
     df_neighbor.reset_index(drop=True, inplace=True)
-    FG = FeatureGenerator(df_neighbor,mutant_tag,OUTDIR,FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR,WTBLASTDIR,MTBLASTDIR,ENERGYDIR,MAPPINGDIR)
-    FG.append_feature()
-    FG.save_csv()
+    save_csv(df=df_neighbor,outdir=OUTDIR,filename=FILENAME)
+
+def save_csv(df,outdir,filename):
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+    df.to_csv('%s/%s.csv'%(outdir,filename),index=False)
 
 class NeighborCalculator(object):
     def __init__(self,pdbdir,mutant_tag,k_neighbor,center,pca):
@@ -79,9 +89,6 @@ class NeighborCalculator(object):
         self.k_neighbor   = k_neighbor
         self.center       = center
         self.pca          = pca
-
-        self.df_pdb       = None
-        self.center_coord = None
 
     def transform(self, coord_array_before, center_coord):
         from sklearn.decomposition import PCA
@@ -142,21 +149,21 @@ class NeighborCalculator(object):
                     temp_df.columns = df_pdb.columns
                     df_pdb = pd.concat([df_pdb, temp_df], axis=0, ignore_index=True)
         print('The atom_number is:',len(df_pdb))
-        self.df_pdb = df_pdb
-        self.center_coord = center_coord
+        return df_pdb,center_coord
+
 
     @log
-    def CalNeighbor(self):
+    def CalNeighbor(self,df_feature,center_coord):
         print('The k_number number is: %s'%self.k_neighbor)
-        dist_arr = self.df_pdb.loc[:,'dist'].values
+        dist_arr = df_feature.loc[:,'dist'].values
         assert len(dist_arr) >= self.k_neighbor
         indices  = sorted(dist_arr.argsort()[:self.k_neighbor])
-        df_neighbor = self.df_pdb.iloc[indices,:]
+        df_neighbor = df_feature.iloc[indices,:]
 
         if self.pca:
             print('Transform coords with PCA.')
             coord_arr = df_neighbor.loc[:, ['x', 'y', 'z']]
-            coord_arr_transform = self.transform(coord_array_before=coord_arr,center_coord=self.center_coord)
+            coord_arr_transform = self.transform(coord_array_before=coord_arr,center_coord=center_coord)
             df_copy = df_neighbor.copy()
             df_copy.loc[:, ['x', 'y', 'z']] = coord_arr_transform
             del df_neighbor
@@ -622,17 +629,12 @@ class FeatureGenerator(object):
 
 
 
-
-
-
-
             if feature == 'ddg':
                 temp_df = pd.DataFrame(np.ones((len_df, 1)) * self.ddg)
                 self.df['ddg'] = temp_df
                 # return df
+        return self.df
 
-    def save_csv(self):
-        self.df.to_csv('%s/%s.csv'%(self.outdir,self.filename))
 
 if __name__ == '__main__':
     main()
