@@ -5,7 +5,7 @@ import numpy as np
 from mCNN.processing import read_csv, save_data_array
 from scipy.spatial.distance import pdist, squareform
 
-def cal_mCSM(df, maximum=8, minimum=0, step=2, class_num=2):
+def cal_mCSM(df, maximum, minimum, step, class_num):
     '''
     :param df: feature df
      cloumns = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor', 's_G', 's_H', 's_b', 's_C', 's_T', 's_B', 's_E', 'sa', 'rsa',
@@ -93,10 +93,7 @@ if __name__ == '__main__':
     # outdir = '/public/home/sry/mCNN/datasets_array/%s/mCSM/%s' % (dataset_name, center)
     filename       = 'min_%.1f_max_%.1f_step_%.1f_center_%s_class_%s'%(minimum,maximum,step,center,class_num)
 
-    # feature_path   = '/public/home/sry/mCNN/datasets/%s/csv_feature%s_%s' % (dataset_name, dataset_name, center)
-
-    feature_dirlst = [csv_feature_dir +'/'+x+'/center_%s_pca_.csv' for x in os.listdir(csv_feature_dir)]
-
+    feature_dirlst = [csv_feature_dir +'/'+x+'/center_%s.csv'%center for x in os.listdir(csv_feature_dir)]
 
     feature_all    = []
     ylst           = []

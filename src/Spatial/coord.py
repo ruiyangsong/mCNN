@@ -68,8 +68,9 @@ def main():
     if not os.path.exists('%s/center_%s.csv'%(OUTDIR,center)):
         FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR, WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR)
         df_feature = FG.append_feature()
-
-    save_csv(df=df_feature,outdir=OUTDIR,filename='center_%s'%center)
+        save_csv(df=df_feature, outdir=OUTDIR, filename='center_%s' % center)
+    else:
+        df_feature = read_csv('%s/center_%s.csv'%(OUTDIR,center))
 
     df_neighbor = NC.CalNeighbor(df_feature,center_coord)
     df_neighbor.reset_index(drop=True, inplace=True)
