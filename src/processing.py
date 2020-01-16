@@ -127,6 +127,21 @@ def load_data(dir):
     ddg = data['ddg']
     return x,y,ddg
 
+def calc_coor_pValue(feature_a_list, feature_b_list):
+    import scipy.stats as stats
+    pearson_coeff, p_value = stats.pearsonr(np.array(feature_a_list).reshape(-1), np.array(feature_b_list).reshape(-1))
+    return pearson_coeff, p_value
+
+def transform(coord_array_before, center_coord):
+    from sklearn.decomposition import PCA
+    assert len(coord_array_before) >= 3  # row number.
+    pca_model = PCA(n_components=3)
+    pca_model.fit(coord_array_before)
+    coord_array_after = pca_model.transform(coord_array_before)
+    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
+    coord_array_after = coord_array_after - center_coord_after
+    return coord_array_after
+
 def sort_row(x, method = 'chain', p_seed = 0):
     '''
     :param x: 3D tensor of this dataset, the axis are: data_num, row_num and col_nm.

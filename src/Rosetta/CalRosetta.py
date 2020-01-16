@@ -14,7 +14,7 @@ def main():
 
     ROS = RosettaEnergy(dataset_name, HOMEdir)
     if flag == 'first':
-        ROS.get_mdl0()# mdl0 are needed by others, split two steps for parallel computing
+        ROS.get_mdl0()# mdl0 are needed by others, split two steps for this parallel computing.
     elif flag == 'second':
         ROS.run_ref()
         ROS.mapping_pos()
@@ -64,14 +64,9 @@ class RosettaEnergy(object):
 
     @log
     def run_ref(self):
+        '''refine mdl0 file'''
         ref_tag = 'rosetta_ref_%s' % self.dataset_name
         qsub_ref(self.homedir, self.refdir, self.outpath_pdb_mdl0, self.outpath_ref, ref_tag)
-
-        # jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
-        # while jobs > 0:
-        #     time.sleep(self.sleep_time)
-        #     jobs = int(shell('qzy | grep %s | wc -l' % ref_tag))
-        # print('---get refine done!')
         check_qsub(tag = ref_tag, sleep_time = self.sleep_time)
         self.ref_tagdirlst = [self.outpath_ref + '/' + x for x in os.listdir(self.outpath_ref)]
 
@@ -147,13 +142,6 @@ class RosettaEnergy(object):
         mt_csv_dir_rewrite = '%s/%s.csv' % (self.outpath_global, self.dataset_name)  ## the rewrite mt_csv
         mut_tag = 'rosetta_mut_%s' % self.dataset_name
         qsub_mut(self.homedir, self.mutdir, self.outpath_ref, self.outpath_mut, mt_csv_dir_rewrite, mut_tag)
-
-
-        # jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
-        # while jobs > 0:
-        #     time.sleep(self.sleep_time)
-        #     jobs = int(shell('qzy | grep %s | wc -l' % mut_tag))
-        # print('---get mutant done!')
         check_qsub(tag=mut_tag, sleep_time=self.sleep_time)
         self.mut_tagdirlst = [self.outpath_mut + '/' + x for x in os.listdir(self.outpath_mut)]
 

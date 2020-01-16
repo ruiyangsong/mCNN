@@ -3,6 +3,7 @@
 note.md
 .idea/
 .vscode/
+tmp/
 results/
 msa/
 datasets_array*/
