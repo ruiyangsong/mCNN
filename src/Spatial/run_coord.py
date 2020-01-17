@@ -123,7 +123,7 @@ class QsubRunner(object):
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
-        os.system('/public/home/sry/bin/getQ.pl')
+        os.system('%s/bin/getQ.pl'%self.homedir)
         os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.1)
 
@@ -165,7 +165,7 @@ class QsubRunner(object):
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
-        os.system('/public/home/sry/bin/getQ.pl')
+        os.system('%s/bin/getQ.pl'%self.homedir)
         os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.1)
 
