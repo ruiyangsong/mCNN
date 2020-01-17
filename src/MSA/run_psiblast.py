@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+'''
+Revoked by CalMSA.py
+'''
 import os, time
 
 def qsub_wild(app, libdir, seq_path, qsubid_prefix):
