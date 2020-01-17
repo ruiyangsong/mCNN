@@ -101,7 +101,7 @@ class QsubRunner(object):
         # -----------------------------qsub-----------------------------------------------------------------------------
         filename = 'center_%s_neighbor_%s'%(center,k_neighbor)
 
-        qsubid = 'coord_wild_%s_%s' % (mutant_tag,filename)
+        qsubid = 'coord_%s_wild_%s_%s' % (self.dataset_name,mutant_tag,filename)
         csv_outdir = '%s/%s' % (self.wild_csv_outdir, mutant_tag)
         qsublog_outdir = '%s/%s/%s' % (self.wild_qsublog_outdir, mutant_tag,filename)
         if not os.path.exists(csv_outdir):
@@ -142,7 +142,7 @@ class QsubRunner(object):
         # -----------------------------qsub-----------------------------
         filename = 'center_%s_neighbor_%s'%(center,k_neighbor)
 
-        qsubid = 'coord_mutant_%s_%s' % (mutant_tag,filename)
+        qsubid = 'coord_%s_mutant_%s_%s' % (self.dataset_name,mutant_tag,filename)
         csv_outdir = '%s/%s/' % (self.mutant_csv_outdir, mutant_tag)
         qsublog_outdir = '%s/%s/%s' % (self.mutant_qsublog_outdir, mutant_tag, filename)
         if not os.path.exists(csv_outdir):
