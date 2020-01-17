@@ -16,10 +16,10 @@ p_aa_pp,yhh_planarity,ref,rama_prepro,total,ddg
 '''
 import os, argparse
 import numpy as np
-from processing import read_csv, str2bool, save_data_array, transform
+from mCNN.processing import read_csv, str2bool, save_data_array, transform
 
 def main():
-    ## The concerned features
+    ## The concerned features, The order is adjustable !!!
     keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
 
             's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
@@ -31,11 +31,21 @@ def main():
 
             'C', 'O', 'N', 'Other',
 
+            'C_mass', 'O_mass', 'N_mass', 'S_mass',
+
             'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
 
             'hydrophobic_bak', 'polar',
 
-            'C_mass', 'O_mass', 'N_mass', 'S_mass',
+            'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
+            'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
+            'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
+            'rama_prepro', 'total',
+
+            'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
+            'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
+            'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
+            'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
 
             'dC', 'dH', 'dO', 'dN', 'dOther',
 
@@ -43,17 +53,7 @@ def main():
 
             'dhydrophobic_bak', 'dpolar',
 
-            'dEntropy', 'entWT', 'entMT',
-
-            'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
-            'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
-            'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
-            'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
-
-            'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
-            'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
-            'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
-            'rama_prepro', 'total']
+            'dEntropy', 'entWT', 'entMT']
 
     ## parse parameters
     parser = argparse.ArgumentParser()
