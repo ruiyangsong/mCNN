@@ -31,12 +31,13 @@ def log(func):
         return res
     return wrapper
 
-def check_qsub(tag,sleep_time):
+def check_qsub(tag,sleep_time,verbose=1):
     jobs = int(shell('qzy | grep %s | wc -l' % tag))
     while jobs > 0:
         time.sleep(sleep_time)
         jobs = int(shell('qzy | grep %s | wc -l' % tag))
-    print('---qsub %s done!'%tag)
+    if verbose:
+        print('---qsub %s done!'%tag)
 
 def split_tag(dir):
     tag = dir.split('/')[-1]
@@ -108,7 +109,7 @@ def save_data_array(x,y,ddg_value,filename,outdir):
     if not os.path.exists(outdir):
         os.system('mkdir -p %s'%outdir)
     np.savez('%s/%s.npz' % (outdir,filename), x=x,y=y,ddg=ddg_value)
-    print('The 3D array which stored numerical representation has stored in local hard drive.')
+    print('The 3D array which stored numerical representation has stored at %s.'%outdir)
 
 ## function for appending mCSM array
 def append_mCSM(x_mCNN, x_mCSM):

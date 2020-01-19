@@ -31,6 +31,9 @@ def main():
 
     feature_dirlst = [csv_feature_dir + '/' + x + '/center_%s.csv' % center for x in os.listdir(csv_feature_dir)]
 
+    for feature_dir in feature_dirlst:
+        assert os.path.exists(feature_dir)
+
     feature_all = []
     ylst = []
     ddglst = []

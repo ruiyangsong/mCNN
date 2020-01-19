@@ -76,7 +76,11 @@ class CalculateMSA(object):
             # get all sequences for wild pdb
             for chain in model:
                 chain_name   = chain.get_id()
-                res_id_lst   = [(str(res.get_id()[0])+str(res.get_id()[1])+str(res.get_id()[2])).strip() for res in chain]
+                # @@++ #################################################################################################
+                # mdl_0生成时只考虑了标准残基，但标准残基可能是HETATM, ie., res.get_id()[0] != ' ',故去除了 str(res.get_id()[0])
+                # res_id_lst = [(str(res.get_id()[0]) + str(res.get_id()[1]) + str(res.get_id()[2])).strip() for res in chain]# @@++
+                # @@++ #################################################################################################
+                res_id_lst   = [(str(res.get_id()[1])+str(res.get_id()[2])).strip() for res in chain]
                 res_name_lst = [aa_321dict[res.get_resname()] for res in chain]
                 assert len(res_id_lst) == len(res_name_lst)
                 if len(res_name_lst) > 0:

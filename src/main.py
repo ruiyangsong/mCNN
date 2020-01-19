@@ -54,7 +54,7 @@ print('\n***Cleaning old files...')
 # os.system('rm -rf %s/*' % pathdict['msa_dir'])
 # os.system('rm -rf %s/*' % pathdict['rosetta_dir'])
 # os.system('rm -rf %s/*' % pathdict['stride_dir'])
-os.system('rm -rf %s/*' % pathdict['mCNN_dir'])
+# os.system('rm -rf %s/*' % pathdict['mCNN_dir'])
 os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
 print('---cleaning done!')
 #-----------------------------------------------------------------------------------------------------------------------
@@ -77,12 +77,22 @@ print('---cleaning done!')
 # print('\n***Calculating stride feature...')
 # os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
 
+## mCSM
+print('\n***Calculating mCSM feature...')
+os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
+# os.system('./Spatial/run_mCSM.py %s'%(dataset_name))
+os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
+
 ## mCNN
 print('\n***Calculating mCNN feature...')
-# os.system('./Spatial/run_coord.py %s -k 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 --center CA geometric'%dataset_name)
+# os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA geometric -T False'%dataset_name)
+# os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 --center CA geometric -T False'%dataset_name)
 
-os.system('./Spatial/run_coord.py %s -k 30 --center CA geometric'%dataset_name)#@@++
-
-##mCSM
-print('\n***Calculating mCSM feature...')
-os.system('./Spatial/run_mCSM.py %s'%dataset_name)
+from processing import shell
+homedir = shell('echo $HOME')
+if homedir == '/home/sry':
+    print('---On server ibm')
+    os.system('./Spatial/run_coord.py %s --flag all -k 130 140 150 160 170 180 190 200 --center CA geometric -T False' % dataset_name)
+elif homedir == '/public/home/sry':
+    print('---On server hp')
+    os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA geometric -T False' % dataset_name)

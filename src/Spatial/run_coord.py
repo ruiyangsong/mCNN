@@ -8,7 +8,8 @@
 #'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
 
 import os, sys, time, argparse
-from mCNN.processing import shell, read_csv, log, check_qsub
+import numpy as np
+from mCNN.processing import shell, str2bool, read_csv, log, check_qsub, save_data_array, transform
 
 def main():
     homedir    = shell('echo $HOME')
@@ -17,22 +18,35 @@ def main():
     ## parse argument
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset_name',       type=str, help='dataset name')
-    parser.add_argument('-k', '--k_neighbor', type=int, required=True, nargs='+', help='The k_neighbor list.')
-    parser.add_argument('-C', '--center',     type=str, required=True, nargs='+', choices=['CA','geometric'], help='The MT site center type.')
+    parser.add_argument('--flag', type=str, choices=['first', 'all'], default='all',
+                        help='"first" calc df_feature only, "all" calc df_neighbor and df_feature, default is "all".')
+
+    parser.add_argument('-k', '--k_neighbor', type=int, required=True,   nargs='+', help='The k_neighbor list.')
+    parser.add_argument('-C', '--center',     type=str, required=True,   nargs='+', choices=['CA','geometric'], help='The MT site center type.')
+    parser.add_argument('-T', '--pca',        type=str, default='False', choices=['False', 'True'], help='If consider pca transform, the default is False')
     args = parser.parse_args()
     dataset_name  = args.dataset_name
+    flag          = args.flag
     k_neighborlst = args.k_neighbor
     centerlst     = args.center
+    pca           = str2bool(args.pca)
 
-    QR = QsubRunner(homedir,dataset_name,k_neighborlst,centerlst,featurelst)
-    QR.runner()
+    QR = CoordRunner(homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst)
+    QR.coord_runner()
+
+    if flag == 'first':
+        exit(0)
+
+    AG = ArrayGenerator(homedir, dataset_name, k_neighborlst,centerlst,pca)
+    AG.array_runner()
 #-----------------------------------------------------------------------------------------------------------------------
-class QsubRunner(object):
-    def __init__(self,homedir,dataset_name,k_neighborlst,centerlst,featurelst):
+class CoordRunner(object):
+    def __init__(self,homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst):
         self.homedir       = homedir
         self.dataset_name  = dataset_name
+        self.flag          = flag
         self.k_neighborlst = k_neighborlst
-        self.centerlst        = centerlst
+        self.centerlst     = centerlst
         self.feature       = featurelst
 
         self.app           = '%s/mCNN/src/Spatial/coord.py' % homedir
@@ -64,7 +78,7 @@ class QsubRunner(object):
             os.makedirs(self.mutant_qsublog_outdir)
 
     @log
-    def runner(self):
+    def coord_runner(self):
         df_mt = read_csv(self.mt_csv_dir)
         df_mt[['POSITION']] = df_mt[['POSITION']].astype(str)
         for rosetta_mut_tag in os.listdir(self.mut_pdb_dir):
@@ -83,8 +97,7 @@ class QsubRunner(object):
                     self.run_cal_wild(mutant_tag,k_neighbor,center,thermo,ddg)
                     self.run_cal_mutant(rosetta_mut_tag,mutant_tag,k_neighbor,center,thermo,ddg)
 
-        check_qsub(tag='coord', sleep_time=self.sleep_time)
-
+        check_qsub(tag='coord_%s'%self.dataset_name, sleep_time=self.sleep_time)
 
     def run_cal_wild(self,mutant_tag,k_neighbor,center,thermo,ddg):
         reverse = 'False'
@@ -115,17 +128,17 @@ class QsubRunner(object):
         run_prog = '%s/run_prog.sh' %qsublog_outdir
 
         g = open(run_prog, 'w+')
-        g.writelines('#!/usr/bin/bash\n')
+        g.writelines('#!/usr/bin/env bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature, wt_blast_path,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
+            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
+            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature, wt_blast_path,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'%self.homedir)
         os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
-        time.sleep(0.1)
+        time.sleep(0.01)
 
     def run_cal_mutant(self, rosetta_mut_tag,mutant_tag,k_neighbor,center,thermo,ddg):
         reverse = 'True'
@@ -156,18 +169,114 @@ class QsubRunner(object):
         run_prog = '%s/run_prog.sh' % qsublog_outdir
 
         g = open(run_prog, 'w+')
-        g.writelines('#!/usr/bin/bash\n')
+        g.writelines('#!/usr/bin/env bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature,
+            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
+            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature,
                wt_blast_path, mt_blast_dir, energy_dir, mapping_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'%self.homedir)
         os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
-        time.sleep(0.1)
+        time.sleep(0.01)
+
+class ArrayGenerator(object):
+    def __init__(self,homedir, dataset_name, k_neighborlst,centerlst,pca):
+        self.homedir       = homedir
+        self.dataset_name  = dataset_name
+        self.k_neighborlst = k_neighborlst
+        self.centerlst     = centerlst
+        self.pca           = pca
+
+        self.wild_csv_path   = '%s/mCNN/dataset/%s/feature/mCNN/wild/csv' % (self.homedir,self.dataset_name)
+        self.mutant_csv_path = '%s/mCNN/dataset/%s/feature/mCNN/mutant/csv' % (self.homedir,self.dataset_name)
+
+        # set output dir for feature array
+        self.wild_outdir_k   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz' % (self.homedir, self.dataset_name)
+        self.mutant_outdir_k = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz' % (self.homedir, self.dataset_name)
+        if not os.path.exists(self.wild_outdir_k):
+            os.makedirs(self.wild_outdir_k)
+        if not os.path.exists(self.mutant_outdir_k):
+            os.makedirs(self.mutant_outdir_k)
+
+        self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
+
+                     's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
+                     's_Helix', 's_Strand', 's_Coil',
+
+                     'sa', 'rsa', 'asa', 'phi', 'psi',
+
+                     'ph', 'temperature',
+
+                     'C', 'O', 'N', 'Other',
+
+                     'C_mass', 'O_mass', 'N_mass', 'S_mass',
+
+                     'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
+                     'hydrophobic_bak', 'polar',
+
+                     'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
+                     'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
+                     'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
+                     'rama_prepro', 'total',
+
+                     'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
+                     'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
+                     'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
+                     'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
+
+                     'dC', 'dH', 'dO', 'dN', 'dOther',
+
+                     'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
+
+                     'dhydrophobic_bak', 'dpolar',
+
+                     'dEntropy', 'entWT', 'entMT']
+
+    @log
+    def array_runner(self):
+        for k_neighbor in self.k_neighborlst:
+            for center in self.centerlst:
+                filename = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, k_neighbor)
+                ## for wild
+                wild_csvdirlst = [self.wild_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in os.listdir(self.wild_csv_path)]
+                self.array_generator(wild_csvdirlst,filename,k_neighbor,center,self.wild_outdir_k)
+
+                ## for mutant
+                mutant_csvdirlst = [self.mutant_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in os.listdir(self.mutant_csv_path)]
+                self.array_generator(mutant_csvdirlst,filename,k_neighbor,center,self.mutant_outdir_k)
+
+    def array_generator(self, csvdirlst,filename,k_neighbor,center,outdir_k):
+        ddglst = []
+        ylst = []
+        arrlst = []
+        for csvdir in csvdirlst:
+            df = read_csv(csvdir)
+            ddg = df.loc[:, 'ddg'].values[0]
+            ddglst.append(ddg)
+            if ddg >= 0:
+                ylst.append(1)
+            else:
+                ylst.append(0)
+            tmp_arr = df.loc[:, self.keys].values
+            if self.pca:
+                try:
+                    prefix = '/'.join(csvdir.split('/')[:-1])
+                    center_coord_dir = '%s/center_%s_neighbor_%s_center_coord.npy' % (prefix, center, k_neighbor)
+                except:
+                    center_coord_dir = '%s/center_%s_neighbor_all_center_coord.npy' % (prefix, center)
+                center_coord = np.load(center_coord_dir)
+                tmp_arr[:, 1:4] = transform(tmp_arr[:, 1:4], center_coord)
+
+            arrlst.append(tmp_arr)
+
+        x = np.array(arrlst).reshape(-1, k_neighbor, len(self.keys))
+        ddg = np.array(ddglst).reshape(-1, 1)
+        y = np.array(ylst).reshape(-1, 1)
+        assert x.shape[0] == ddg.shape[0] and ddg.shape[0] == y.shape[0]
+        save_data_array(x, y, ddg, filename, outdir_k)
 
 if __name__ == '__main__':
     main()
