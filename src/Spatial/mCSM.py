@@ -87,9 +87,10 @@ def cal_mCSM(df, maximum, minimum, step, class_num=2):
     if class_num == 2:
         atom_class = ['hydrophobic_bak', 'polar']
         delta_r    = ['dhydrophobic_bak', 'dpolar']
-        #########################
+        ################################################################################################################
         # pay attention here!!! #
-        #########################
+        # drop atoms which was not assigned by hp.
+        ################################################################################################################
         df = df.loc[(df.hydrophobic_bak != 0) | (df.polar != 0), :]
 
     class_num   = len(atom_class)

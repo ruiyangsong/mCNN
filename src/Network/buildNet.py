@@ -8,7 +8,14 @@
 # author    : ruiyang
 # email     : ww_sry@163.com
 # ------------------------------
-import sys
+
+import os, sys, argparse
+import numpy as np
+from keras.utils import to_categorical
+from sklearn.model_selection import StratifiedKFold
+from mCNN.processing import shuffle_data, load_data, shell, append_mCSM, sort_row
+from keras.backend.tensorflow_backend import set_session
+
 from keras import models
 from keras import layers
 from keras import regularizers
@@ -19,7 +26,6 @@ from keras import Input
 from keras.utils import plot_model
 
 
-import numpy as np
 import keras
 from keras.models import Sequential, Model, load_model
 from keras.layers import Dense , Dropout , Activation , Flatten
@@ -31,6 +37,215 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 import matplotlib.pyplot as plt
+
+
+def main():
+    # get command line params ------------------------------------------------------------------------------------------
+    homedir = shell('echo $HOME')
+    ## Init container
+    container = {'mCNN_arrdir': '', 'mCSM_arrdir': ''}
+    ## Input parameters.
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dataset_name',        type=str,   help='dataset_name.')
+    parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','all'],     help='wild or mutant array, default is wild.')
+    parser.add_argument('-C', '--center',      type=str,   default='CA',    choices=['CA', 'geometric'],   help='The MT site center, default is CA.')
+    ## parameters for reading mCNN array, array locates at: '~/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_50.npz'
+    parser.add_argument('--mCNN',              type=str,   nargs=2,         help='PCA, k_neighbor')
+    ## parameters for reading mCSM array, array locates at: '~/mCNN/dataset/S2648/feature/mCSM/mutant/npz/min_0.1_max_7.0_step_2.0_center_CA_class_2.npz'
+    parser.add_argument('--mCSM',              type=str,   nargs=4,         help='min, max, step, atom_class_num.')
+    ## Config data processing params
+    parser.add_argument('-n', '--normalize',   type=str,   choices=['norm', 'max'], default='norm', help='normalize_method to choose, default = norm.')
+    parser.add_argument('-s', '--sort',        type=str,
+                        choices=['chain', 'distance', 'octant', 'permutation', 'permutation1', 'permutation2'],
+                        default='chain',       help='row sorting methods to choose, default = "chain".')
+    parser.add_argument('-d', '--random_seed', type=int, nargs=2, default=(1, 1), help='permutation-seed, k-fold-seed, default sets to (1,1).')
+    ## Config training
+    parser.add_argument('-D', '--model',       type=str, help='Network model to chose.', required=True)
+    parser.add_argument('-K', '--Kfold',       type=int, help='Fold numbers to cross validation.')
+    parser.add_argument('-V', '--verbose',     type=int, choices=[0, 1], default=1, help='the verbose flag, default is 1.')
+    parser.add_argument('-E', '--epoch',       type=int, default=100, help='training epoch, default is 100.')
+    parser.add_argument('-B', '--batch_size',  type=int, default=64,  help='training batch size, default is 64.')
+    ## config hardware
+    parser.add_argument('--CUDA', type=str, default='0', choices=['0', '1', '2', '3'], help='Which gpu to use, default = "0"')
+    ## parser
+    args = parser.parse_args()
+    dataset_name   = args.dataset_name
+    wild_or_mutant = args.wild_or_mutant
+    center = args.center
+    if args.mCNN:
+        str_pca, str_k_neighbor = args.mCNN
+        container['mCNN_arrdir'] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz'%(homedir,dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
+    if args.mCSM:
+        min_, max_, step, atom_class_num = args.mCSM
+        container['mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'\
+                                   %(homedir, dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
+    if container['mCNN_arrdir'] == '' and container['mCSM_arrdir'] == '':
+        print('[ERROR] parsing feature_type param error, check the argparser code!')
+        exit(0)
+    ## parser data processing
+    normalize_method = args.normalize
+    sort_method = args.sort
+    seed_tuple = tuple(args.random_seed)
+    ## parser training
+    nn_model = args.model
+    k = args.Kfold
+    verbose = args.verbose
+    epoch = args.epoch
+    batch_size = args.batch_size
+    CUDA = args.CUDA
+    ## print input info.
+    print('dataset_name: %s, wild_or_mutant: %s, center: %s,'
+          '\nmCNN_arrdir: %s,'
+          '\nmCSM_arrdir: %s,'
+          '\nnormalize_method: %s,'
+          '\nsort_method: %s,'
+          '\n(permutation-seed, k-fold-seed): %r,'
+          '\nmodel: %s,'
+          '\nkfold: %s,'
+          '\nverbose_flag: %s,'
+          '\nepoch: %s,'
+          '\nbatch_size: %s,'
+          '\nCUDA: %r.'
+          % (dataset_name, wild_or_mutant, center, container['mCNN_arrdir'],container['mCSM_arrdir'],
+             normalize_method,sort_method,seed_tuple,nn_model,k,verbose,epoch,batch_size,CUDA))
+
+    # loading data -----------------------------------------------------------------------------------------------------
+    if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] == '':
+        x, y, ddg = load_data(container['mCNN_arrdir'])
+    if container['mCSM_arrdir'] != '' and container['mCNN_arrdir'] == '':
+        x, y, ddg = load_data(container['mCSM_arrdir'])
+    if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] != '':
+        x, y, ddg = load_data(container['mCNN_arrdir'])
+        x_mCSM, y_mCSM, ddg_mCSM = load_data(container['mCSM_arrdir'])
+        x = append_mCSM(x_mCNN=x, x_mCSM=x_mCSM)
+    print(x.shape)
+    print('Loading data from hard drive is done.')
+
+    ## sort row of each mutation matrix.
+    x = sort_row(x, sort_method, seed_tuple[0])  # chain sorting return self!
+    print('Sort row is done, sorting method is %s.' % sort_method)
+
+    ## Cross validation.
+    print('%d-fold cross validation begin.' % (k))
+    kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method, seed_tuple[1:], flag_tuple,
+                                                 oversample, CUDA, epoch, batch_size, train_ratio=0.7)
+
+    print_result(nn_model, kfold_score)
+    ## plot.
+    # plotfigure(history_dict)
+
+
+def save_model(model, model_path, model_name):
+    if not os.path.exists(model_path):
+        os.makedirs(model_path)
+        model.save('%s/%s'%(model_path, model_name))
+        print('---model saved at %s.'%model_path)
+
+class DataExtractor(object):
+    def __init__(self):
+        self.x_val_lst   = None
+        self.y_val_lst   = None
+        self.ddg_val_lst = None
+
+    def get_val_data(self, x_val_lst, y_val_lst, ddg_val_lst):
+        self.x_val_lst   = list(x_val_lst)
+        self.y_val_lst   = list(y_val_lst)
+        self.ddg_val_lst = list(ddg_val_lst)
+
+    def given_kfold(self, x_train_lst, y_train_lst, ddg_train_lst, x_test_lst, y_test_lst, ddg_test_lst):
+        self.x_train_lst   = list(x_train_lst)
+        self.y_train_lst   = list(y_train_lst)
+        self.ddg_train_lst = list(ddg_train_lst)
+
+        self.x_test_lst    = list(x_test_lst)
+        self.y_test_lst    = list(y_test_lst)
+        self.ddg_test_lst  = list(ddg_test_lst)
+
+    def split_kfold(self, x, y, ddg, fold_num, random_seed=10, train_ratio = 0.7):
+        self.x_train_lst   = []
+        self.y_traiin_lst  = []
+        self.ddg_train_lst = []
+
+        self.x_test_lst    = []
+        self.y_test_lst    = []
+        self.ddg_test_lst  = []
+        if fold_num >= 3:
+            skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=random_seed)
+            for train_index, test_index in skf.split(x, y):
+                self.x_train_lst.append(x[train_index])
+                self.y_train_lst.append(y[train_index])
+                self.ddg_train_lst.append(ddg[train_index])
+                self.x_test_lst.append(x[test_index])
+                self.y_test_lst.append(y[test_index])
+                self.ddg_test_lst.append(ddg[test_index])
+        elif fold_num == 2:
+            x_train   = []
+            y_train   = []
+            ddg_train = []
+            x_test    = []
+            y_test    = []
+            ddg_test  = []
+
+            for label in set(y.reshape(-1)):
+                index = np.argwhere(y.reshape(-1) == label)
+                train_num = int(index.shape[0] * train_ratio)
+                train_index = index[:train_num]
+                test_index  = index[train_num:]
+                x_train.append(x[train_index])
+                y_train.append(y[train_index])
+                ddg_train.append(ddg[train_index])
+
+                x_test.append(x[test_index])
+                y_test.append(y[test_index])
+                ddg_test.append(ddg[test_index])
+            reshape_lst = list(x.shape[1:])
+            reshape_lst.insert(0,-1)
+            ## transform python list to numpy array
+            x_train   = np.array(x_train).reshape(reshape_lst)
+            y_train   = np.array(y_train).reshape(-1,1)
+            ddg_train = np.array(ddg_train).reshape(-1,1)
+            x_test    = np.array(x_test).reshape(reshape_lst)
+            y_test    = np.array(y_test).reshape(-1, 1)
+            ddg_test  = np.array(ddg_test).reshape(-1, 1)
+            ## shuffle data
+            x_train, y_train, ddg_train = shuffle_data(x_train, y_train, ddg_train, random_seed)
+            x_test, y_test, ddg_test    = shuffle_data(x_test, y_test, ddg_test, random_seed)
+
+            self.x_train_lst.append(x_train)
+            self.y_train_lst.append(y_train)
+            self.ddg_train_lst.append(ddg_train)
+            self.x_test_lst.append(x_test)
+            self.y_test_lst.append(y_test)
+            self.ddg_test_lst.append(ddg_test)
+
+        else:
+            print('[ERROR] The fold number should not smaller than 2!')
+            exit(1)
+
+class NetworkTrainer(object):
+    def __init__(self, DE_object=None, nn_model=None, verbose=1, CUDA='0', epoch=100, batch_size=128):
+        self.DE_obiect  = DE_object
+        self.nn_model   = nn_model
+        self.verbose    = verbose
+        self.CUDA       = CUDA
+        self.epoch      = epoch
+        self.batch_size = batch_size
+
+        os.environ['CUDA_VISIBLE_DEVICES'] = self.CUDA
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        set_session(tf.Session(config=config))
+
+    def train_model(self):
+        pass
+
+    def save_model(self, metric, threshold, model_path):
+        pass
+
+class NetworkEvaluator(object):
+    def load_model(self, model_dir):
+        self.model = load_model(model_dir)
 
 
 class TrainCallback(keras.callbacks.Callback):
@@ -86,49 +301,7 @@ class TrainCallback(keras.callbacks.Callback):
         plt.savefig("/public/home/yels/project/Data_pre/QA_global.png")
         # plt.show()
 
-class DataSet(object):
-   def __init__(self, data_dir):
-       self.num_classes = None
-       self.X_train = None
-       self.X_test = None
-       self.Y_train = None
-       self.Y_test = None
-       self.img_size = 128
-       self.extract_data(data_dir)
 
-   def extract_data(self,path):
-        #根据指定路径读取出图片、标签和类别数
-        imgs,labels,counter = read_file(data_array_dir)
-
-        #将数据集打乱随机分组
-        X_train,X_test,y_train,y_test = train_test_split(imgs,labels,test_size=0.2,random_state=random.randint(0, 100))
-
-        #重新格式化和标准化
-        # 本案例是基于thano的，如果基于tensorflow的backend需要进行修改
-        X_train = X_train.reshape(X_train.shape[0], 1, self.img_size, self.img_size)/255.0
-        X_test = X_test.reshape(X_test.shape[0], 1, self.img_size, self.img_size) / 255.0
-
-        X_train = X_train.astype('float32')
-        X_test = X_test.astype('float32')
-
-        #将labels转成 binary class matrices
-        Y_train = np_utils.to_categorical(y_train, num_classes=counter)
-        Y_test = np_utils.to_categorical(y_test, num_classes=counter)
-
-        #将格式化后的数据赋值给类的属性上
-        self.X_train = X_train
-        self.X_test = X_test
-        self.Y_train = Y_train
-        self.Y_test = Y_test
-        self.num_classes = counter
-
-   def check(self):
-       print('num of dim:', self.X_test.ndim)
-       print('shape:', self.X_test.shape)
-       print('size:', self.X_test.size)
-       print('num of dim:', self.X_train.ndim)
-       print('shape:', self.X_train.shape)
-       print('size:', self.X_train.size)
 
 class ConvNet(object):
     def __init__(self, model_path):

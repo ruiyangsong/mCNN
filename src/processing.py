@@ -143,7 +143,7 @@ def transform(coord_array_before, center_coord):
     coord_array_after = coord_array_after - center_coord_after
     return coord_array_after
 
-def sort_row(x, method = 'chain', p_seed = 0):
+def sort_row(x, method = 'chain', p_seed = 1):
     '''
     :param x: 3D tensor of this dataset, the axis are: data_num, row_num and col_nm.
     :param method: str, row sorting method.
