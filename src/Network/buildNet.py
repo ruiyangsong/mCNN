@@ -43,10 +43,11 @@ def main():
     # get command line params ------------------------------------------------------------------------------------------
     homedir = shell('echo $HOME')
     ## Init container
-    container = {'mCNN_arrdir': '', 'mCSM_arrdir': ''}
+    container = {'mCNN_arrdir': '', 'mCSM_arrdir': '', 'val_mCNN_arrdir': '', 'val_mCSM_arrdir': ''}
     ## Input parameters.
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset_name',        type=str,   help='dataset_name.')
+    parser.add_argument('val_dataset_name',    type=str,   help='validation dataset_name.')
     parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','stack','split'],     help='wild, mutant, stack or split array, default is wild.')
     parser.add_argument('-C', '--center',      type=str,   default='CA',    choices=['CA', 'geometric'],   help='The MT site center, default is CA.')
     ## parameters for reading mCNN array, array locates at: '~/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_50.npz'
@@ -59,7 +60,7 @@ def main():
     parser.add_argument('-s', '--sort',        type=str,
                         choices=['chain', 'distance', 'octant', 'permutation', 'permutation1', 'permutation2'],
                         default='chain',       help='row sorting methods to choose, default = "chain".')
-    parser.add_argument('-d', '--random_seed', type=int, nargs=2, default=(1, 1), help='permutation-seed, k-fold-seed, default sets to (1,1).')
+    parser.add_argument('-d', '--random_seed', type=int, nargs=3, default=(1,1,1), help='permutation-seed, k-fold-seed, split-val-seed, default sets to (1,1,1).')
     ## Config training
     parser.add_argument('-D', '--model',       type=str, help='Network model to chose.', required=True)
     parser.add_argument('-K', '--Kfold',       type=int, help='Fold numbers to cross validation.')
@@ -71,15 +72,17 @@ def main():
     ## parser
     args = parser.parse_args()
     dataset_name   = args.dataset_name
+    val_dataset_name   = args.val_dataset_name
     wild_or_mutant = args.wild_or_mutant
     center = args.center
     if args.mCNN:
         str_pca, str_k_neighbor = args.mCNN
         container['mCNN_arrdir'] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz'%(homedir,dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
+        container['val_mCNN_arrdir'] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz'%(homedir,val_dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
     if args.mCSM:
         min_, max_, step, atom_class_num = args.mCSM
-        container['mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'\
-                                   %(homedir, dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
+        container['mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'%(homedir, dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
+        container['val_mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'%(homedir, val_dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
     if container['mCNN_arrdir'] == '' and container['mCSM_arrdir'] == '':
         print('[ERROR] parsing feature_type param error, check the argparser code!')
         exit(0)
@@ -96,35 +99,49 @@ def main():
     batch_size = args.batch_size
     CUDA = args.CUDA
     ## print input info.
-    print('dataset_name: %s, wild_or_mutant: %s, center: %s,'
+    print('dataset_name: %s, val_dateset_name: %s, wild_or_mutant: %s, center: %s,'
           '\nmCNN_arrdir: %s,'
+          '\nval_mCNN_arrdir: %s,'
           '\nmCSM_arrdir: %s,'
+          '\nval_mCSM_arrdir: %s,'
           '\nappend: %s,'
           '\nnormalize_method: %s,'
           '\nsort_method: %s,'
-          '\n(permutation-seed, k-fold-seed): %r,'
+          '\n(permutation-seed, k-fold-seed, split-val-seed): %r,'
           '\nmodel: %s,'
           '\nkfold: %s,'
           '\nverbose_flag: %s,'
           '\nepoch: %s,'
           '\nbatch_size: %s,'
           '\nCUDA: %r.'
-          % (dataset_name, wild_or_mutant, center, container['mCNN_arrdir'],container['mCSM_arrdir'],append,
+          % (dataset_name, val_dataset_name, wild_or_mutant, center, container['mCNN_arrdir'], container['val_mCNN_arrdir'],container['mCSM_arrdir'],container['val_mCSM_arrdir'],append,
              normalize_method,sort_method,seed_tuple,nn_model,k,verbose,epoch,batch_size,CUDA))
 
     # load data and sort row (return python dictionary)-----------------------------------------------------------------
     if container['mCNN_arrdir'] != '':
         x_mCNN, y_mCNN, ddg_mCNN = load_sort_data(container['mCNN_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
+        x_mCNN_val, y_mCNN_val, ddg_mCNN_val = load_sort_data(container['val_mCNN_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
     if container['mCSM_arrdir'] != '':
         x_mCSM, y_mCSM, ddg_mCSM = load_sort_data(container['mCSM_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
+        x_mCSM_val, y_mCSM_val, ddg_mCSM_val = load_sort_data(container['val_mCSM_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
     if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] != '' and append == 'True':
         x_append = append_mCSM(x_mCNN_dict=x_mCNN, x_mCSM_dict=x_mCSM)
-        del x_mCNN, x_mCSM
+        x_append_val = append_mCSM(x_mCNN_dict=x_mCNN_val, x_mCSM_dict=x_mCSM_val)
+        del x_mCNN, x_mCSM, x_mCNN_val, x_mCSM_val
 
     # Cross validation. ------------------------------------------------------------------------------------------------
     print('%d-fold cross validation begin.' % (k))
-    kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method, seed_tuple[1:], flag_tuple,
-                                                 oversample, CUDA, epoch, batch_size, train_ratio=0.7)
+    DE = DataExtractor
+    DE.split_kfold(x_dict, y_dict, ddg_dict, fold_num=k, random_seed=seed_tuple[1], train_ratio = 0.7)
+    key_lst = list(DE.x_test_dict.keys())
+    val_num = int(DE.x_test_dict[key_lst[0]][0].shape[0])
+    DE.split_val_data(x_val_dict, y_val_dict, ddg_val_dict, seed_tuple[2], val_num)
+
+
+
+def cross_validation():
+    pass
+
 
     print_result(nn_model, kfold_score)
     ## plot.
@@ -137,88 +154,121 @@ def save_model(model, model_path, model_name):
         print('---model saved at %s.'%model_path)
 
 class DataExtractor(object):
+    '''每一个数据是一个python字典，字典中每一个值是一个列表，列表存储了每一折数据，eg.{'wild':[fold1,fold2,...],...}'''
     def __init__(self):
-        self.x_val_lst   = None
-        self.y_val_lst   = None
-        self.ddg_val_lst = None
+        self.x_val_dict   = None
+        self.y_val_dict   = None
+        self.ddg_val_dict = None
 
-    def get_val_data(self, x_val_lst, y_val_lst, ddg_val_lst):
-        self.x_val_lst   = list(x_val_lst)
-        self.y_val_lst   = list(y_val_lst)
-        self.ddg_val_lst = list(ddg_val_lst)
+    def split_val_data(self, x_val_dict, y_val_dict, ddg_val_dict,val_num):
+        key_lst = list(x_val_dict.keys())
+        indices = [i for i in range(x_val_dict[key_lst[0]].size[0])]
+        np.random.seed(p_seed)
+        np.random.shuffle(indices)
+        val_indices = indices[:val_num]
+        for key in key_lst:
+            x_val_dict[key] = x_val_dict[key][val_indices]
+            y_val_dict[key] = y_val_dict[key][val_indices]
+            ddg_val_dict[key] = ddg_val_dict[key][val_indices]
+        self.x_val_dict   = x_val_dict
+        self.y_val_dict   = y_val_dict
+        self.ddg_val_dict = ddg_val_dict
 
-    def given_kfold(self, x_train_lst, y_train_lst, ddg_train_lst, x_test_lst, y_test_lst, ddg_test_lst):
-        self.x_train_lst   = list(x_train_lst)
-        self.y_train_lst   = list(y_train_lst)
-        self.ddg_train_lst = list(ddg_train_lst)
+    def given_val_data(self, x_val_dict, y_val_dict, ddg_val_dict):
+        self.x_val_dict   = x_val_dict
+        self.y_val_dict   = y_val_dict
+        self.ddg_val_dict = ddg_val_dict
 
-        self.x_test_lst    = list(x_test_lst)
-        self.y_test_lst    = list(y_test_lst)
-        self.ddg_test_lst  = list(ddg_test_lst)
+    def given_kfold(self, x_train_dict, y_train_dict, ddg_train_dict, x_test_dict, y_test_dict, ddg_test_dict):
+        self.x_train_dict   = x_train_dict
+        self.y_train_dict   = y_train_dict
+        self.ddg_train_dict = ddg_train_dict
 
-    def split_kfold(self, x, y, ddg, fold_num, random_seed=10, train_ratio = 0.7):
-        self.x_train_lst   = []
-        self.y_traiin_lst  = []
-        self.ddg_train_lst = []
+        self.x_test_dict    = x_test_dict
+        self.y_test_dict    = y_test_dict
+        self.ddg_test_dict  = ddg_test_dict
 
-        self.x_test_lst    = []
-        self.y_test_lst    = []
-        self.ddg_test_lst  = []
+    def split_kfold(self, x_dict, y_dict, ddg_dict, fold_num, random_seed=10, train_ratio = 0.7):
+        '''参数中的dict的值所存储的数据没有分折（split fold）'''
+        self.x_train_dict   = {}
+        self.y_traiin_dict  = {}
+        self.ddg_train_dict = {}
+
+        self.x_test_dict    = {}
+        self.y_test_dict    = {}
+        self.ddg_test_dict  = {}
         if fold_num >= 3:
             skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=random_seed)
-            for train_index, test_index in skf.split(x, y):
-                self.x_train_lst.append(x[train_index])
-                self.y_train_lst.append(y[train_index])
-                self.ddg_train_lst.append(ddg[train_index])
-                self.x_test_lst.append(x[test_index])
-                self.y_test_lst.append(y[test_index])
-                self.ddg_test_lst.append(ddg[test_index])
+            for key in x_dict.keys():
+                self.x_train_dict[key] = []
+                self.y_traiin_dict[key] = []
+                self.ddg_train_dict[key] = []
+                self.x_test_dict[key] = []
+                self.y_test_dict[key] = []
+                self.ddg_test_dict[key] = []
+                x,y,ddg = x_dict[key],y_dict[key],ddg_dict[key]
+                for train_index, test_index in skf.split(x, y):
+                    self.x_train_dict[key].append(x[train_index])
+                    self.y_train_dict[key].append(y[train_index])
+                    self.ddg_train_dict[key].append(ddg[train_index])
+                    self.x_test_dict[key].append(x[test_index])
+                    self.y_test_dict[key].append(y[test_index])
+                    self.ddg_test_dict[key].append(ddg[test_index])
         elif fold_num == 2:
-            x_train   = []
-            y_train   = []
-            ddg_train = []
-            x_test    = []
-            y_test    = []
-            ddg_test  = []
+            for key in x_dict.keys():
+                self.x_train_dict[key] = []
+                self.y_traiin_dict[key] = []
+                self.ddg_train_dict[key] = []
+                self.x_test_dict[key] = []
+                self.y_test_dict[key] = []
+                self.ddg_test_dict[key] = []
+                x,y,ddg = x_dict[key],y_dict[key],ddg_dict[key]
+                x_train   = []
+                y_train   = []
+                ddg_train = []
+                x_test    = []
+                y_test    = []
+                ddg_test  = []
+                for label in set(y.reshape(-1)):
+                    index = np.argwhere(y.reshape(-1) == label)
+                    train_num = int(index.shape[0] * train_ratio)
+                    train_index = index[:train_num]
+                    test_index  = index[train_num:]
+                    x_train.append(x[train_index])
+                    y_train.append(y[train_index])
+                    ddg_train.append(ddg[train_index])
 
-            for label in set(y.reshape(-1)):
-                index = np.argwhere(y.reshape(-1) == label)
-                train_num = int(index.shape[0] * train_ratio)
-                train_index = index[:train_num]
-                test_index  = index[train_num:]
-                x_train.append(x[train_index])
-                y_train.append(y[train_index])
-                ddg_train.append(ddg[train_index])
+                    x_test.append(x[test_index])
+                    y_test.append(y[test_index])
+                    ddg_test.append(ddg[test_index])
+                reshape_lst = list(x.shape[1:])
+                reshape_lst.insert(0,-1)
+                ## transform python list to numpy array
+                x_train   = np.array(x_train).reshape(reshape_lst)
+                y_train   = np.array(y_train).reshape(-1,1)
+                ddg_train = np.array(ddg_train).reshape(-1,1)
+                x_test    = np.array(x_test).reshape(reshape_lst)
+                y_test    = np.array(y_test).reshape(-1, 1)
+                ddg_test  = np.array(ddg_test).reshape(-1, 1)
+                ## shuffle data
+                x_train, y_train, ddg_train = shuffle_data(x_train, y_train, ddg_train, random_seed)
+                x_test, y_test, ddg_test    = shuffle_data(x_test, y_test, ddg_test, random_seed)
 
-                x_test.append(x[test_index])
-                y_test.append(y[test_index])
-                ddg_test.append(ddg[test_index])
-            reshape_lst = list(x.shape[1:])
-            reshape_lst.insert(0,-1)
-            ## transform python list to numpy array
-            x_train   = np.array(x_train).reshape(reshape_lst)
-            y_train   = np.array(y_train).reshape(-1,1)
-            ddg_train = np.array(ddg_train).reshape(-1,1)
-            x_test    = np.array(x_test).reshape(reshape_lst)
-            y_test    = np.array(y_test).reshape(-1, 1)
-            ddg_test  = np.array(ddg_test).reshape(-1, 1)
-            ## shuffle data
-            x_train, y_train, ddg_train = shuffle_data(x_train, y_train, ddg_train, random_seed)
-            x_test, y_test, ddg_test    = shuffle_data(x_test, y_test, ddg_test, random_seed)
-
-            self.x_train_lst.append(x_train)
-            self.y_train_lst.append(y_train)
-            self.ddg_train_lst.append(ddg_train)
-            self.x_test_lst.append(x_test)
-            self.y_test_lst.append(y_test)
-            self.ddg_test_lst.append(ddg_test)
+            self.x_train_dict[key].append(x_train)
+            self.y_train_dict[key].append(y_train)
+            self.ddg_train_dict[key].append(ddg_train)
+            self.x_test_dict[key].append(x_test)
+            self.y_test_dict[key].append(y_test)
+            self.ddg_test_dict[key].append(ddg_test)
 
         else:
             print('[ERROR] The fold number should not smaller than 2!')
-            exit(1)
+            exit(0)
+
 
 class NetworkTrainer(object):
     def __init__(self, DE_object=None, nn_model=None, verbose=1, CUDA='0', epoch=100, batch_size=128):
+
         self.DE_obiect  = DE_object
         self.nn_model   = nn_model
         self.verbose    = verbose
@@ -231,6 +281,17 @@ class NetworkTrainer(object):
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         set_session(tf.Session(config=config))
+
+    def load_data(self, data):
+        self.x_train   = data.x_train
+        self.y_train   = data.y_train
+        self.ddg_train = data.ddg_train
+        self.x_val     = data.x_val
+        self.y_val     = data.y_val
+        self.ddg_val   = data.ddg_val
+        self.x_test    = data.x_test
+        self.y_test    = data.y_test
+        self.ddg_test  = data.ddg_test
 
     def train_model(self):
         pass
@@ -297,25 +358,22 @@ class TrainCallback(keras.callbacks.Callback):
         # plt.show()
 
 
-
 class ConvNet(object):
     def __init__(self, model_path):
         self.tag        = None
         self.model      = None
         self.model_path = model_path
 
-    def load_data(self, data):
-        self.x_train   = data.x_train
-        self.y_train   = data.y_train
-        self.ddg_train = data.ddg_train
-        self.x_val     = data.x_val
-        self.y_val     = data.y_val
-        self.ddg_val   = data.ddg_val
-        self.x_test    = data.x_test
-        self.y_test    = data.y_test
-        self.ddg_test  = data.ddg_test
+    def build_network(self, input_num, output_num, input_shape, class_num, kernel_size, activator, dropout, kernel_init, regular, dformat, summary=True):
+        if input_num == 1 and output == 1:
+            pass
+        if input_num == 1 and output == 2:
+            pass
+        if input_num == 2 and output == 1:
+            pass
+        if input_num == 2 and output == 2:
+            pass
 
-    def In1_Out2(self, input_shape, class_num, kernel_size, activator, dropout, kernel_init, regular, dformat, summary=True):
         Input_merge = Input(shape=input_shape,
                             dtype='float32',
                             name='merge')
