@@ -1,9 +1,9 @@
 *.tar.gz
 *.swp
-note.md
 .idea/
 .vscode/
-tmp/
+tmp/*
+!tmp/note.md
 results/
 msa/
 datasets_array*/
