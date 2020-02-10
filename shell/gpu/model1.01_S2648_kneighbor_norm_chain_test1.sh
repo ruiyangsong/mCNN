@@ -80,7 +80,8 @@ do
 time python cross_validation.py S2648 20 170 5 5 1.01 norm chain 1 10 1 0 0
 done
 
-for i in $(seq 1 5)do
+for i in $(seq 1 5)
+do
 time python cross_validation.py S2648 20 180 5 5 1.01 norm chain 1 10 1 0 0
 done
 

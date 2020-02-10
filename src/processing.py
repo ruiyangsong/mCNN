@@ -112,36 +112,20 @@ def save_data_array(x,y,ddg_value,filename,outdir):
     print('The 3D array which stored numerical representation has stored at %s.'%outdir)
 
 ## function for appending mCSM array
-def append_mCSM(x_mCNN, x_mCSM):
-    xlst = []
-    for i in range(len(x_mCNN)):
-        x = x_mCNN[i]
-        x_m = x_mCSM[i]
-        arr = np.hstack((x, np.dot(np.ones((x.shape[0], 1)), x_m.reshape(1, -1))))
-        xlst.append(arr)
-    return np.array(xlst)
-
-def load_data(dir):
-    data = np.load(dir)
-    x = data['x']
-    y = data['y']
-    ddg = data['ddg']
-    return x,y,ddg
-
-def calc_coor_pValue(feature_a_list, feature_b_list):
-    import scipy.stats as stats
-    pearson_coeff, p_value = stats.pearsonr(np.array(feature_a_list).reshape(-1), np.array(feature_b_list).reshape(-1))
-    return pearson_coeff, p_value
-
-def transform(coord_array_before, center_coord):
-    from sklearn.decomposition import PCA
-    assert len(coord_array_before) >= 3  # row number.
-    pca_model = PCA(n_components=3)
-    pca_model.fit(coord_array_before)
-    coord_array_after = pca_model.transform(coord_array_before)
-    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
-    coord_array_after = coord_array_after - center_coord_after
-    return coord_array_after
+def append_mCSM(x_mCNN_dict, x_mCSM_dict):
+    print('[WARNING] Appending x_mCSM to x_mCNN, MAKE SURE DDG VALUES ARE THE SAME!')
+    x_append_dict = {}
+    for key in x_mCNN_dict.keys():
+        x_mCNN = x_mCNN_dict[key]
+        x_mCSM = x_mCSM_dict[key]
+        xlst = []
+        for i in range(len(x_mCNN)):
+            x = x_mCNN[i]
+            x_m = x_mCSM[i]
+            arr = np.hstack((x, np.dot(np.ones((x.shape[0], 1)), x_m.reshape(1, -1))))
+            xlst.append(arr)
+        x_append_dict[key] = np.array(xlst)
+    return x_append_dict
 
 def sort_row(x, method = 'chain', p_seed = 1):
     '''
@@ -183,6 +167,48 @@ def sort_row(x, method = 'chain', p_seed = 1):
     for i in range(data_num):
         x[i] = x[i][indices]
     return x
+
+def load_sort_data(dir,wild_or_mutant=None,sort_method='chain',seed=1):
+    print('loading data from: %s'%dir)
+    x_dict = {}
+    y_dict = {}
+    ddg_dict = {}
+    if wild_or_mutant in ['wild','mutant']:
+        data = np.load(dir)
+        x_dict[wild_or_mutant] = sort_row(data['x'],sort_method,seed)
+        y_dict[wild_or_mutant] = data['y']
+        ddg_dict[wild_or_mutant] = data['ddg']
+    else:
+        import re
+        data_wild = np.load(re.sub('(stack|split)','wild',dir))
+        data_mutant = np.load(re.sub('(stack|split)', 'mutant', dir))
+        if wild_or_mutant == 'stack':
+            x_dict[wild_or_mutant] = np.vstack((sort_row(data_wild['x'],sort_method,seed),sort_row(data_mutant['x'],sort_method,seed)))
+            y_dict[wild_or_mutant] = np.vstack((data_wild['y'],data_mutant['y']))
+            ddg_dict[wild_or_mutant] = np.vstack((data_wild['ddg'],data_mutant['ddg']))
+        elif wild_or_mutant == 'split':
+            x_dict['wild'] = sort_row(data_wild['x'],sort_method,seed)
+            x_dict['mutant'] = sort_row(data_mutant['x'],sort_method,seed)
+            y_dict['wild'] = data_wild['y']
+            y_dict['mutant'] = data_mutant['y']
+            ddg_dict['wild'] = data_wild['ddg']
+            ddg_dict['mutant'] = data_mutant['ddg']
+    return x_dict, y_dict, ddg_dict
+
+def calc_coor_pValue(feature_a_list, feature_b_list):
+    import scipy.stats as stats
+    pearson_coeff, p_value = stats.pearsonr(np.array(feature_a_list).reshape(-1), np.array(feature_b_list).reshape(-1))
+    return pearson_coeff, p_value
+
+def transform(coord_array_before, center_coord):
+    from sklearn.decomposition import PCA
+    assert len(coord_array_before) >= 3  # row number.
+    pca_model = PCA(n_components=3)
+    pca_model.fit(coord_array_before)
+    coord_array_after = pca_model.transform(coord_array_before)
+    center_coord_after = pca_model.transform(center_coord.reshape(-1, 3))
+    coord_array_after = coord_array_after - center_coord_after
+    return coord_array_after
 
 def shuffle_data(x, y, ddg, random_seed):
     indices = [i for i in range(x.shape[0])]

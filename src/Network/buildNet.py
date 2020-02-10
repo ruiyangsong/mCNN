@@ -13,7 +13,7 @@ import os, sys, argparse
 import numpy as np
 from keras.utils import to_categorical
 from sklearn.model_selection import StratifiedKFold
-from mCNN.processing import shuffle_data, load_data, shell, append_mCSM, sort_row
+from mCNN.processing import shuffle_data, load_sort_data, shell, append_mCSM
 from keras.backend.tensorflow_backend import set_session
 
 from keras import models
@@ -47,11 +47,12 @@ def main():
     ## Input parameters.
     parser = argparse.ArgumentParser()
     parser.add_argument('dataset_name',        type=str,   help='dataset_name.')
-    parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','all'],     help='wild or mutant array, default is wild.')
+    parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','stack','split'],     help='wild, mutant, stack or split array, default is wild.')
     parser.add_argument('-C', '--center',      type=str,   default='CA',    choices=['CA', 'geometric'],   help='The MT site center, default is CA.')
     ## parameters for reading mCNN array, array locates at: '~/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_50.npz'
     parser.add_argument('--mCNN',              type=str,   nargs=2,         help='PCA, k_neighbor')
     ## parameters for reading mCSM array, array locates at: '~/mCNN/dataset/S2648/feature/mCSM/mutant/npz/min_0.1_max_7.0_step_2.0_center_CA_class_2.npz'
+    parser.add_argument('--append',            type=str,   default='False', help='whether append mCSM features to mCNN features, default is False.')
     parser.add_argument('--mCSM',              type=str,   nargs=4,         help='min, max, step, atom_class_num.')
     ## Config data processing params
     parser.add_argument('-n', '--normalize',   type=str,   choices=['norm', 'max'], default='norm', help='normalize_method to choose, default = norm.')
@@ -82,11 +83,12 @@ def main():
     if container['mCNN_arrdir'] == '' and container['mCSM_arrdir'] == '':
         print('[ERROR] parsing feature_type param error, check the argparser code!')
         exit(0)
-    ## parser data processing
+    append = args.append
+    ## parser for data processing
     normalize_method = args.normalize
     sort_method = args.sort
     seed_tuple = tuple(args.random_seed)
-    ## parser training
+    ## parser for training
     nn_model = args.model
     k = args.Kfold
     verbose = args.verbose
@@ -97,6 +99,7 @@ def main():
     print('dataset_name: %s, wild_or_mutant: %s, center: %s,'
           '\nmCNN_arrdir: %s,'
           '\nmCSM_arrdir: %s,'
+          '\nappend: %s,'
           '\nnormalize_method: %s,'
           '\nsort_method: %s,'
           '\n(permutation-seed, k-fold-seed): %r,'
@@ -106,26 +109,19 @@ def main():
           '\nepoch: %s,'
           '\nbatch_size: %s,'
           '\nCUDA: %r.'
-          % (dataset_name, wild_or_mutant, center, container['mCNN_arrdir'],container['mCSM_arrdir'],
+          % (dataset_name, wild_or_mutant, center, container['mCNN_arrdir'],container['mCSM_arrdir'],append,
              normalize_method,sort_method,seed_tuple,nn_model,k,verbose,epoch,batch_size,CUDA))
 
-    # loading data -----------------------------------------------------------------------------------------------------
-    if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] == '':
-        x, y, ddg = load_data(container['mCNN_arrdir'])
-    if container['mCSM_arrdir'] != '' and container['mCNN_arrdir'] == '':
-        x, y, ddg = load_data(container['mCSM_arrdir'])
-    if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] != '':
-        x, y, ddg = load_data(container['mCNN_arrdir'])
-        x_mCSM, y_mCSM, ddg_mCSM = load_data(container['mCSM_arrdir'])
-        x = append_mCSM(x_mCNN=x, x_mCSM=x_mCSM)
-    print(x.shape)
-    print('Loading data from hard drive is done.')
+    # load data and sort row (return python dictionary)-----------------------------------------------------------------
+    if container['mCNN_arrdir'] != '':
+        x_mCNN, y_mCNN, ddg_mCNN = load_sort_data(container['mCNN_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
+    if container['mCSM_arrdir'] != '':
+        x_mCSM, y_mCSM, ddg_mCSM = load_sort_data(container['mCSM_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
+    if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] != '' and append == 'True':
+        x_append = append_mCSM(x_mCNN_dict=x_mCNN, x_mCSM_dict=x_mCSM)
+        del x_mCNN, x_mCSM
 
-    ## sort row of each mutation matrix.
-    x = sort_row(x, sort_method, seed_tuple[0])  # chain sorting return self!
-    print('Sort row is done, sorting method is %s.' % sort_method)
-
-    ## Cross validation.
+    # Cross validation. ------------------------------------------------------------------------------------------------
     print('%d-fold cross validation begin.' % (k))
     kfold_score, history_list = cross_validation(x, y, ddg, k, nn_model, normalize_method, seed_tuple[1:], flag_tuple,
                                                  oversample, CUDA, epoch, batch_size, train_ratio=0.7)
@@ -133,7 +129,6 @@ def main():
     print_result(nn_model, kfold_score)
     ## plot.
     # plotfigure(history_dict)
-
 
 def save_model(model, model_path, model_name):
     if not os.path.exists(model_path):
