@@ -174,25 +174,31 @@ def load_sort_data(dir,wild_or_mutant=None,sort_method='chain',seed=1):
     y_dict = {}
     ddg_dict = {}
     if wild_or_mutant in ['wild','mutant']:
+        assert os.path.exists(dir)
         data = np.load(dir)
         x_dict[wild_or_mutant] = sort_row(data['x'],sort_method,seed)
         y_dict[wild_or_mutant] = data['y']
         ddg_dict[wild_or_mutant] = data['ddg']
     else:
         import re
-        data_wild = np.load(re.sub('(stack|split)','wild',dir))
-        data_mutant = np.load(re.sub('(stack|split)', 'mutant', dir))
+        # wild_dir = re.sub('(stack|split)','wild',dir)
+        # mutant_dir = re.sub('(stack|split)', 'mutant', dir)
+        wild_dir = re.sub('stack', 'wild', dir)
+        mutant_dir = re.sub('stack', 'mutant', dir)
+        assert os.path.exists(wild_dir) and os.path.exists(mutant_dir)
+        data_wild = np.load(wild_dir)
+        data_mutant = np.load(mutant_dir)
         if wild_or_mutant == 'stack':
             x_dict[wild_or_mutant] = np.vstack((sort_row(data_wild['x'],sort_method,seed),sort_row(data_mutant['x'],sort_method,seed)))
             y_dict[wild_or_mutant] = np.vstack((data_wild['y'],data_mutant['y']))
             ddg_dict[wild_or_mutant] = np.vstack((data_wild['ddg'],data_mutant['ddg']))
-        elif wild_or_mutant == 'split':
-            x_dict['wild'] = sort_row(data_wild['x'],sort_method,seed)
-            x_dict['mutant'] = sort_row(data_mutant['x'],sort_method,seed)
-            y_dict['wild'] = data_wild['y']
-            y_dict['mutant'] = data_mutant['y']
-            ddg_dict['wild'] = data_wild['ddg']
-            ddg_dict['mutant'] = data_mutant['ddg']
+        # elif wild_or_mutant == 'split':
+        #     x_dict['wild'] = sort_row(data_wild['x'],sort_method,seed)
+        #     x_dict['mutant'] = sort_row(data_mutant['x'],sort_method,seed)
+        #     y_dict['wild'] = data_wild['y']
+        #     y_dict['mutant'] = data_mutant['y']
+        #     ddg_dict['wild'] = data_wild['ddg']
+        #     ddg_dict['mutant'] = data_mutant['ddg']
     return x_dict, y_dict, ddg_dict
 
 def calc_coor_pValue(feature_a_list, feature_b_list):
