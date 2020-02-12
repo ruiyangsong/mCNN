@@ -265,6 +265,44 @@ class DataExtractor(object):
             print('[ERROR] The fold number should not smaller than 2!')
             exit(0)
 
+class LossHistory(keras.callbacks.Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = {'batch':[], 'epoch':[]}
+        self.pearson_r = {'batch':[], 'epoch':[]}
+        self.val_loss = {'batch':[], 'epoch':[]}
+        self.val_pearson_r = {'batch':[], 'epoch':[]}
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses['batch'].append(logs.get('loss'))
+        self.pearson_r['batch'].append(logs.get('pearson_r'))
+        self.val_loss['batch'].append(logs.get('val_loss'))
+        self.val_pearson_r['batch'].append(logs.get('val_pearson_r'))
+
+    def on_epoch_end(self, batch, logs={}):
+        self.losses['epoch'].append(logs.get('loss'))
+        self.pearson_r['epoch'].append(logs.get('pearson_r'))
+        self.val_loss['epoch'].append(logs.get('val_loss'))
+        self.val_pearson_r['epoch'].append(logs.get('val_pearson_r'))
+
+    def loss_plot(self, loss_type):
+        iters = range(len(self.losses[loss_type]))
+        plt.figure()
+        # acc
+        plt.plot(iters, self.pearson_r[loss_type], 'r', label='train_pearson_r')
+        # loss
+        plt.plot(iters, self.losses[loss_type], 'g', label='train_loss')
+        if loss_type == 'epoch':
+            # val_acc
+            plt.plot(iters, self.val_pearson_r[loss_type], 'b', label='val_pearson_r')
+            # val_loss
+            plt.plot(iters, self.val_loss[loss_type], 'k', label='val_loss')
+        plt.grid(True)
+        plt.xlabel(loss_type)
+        plt.ylabel('pearson_r-loss')
+        plt.legend(loc="upper right")
+        plt.savefig("/public/home/yels/project/Data_pre/QA_global.png")
+        # plt.show()
+
 
 class NetworkTrainer(object):
     def __init__(self, DE_object=None, nn_model=None, verbose=1, CUDA='0', epoch=100, batch_size=128):
@@ -276,6 +314,15 @@ class NetworkTrainer(object):
         self.epoch      = epoch
         self.batch_size = batch_size
 
+        self.tag        = None
+        self.model_path = model_path
+    
+    def run(self):
+        self.config_tf()
+        self.load_data()
+        self.train_model()
+
+    def config_tf(self):
         os.environ['CUDA_VISIBLE_DEVICES'] = self.CUDA
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
         config = tf.ConfigProto()
@@ -294,22 +341,54 @@ class NetworkTrainer(object):
         self.ddg_test  = data.ddg_test
 
     def train_model(self):
-        pass
+        def train_In1_Out2(self, _optimizer, class_loss, ddg_loss, class_weight, ddg_weight, epochs, batch_size, verbose = 1, validation = True):
+        self.model.compile(optimizer=_optimizer,
+                           loss={'class': class_loss,
+                                 'ddg'  : ddg_loss},
+                           loss_weights={'class': class_weight,
+                                         'ddg'  : ddg_weight},
+                           metrics={'class': ['accuracy',自定义的损失],
+                                    'ddg'  : ['mse']})
+        val_data = None
+        if validation:
+            val_data = (self.x_val, [self.y_val,self.ddg_val])
+
+        
+        # if validation:
+        #     self.model.fit(x=self.x_train,
+        #                    y={'class': self.y_train,
+        #                       'ddg'  : self.ddg_train},
+        #                    validation_data=(self.x_val, [self.y_val,self.ddg_val]),
+        #                    epochs=epochs,
+        #                    batch_size=batch_size,
+        #                    verbose=verbose,
+        #                    shuffle=True)
+        # else:
+        #     self.model.fit(x=self.x_train,
+        #                    y={'class': self.y_train,
+        #                       'ddg': self.ddg_train},
+        #                    epochs=epochs,
+        #                    batch_size=batch_size,
+        #                    verbose=verbose,
+        #                    shuffle=True)
 
     def save_model(self, metric, threshold, model_path):
         pass
 
 class NetworkEvaluator(object):
-    def load_model(self, model_dir):
-        self.model = load_model(model_dir)
+    def __init__(self,model_dir,test_data,model):
+        '''use the model from param or load model from hard drive.'''
+        self.model_dir = model_dir
+        self.test_data = test_data
+        self.model = model
 
+    def load_model(self):
+        self.model = load_model(self.model_dir)
+
+    def test_model(self):
+        pass
 
 class TrainCallback(keras.callbacks.Callback):
-    callbacks_list = [
-        keras.callbacks.ReduceLROnPlateau(monitor='val_loss',
-                                          factor = 0.1,
-                                          patience = 10)
-    ]
     def on_train_begin(self, logs={}):
         self.losses = {'batch':[], 'epoch':[]}
         self.pearson_r = {'batch':[], 'epoch':[]}
@@ -358,77 +437,127 @@ class TrainCallback(keras.callbacks.Callback):
         # plt.show()
 
 
+class Metrics_Generator(object):
+    def pearson_r(self, y_true, y_pred):
+        x = y_true
+        y = y_pred
+        mx = K.mean(x, axis=0)
+        my = K.mean(y, axis=0)
+        xm, ym = x - mx, y - my
+        r_num = K.sum(xm * ym)
+        x_square_sum = K.sum(xm * xm)
+        y_square_sum = K.sum(ym * ym)
+        r_den = K.sqrt(x_square_sum * y_square_sum)
+        r = r_num / r_den
+        return K.mean(r)
+
+    def recall_p():
+        pass
+
+    def recall_n():
+        pass
+
+    def mcc():
+        pass
+
+    def acc():
+        pass
+
+class LossFunction(object):
+    # def binary_crossentropy_focal_loss(y_true, y_pred):
+    #     alpha = 0.25; gamma = 2
+    #     label  = y_true[0]
+    #     output = K.clip(y_pred[0], K.epsilon(), 1 - K.epsilon())
+    #     pt = label*output + (1-label)*(1-output)
+    #     bc = - alpha * K.pow(1-pt, gamma) * K.log(pt)
+    #     positive = K.sum(label)
+    #     return K.sum(bc)/positive
+    def binary_focal_loss(gamma=2, alpha=0.25):
+        """
+        Binary form of focal loss.
+        适用于二分类问题的focal loss
+        focal_loss(p_t) = -alpha_t * (1 - p_t)**gamma * log(p_t)
+            where p = sigmoid(x), p_t = p or 1 - p depending on if the label is 1 or 0, respectively.
+        References:
+            https://arxiv.org/pdf/1708.02002.pdf
+        Usage:
+         model.compile(loss=[binary_focal_loss(alpha=.25, gamma=2)], metrics=["accuracy"], optimizer=adam)
+        """
+        alpha = tf.constant(alpha, dtype=tf.float32)
+        gamma = tf.constant(gamma, dtype=tf.float32)
+        def binary_focal_loss_fixed(y_true, y_pred):
+            """
+            y_true shape need be (None,1)
+            y_pred need be compute after sigmoid
+            """
+            y_true = tf.cast(y_true, tf.float32)
+            alpha_t = y_true*alpha + (K.ones_like(y_true)-y_true)*(1-alpha)
+            p_t = y_true*y_pred + (K.ones_like(y_true)-y_true)*(K.ones_like(y_true)-y_pred) + K.epsilon()
+            focal_loss = - alpha_t * K.pow((K.ones_like(y_true)-p_t),gamma) * K.log(p_t)
+            return K.mean(focal_loss)
+        return binary_focal_loss_fixed
+
 class ConvNet(object):
-    def __init__(self, model_path):
-        self.tag        = None
+    def __init__(self, input_num, output_num, input_shape, channel_last = True, kernel_size=(3,3),initializer='random_uniform',activator='relu',pool_size=(2,2),padding_style='same',regular_rate=[0.001,0.001],dropout_rate=0.3), optimizer='adam', summary=True:
+        if channel_last:
+            self.batch_norm_axis = -1
+        else:
+            self.batch_norm_axis = 1
+        self.input_num   = input_num
+        self.output_num  = output_num
+        self.input_shape = input_shape[1:]# Attention HERE!
+        
+        self.kernel_size = kernel_size
+        self.initializer = initializer
+        self.activator   = activator
+        
+        self.pool_size   = pool_size
+        self.padding_style = padding_style
+        
+        self.regular_rate  = regular_rate
+        self.dropout_rate  = dropout_rate
+
+        self.optimizer = optimizer
+        self.summary   = summary
+
         self.model      = None
-        self.model_path = model_path
 
-    def build_network(self, input_num, output_num, input_shape, class_num, kernel_size, activator, dropout, kernel_init, regular, dformat, summary=True):
-        if input_num == 1 and output == 1:
-            pass
-        if input_num == 1 and output == 2:
-            pass
-        if input_num == 2 and output == 1:
-            pass
-        if input_num == 2 and output == 2:
-            pass
 
-        Input_merge = Input(shape=input_shape,
-                            dtype='float32',
-                            name='merge')
+    def run(self,):
+        self.build_model(self.task_type)
 
-        x = layers.Conv1D(128, 5, activation=activator)(Input_merge)
-        y = layers.MaxPooling1D(5)(x)
 
-        y = layers.BatchNormalization(axis=-1)(y)
-        residual = layers.Conv2D(128, 1, strides=2, padding='same')(x)
-        y = layers.add([y, residual])
+    def multi_task(self, class_num=2,loss_type_lst=['mse','binary_crossentropy'], loss_weights_lst=[0.5,10.], metrics_lst=['mse','accuracy']):
+        if self.input_num == 1 and self.output == 2:
+            input_layer = Input(shape=self.input_shape)
+            conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
+            conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
+            pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
+            conv3 = layers.Conv2D(64,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool1)
+            conv3_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(conv3)
+            pool2 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv3_BatchNorm)
+            conv4 = layers.Conv2D(128,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool2)
+            pool3 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv4)
+            flat = layers.Flatten()(pool3)
+            
+            dense = layers.Dense(128, activation=self.activator)(flat)
+            dense_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(dense)
+            drop  = layers.Dropout(self.dropout_rate)(dense_BatchNorm)
+            ddg_prediction = layers.Dense(1, name='ddg')(drop)
+            class_prediction = layers.Dense(class_num,activation='softmax',name='class')
 
-        Output_class = layers.Dense(class_num,
-                                    activation=activator,
-                                    name='class')(y)
-        Output_ddg   = layers.Dense(1,
-                                    name='ddg')(y)
+            model = Model(inputs=input_layer, outputs=[ddg_prediction,class_prediction])
+            
+            if self.summary:
+                model.summary()
 
-        model = Model(Input_merge, [Output_class, Output_ddg])
-        func_name  = sys._getframe().f_code.co_name
-        self.tag   = func_name
-        self.model = model
-        if summary:
-            self.model.summary()
-
-    def In2_Out2(self, input_shape, class_num, kernel_size, activator, dropout, kernel_init, regular, dformat, summary):
-        Input_merge = Input(shape=input_shape,
-                            dtype='float32',
-                            name='merge')
-
-        x = layers.Conv1D(128, 5, activation=activator)(Input_merge)
-        x = layers.MaxPooling1D(5)(x)
-
-        Output_class = layers.Dense(class_num,
-                                    activation=activator,
-                                    name='class')(x)
-        Output_ddg   = layers.Dense(1,
-                                    name='ddg')(x)
-        model = Model(Input_merge, [Output_class, Output_ddg])
-        self.model = model
-        if summary:
-            self.model.summary()
-
-    def train_In1_Out2(self, _optimizer, class_loss, ddg_loss, class_weight, ddg_weight, epochs, batch_size, verbose = 1, validation = True):
-        self.model.compile(optimizer=_optimizer,
-                           loss={'class': class_loss,
-                                 'ddg'  : ddg_loss},
-                           loss_weights={'class': class_weight,
-                                         'ddg'  : ddg_weight},
-                           metrics={'class': ['accuracy',自定义的损失],
-                                    'ddg'  : ['mse']})
-        val_data = None
-        if validation:
-            val_data = (self.x_val, [self.y_val,self.ddg_val])
-
-        self.model.fit(x=self.x_train,
+            model.compile(optimizer=self.optimizer,
+                          loss={'ddg':loss_type_lst[0],'class':loss_type_lst[1]},
+                          loss_weights={'ddg':loss_weights_lst[0],'class':loss_weights_lst[1]},
+                          metrics={'ddg':metrics_lst[0],'class':metrics_lst[1]}
+                          )
+            self.model = model
+            self.model.fit(x=self.x_train,
                        y={'class': self.y_train,
                           'ddg': self.ddg_train},
                        validation_data=val_data,
@@ -438,24 +567,107 @@ class ConvNet(object):
                        shuffle=True,
                        class_weight = [],
                        callbacks = [history])
-        # if validation:
-        #     self.model.fit(x=self.x_train,
-        #                    y={'class': self.y_train,
-        #                       'ddg'  : self.ddg_train},
-        #                    validation_data=(self.x_val, [self.y_val,self.ddg_val]),
-        #                    epochs=epochs,
-        #                    batch_size=batch_size,
-        #                    verbose=verbose,
-        #                    shuffle=True)
-        # else:
-        #     self.model.fit(x=self.x_train,
-        #                    y={'class': self.y_train,
-        #                       'ddg': self.ddg_train},
-        #                    epochs=epochs,
-        #                    batch_size=batch_size,
-        #                    verbose=verbose,
-        #                    shuffle=True)
 
+        if self.input_num == 2 and self.output == 2:
+            pass
+
+    def classifiter(self, class_num=2, loss_type='binary_crossentropy',metrics=['accuracy']):
+        if self.input_num == 1 and self.output == 1:
+            input_layer = Input(shape=self.input_shape)
+            conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
+            conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
+            pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
+            conv3 = layers.Conv2D(64,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool1)
+            conv3_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(conv3)
+            pool2 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv3_BatchNorm)
+            conv4 = layers.Conv2D(128,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool2)
+            pool3 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv4)
+            flat = layers.Flatten()(pool3)
+            
+            dense = layers.Dense(128, activation=self.activator)(flat)
+            dense_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(dense)
+            drop  = layers.Dropout(self.dropout_rate)(dense_BatchNorm)
+
+            output_layer = layers.Dense(class_num,activation='softmax')(drop)
+            model = models.Model(inputs=input_layer, outputs=output_layer)
+
+            if self.summary:
+                model.summary()
+            # rmsp = optimizers.RMSprop(lr=0.0008)
+            model.compile(optimizer=self.optimizer,
+                          loss=loss_type,
+                          metrics=metrics) # accuracy
+            self.model = model
+
+        if self.input_num == 2 and self.output == 1:
+            pass
+
+    def regressor(self, loss_type='mse', metrics=['mae']):
+        if self.input_num == 1 and self.output_num == 1:
+            input_layer = Input(shape=self.input_shape)
+            conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
+            conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
+            pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
+            conv3 = layers.Conv2D(64,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool1)
+            conv3_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(conv3)
+            pool2 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv3_BatchNorm)
+            conv4 = layers.Conv2D(128,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool2)
+            pool3 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv4)
+            flat = layers.Flatten()(pool3)
+            
+            dense = layers.Dense(128, activation=self.activator)(flat)
+            
+            dense_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(dense)
+            drop  = layers.Dropout(self.dropout_rate)(dense_BatchNorm)
+
+            output_layer = layers.Dense(1)(drop)
+            model = models.Model(inputs=input_layer, outputs=output_layer)
+
+            if self.summary:
+                model.summary()
+
+            model.compile(optimizer=self.optimizer,
+                          loss=loss_type,
+                          metrics=metrics)
+            self.model = model
+
+        if self.input_num == 2 and self.output_num == 1:
+            Input_1 = Input(shape=input_shape[0], name='input_1')
+            conv1_input_1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
+            pool1_input_1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv1_input_1)
+            
+            residual = layers.Conv2D(128, 1, strides=2, padding='same')(x)
+            
+            conv2_input_1 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator,kernel_regularizer=regularizers.l1_l2(l1=self.regular_rate[0],l2=self.regular_rate[1]))(pool1_input_1)
+            conv2_input_1_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(conv2_input_1)
+            pool2_input_1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2_input_1_BatchNorm)
+            flat_input_1 = layers.Flatten()(pool2_input_1)
+            dense_input_1 = layers.Dense(128, activation=self.activator)(flat_input_1)
+            dense_input_1_BatchNorm = layers.BatchNormalization(axis=self.batch_norm_axis)(dense_input_1)
+            drop_input_1  = layers.Dropout(self.dropout_rate)(dense_input_1_BatchNorm)
+
+
+
+            x = layers.Conv1D(128, 5, activation=activator)(Input_1)
+            y = layers.MaxPooling1D(5)(x)
+
+            y = layers.BatchNormalization(axis=self.batch_norm_axis)(y)
+            residual = layers.Conv2D(128, 1, strides=2, padding='same')(x)
+            y = layers.add([y, residual])
+
+            Output_class = layers.Dense(class_num,
+                                        activation=activator,
+                                        name='class')(y)
+            Output_ddg   = layers.Dense(1,
+                                        name='ddg')(y)
+
+            model = Model(Input_merge, [Output_class, Output_ddg])
+            func_name  = sys._getframe().f_code.co_name
+            self.tag   = func_name
+            self.model = model
+            if summary:
+                self.model.summary()
+  
     def train_parameter(self, data):
         pass
 
@@ -485,39 +697,7 @@ class ConvNet(object):
 
 
 
-# def binary_crossentropy_focal_loss(y_true, y_pred):
-#     alpha = 0.25; gamma = 2
-#     label  = y_true[0]
-#     output = K.clip(y_pred[0], K.epsilon(), 1 - K.epsilon())
-#     pt = label*output + (1-label)*(1-output)
-#     bc = - alpha * K.pow(1-pt, gamma) * K.log(pt)
-#     positive = K.sum(label)
-#     return K.sum(bc)/positive
-def binary_focal_loss(gamma=2, alpha=0.25):
-    """
-    Binary form of focal loss.
-    适用于二分类问题的focal loss
-    focal_loss(p_t) = -alpha_t * (1 - p_t)**gamma * log(p_t)
-        where p = sigmoid(x), p_t = p or 1 - p depending on if the label is 1 or 0, respectively.
-    References:
-        https://arxiv.org/pdf/1708.02002.pdf
-    Usage:
-     model.compile(loss=[binary_focal_loss(alpha=.25, gamma=2)], metrics=["accuracy"], optimizer=adam)
-    """
-    alpha = tf.constant(alpha, dtype=tf.float32)
-    gamma = tf.constant(gamma, dtype=tf.float32)
 
-    def binary_focal_loss_fixed(y_true, y_pred):
-        """
-        y_true shape need be (None,1)
-        y_pred need be compute after sigmoid
-        """
-        y_true = tf.cast(y_true, tf.float32)
-        alpha_t = y_true*alpha + (K.ones_like(y_true)-y_true)*(1-alpha)
-        p_t = y_true*y_pred + (K.ones_like(y_true)-y_true)*(K.ones_like(y_true)-y_pred) + K.epsilon()
-        focal_loss = - alpha_t * K.pow((K.ones_like(y_true)-p_t),gamma) * K.log(p_t)
-        return K.mean(focal_loss)
-    return binary_focal_loss_fixed
 
 
 
