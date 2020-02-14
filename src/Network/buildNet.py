@@ -37,89 +37,16 @@ import matplotlib.pyplot as plt
 
 
 def main():
-    # get command line params ------------------------------------------------------------------------------------------
-    homedir = shell('echo $HOME')
-    ## Init container
-    container = {'mCNN_arrdir': '', 'mCSM_arrdir': '', 'val_mCNN_arrdir': '', 'val_mCSM_arrdir': ''}
-    ## Input parameters.
-    parser = argparse.ArgumentParser()
-    parser.add_argument('dataset_name',        type=str,   help='dataset_name.')
-    parser.add_argument('val_dataset_name',    type=str,   help='validation dataset_name.')
-    parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','stack'],     help='wild, mutant or stack array, default is wild.')
-    parser.add_argument('-C', '--center',      type=str,   default='CA',    choices=['CA', 'geometric'],   help='The MT site center, default is CA.')
-    ## parameters for reading mCNN array, array locates at: '~/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_50.npz'
-    parser.add_argument('--mCNN',              type=str,   nargs=2,         help='PCA, k_neighbor')
-    ## parameters for reading mCSM array, array locates at: '~/mCNN/dataset/S2648/feature/mCSM/mutant/npz/min_0.1_max_7.0_step_2.0_center_CA_class_2.npz'
-    parser.add_argument('--append',            type=str,   default='False', help='whether append mCSM features to mCNN features, default is False.')
-    parser.add_argument('--mCSM',              type=str,   nargs=4,         help='min, max, step, atom_class_num.')
-    ## Config data processing params
-    parser.add_argument('-n', '--normalize',   type=str,   choices=['norm', 'max'], default='norm', help='normalize_method to choose, default = norm.')
-    parser.add_argument('-s', '--sort',        type=str,
-                        choices=['chain', 'distance', 'octant', 'permutation', 'permutation1', 'permutation2'],
-                        default='chain',       help='row sorting methods to choose, default = "chain".')
-    parser.add_argument('-d', '--random_seed', type=int, nargs=3, default=(1,1,1), help='permutation-seed, k-fold-seed, split-val-seed, default sets to (1,1,1).')
-    ## Config training
-    parser.add_argument('-D', '--model',       type=str, help='Network model to chose.', required=True)
-    parser.add_argument('-K', '--Kfold',       type=int, help='Fold numbers to cross validation.')
-    parser.add_argument('-V', '--verbose',     type=int, choices=[0, 1], default=1, help='the verbose flag, default is 1.')
-    parser.add_argument('-E', '--epoch',       type=int, default=100, help='training epoch, default is 100.')
-    parser.add_argument('-B', '--batch_size',  type=int, default=64,  help='training batch size, default is 64.')
-    ## config hardware
-    parser.add_argument('--CUDA', type=str, default='0', choices=['0', '1', '2', '3'], help='Which gpu to use, default = "0"')
-    ## parser
-    args = parser.parse_args()
-    dataset_name   = args.dataset_name
-    val_dataset_name   = args.val_dataset_name
-    wild_or_mutant = args.wild_or_mutant
-    center = args.center
-    if args.mCNN:
-        str_pca, str_k_neighbor = args.mCNN
-        container['mCNN_arrdir'] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz'\
-                                   %(homedir,dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
-        container['val_mCNN_arrdir'] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz'\
-                                       %(homedir,val_dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
-    if args.mCSM:
-        min_, max_, step, atom_class_num = args.mCSM
-        container['mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'\
-                                   %(homedir, dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
-        container['val_mCSM_arrdir'] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz'\
-                                       %(homedir, val_dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
-    if container['mCNN_arrdir'] == '' and container['mCSM_arrdir'] == '':
-        print('[ERROR] parsing feature_type param error, check the argparser code!')
-        exit(0)
-    append = args.append
-    ## parser for data processing
-    normalize_method = args.normalize
-    sort_method = args.sort
-    seed_tuple = tuple(args.random_seed)
-    ## parser for training
-    nn_model = args.model
-    k = args.Kfold
-    verbose = args.verbose
-    epoch = args.epoch
-    batch_size = args.batch_size
-    CUDA = args.CUDA
-    ## print input info.
-    print('dataset_name: %s, val_dateset_name: %s, wild_or_mutant: %s, center: %s,'
-          '\nmCNN_arrdir: %s,'
-          '\nval_mCNN_arrdir: %s,'
-          '\nmCSM_arrdir: %s,'
-          '\nval_mCSM_arrdir: %s,'
-          '\nappend: %s,'
-          '\nnormalize_method: %s,'
-          '\nsort_method: %s,'
-          '\n(permutation-seed, k-fold-seed, split-val-seed): %r,'
-          '\nmodel: %s,'
-          '\nkfold: %s,'
-          '\nverbose_flag: %s,'
-          '\nepoch: %s,'
-          '\nbatch_size: %s,'
-          '\nCUDA: %r.'
-          % (dataset_name, val_dataset_name, wild_or_mutant, center, container['mCNN_arrdir'], container['val_mCNN_arrdir'],
-             container['mCSM_arrdir'],container['val_mCSM_arrdir'], append, normalize_method, sort_method, seed_tuple,
-             nn_model, k, verbose, epoch, batch_size, CUDA))
+    pass
+
+
 
     # load data and sort row (return python dictionary)-----------------------------------------------------------------
+    
+    if container['mCNN_wild_dir'] != '' and container['val_mCNN_wild_dir']:
+        mCNN_wild
+
+
     if container['mCNN_arrdir'] != '' and container['mCSM_arrdir'] == '':
         x_dict, y_dict, ddg_dict = load_sort_data(container['mCNN_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
         x_val_dict, y_val_dict, ddg_val_dict = load_sort_data(container['val_mCNN_arrdir'],wild_or_mutant,sort_method,seed_tuple[0])
@@ -161,156 +88,6 @@ def save_model(model, model_path, model_name):
         model.save('%s/%s'%(model_path, model_name))
         print('---model saved at %s.'%model_path)
 
-class DataExtractor(object):
-    '''每一个数据是一个python字典，字典中每一个值是一个列表，列表存储了每一折数据，eg.{'wild':[fold1,fold2,...],...}'''
-    def __init__(self):
-        self.x_val_dict   = None
-        self.y_val_dict   = None
-        self.ddg_val_dict = None
-
-    def split_val_data(self, x_val_dict, y_val_dict, ddg_val_dict,seed,val_num):
-        key_lst = list(x_val_dict.keys())
-        indices = [i for i in range(x_val_dict[key_lst[0]].size[0])]
-        np.random.seed(seed)
-        np.random.shuffle(indices)
-        val_indices = indices[:val_num]
-        for key in key_lst:
-            x_val_dict[key] = x_val_dict[key][val_indices]
-            y_val_dict[key] = y_val_dict[key][val_indices]
-            ddg_val_dict[key] = ddg_val_dict[key][val_indices]
-        self.x_val_dict   = x_val_dict
-        self.y_val_dict   = y_val_dict
-        self.ddg_val_dict = ddg_val_dict
-
-    def given_val_data(self, x_val_dict, y_val_dict, ddg_val_dict):
-        self.x_val_dict   = x_val_dict
-        self.y_val_dict   = y_val_dict
-        self.ddg_val_dict = ddg_val_dict
-
-    def given_kfold(self, x_train_dict, y_train_dict, ddg_train_dict, x_test_dict, y_test_dict, ddg_test_dict):
-        self.x_train_dict   = x_train_dict
-        self.y_train_dict   = y_train_dict
-        self.ddg_train_dict = ddg_train_dict
-
-        self.x_test_dict    = x_test_dict
-        self.y_test_dict    = y_test_dict
-        self.ddg_test_dict  = ddg_test_dict
-
-    def split_kfold(self, x_dict, y_dict, ddg_dict, fold_num, random_seed=10, train_ratio = 0.7):
-        '''参数中的dict的值所存储的数据没有分折（split fold）'''
-        self.x_train_dict   = {}
-        self.y_traiin_dict  = {}
-        self.ddg_train_dict = {}
-
-        self.x_test_dict    = {}
-        self.y_test_dict    = {}
-        self.ddg_test_dict  = {}
-        if fold_num >= 3:
-            skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=random_seed)
-            for key in x_dict.keys():
-                self.x_train_dict[key] = []
-                self.y_traiin_dict[key] = []
-                self.ddg_train_dict[key] = []
-                self.x_test_dict[key] = []
-                self.y_test_dict[key] = []
-                self.ddg_test_dict[key] = []
-                x,y,ddg = x_dict[key],y_dict[key],ddg_dict[key]
-                for train_index, test_index in skf.split(x, y):
-                    self.x_train_dict[key].append(x[train_index])
-                    self.y_train_dict[key].append(y[train_index])
-                    self.ddg_train_dict[key].append(ddg[train_index])
-                    self.x_test_dict[key].append(x[test_index])
-                    self.y_test_dict[key].append(y[test_index])
-                    self.ddg_test_dict[key].append(ddg[test_index])
-        elif fold_num == 2:
-            for key in x_dict.keys():
-                self.x_train_dict[key] = []
-                self.y_traiin_dict[key] = []
-                self.ddg_train_dict[key] = []
-                self.x_test_dict[key] = []
-                self.y_test_dict[key] = []
-                self.ddg_test_dict[key] = []
-                x,y,ddg = x_dict[key],y_dict[key],ddg_dict[key]
-                x_train   = []
-                y_train   = []
-                ddg_train = []
-                x_test    = []
-                y_test    = []
-                ddg_test  = []
-                for label in set(y.reshape(-1)):
-                    index = np.argwhere(y.reshape(-1) == label)
-                    train_num = int(index.shape[0] * train_ratio)
-                    train_index = index[:train_num]
-                    test_index  = index[train_num:]
-                    x_train.append(x[train_index])
-                    y_train.append(y[train_index])
-                    ddg_train.append(ddg[train_index])
-
-                    x_test.append(x[test_index])
-                    y_test.append(y[test_index])
-                    ddg_test.append(ddg[test_index])
-                reshape_lst = list(x.shape[1:])
-                reshape_lst.insert(0,-1)
-                ## transform python list to numpy array
-                x_train   = np.array(x_train).reshape(reshape_lst)
-                y_train   = np.array(y_train).reshape(-1,1)
-                ddg_train = np.array(ddg_train).reshape(-1,1)
-                x_test    = np.array(x_test).reshape(reshape_lst)
-                y_test    = np.array(y_test).reshape(-1, 1)
-                ddg_test  = np.array(ddg_test).reshape(-1, 1)
-                ## shuffle data
-                x_train, y_train, ddg_train = shuffle_data(x_train, y_train, ddg_train, random_seed)
-                x_test, y_test, ddg_test    = shuffle_data(x_test, y_test, ddg_test, random_seed)
-
-            self.x_train_dict[key].append(x_train)
-            self.y_train_dict[key].append(y_train)
-            self.ddg_train_dict[key].append(ddg_train)
-            self.x_test_dict[key].append(x_test)
-            self.y_test_dict[key].append(y_test)
-            self.ddg_test_dict[key].append(ddg_test)
-
-        else:
-            print('[ERROR] The fold number should not smaller than 2!')
-            exit(0)
-
-class LossHistory(keras.callbacks.Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = {'batch':[], 'epoch':[]}
-        self.pearson_r = {'batch':[], 'epoch':[]}
-        self.val_loss = {'batch':[], 'epoch':[]}
-        self.val_pearson_r = {'batch':[], 'epoch':[]}
-
-    def on_batch_end(self, batch, logs={}):
-        self.losses['batch'].append(logs.get('loss'))
-        self.pearson_r['batch'].append(logs.get('pearson_r'))
-        self.val_loss['batch'].append(logs.get('val_loss'))
-        self.val_pearson_r['batch'].append(logs.get('val_pearson_r'))
-
-    def on_epoch_end(self, batch, logs={}):
-        self.losses['epoch'].append(logs.get('loss'))
-        self.pearson_r['epoch'].append(logs.get('pearson_r'))
-        self.val_loss['epoch'].append(logs.get('val_loss'))
-        self.val_pearson_r['epoch'].append(logs.get('val_pearson_r'))
-
-    def loss_plot(self, loss_type):
-        iters = range(len(self.losses[loss_type]))
-        plt.figure()
-        # acc
-        plt.plot(iters, self.pearson_r[loss_type], 'r', label='train_pearson_r')
-        # loss
-        plt.plot(iters, self.losses[loss_type], 'g', label='train_loss')
-        if loss_type == 'epoch':
-            # val_acc
-            plt.plot(iters, self.val_pearson_r[loss_type], 'b', label='val_pearson_r')
-            # val_loss
-            plt.plot(iters, self.val_loss[loss_type], 'k', label='val_loss')
-        plt.grid(True)
-        plt.xlabel(loss_type)
-        plt.ylabel('pearson_r-loss')
-        plt.legend(loc="upper right")
-        plt.savefig("/public/home/yels/project/Data_pre/QA_global.png")
-        # plt.show()
-
 
 def save_model(self, metric, threshold, model_path):
     pass
@@ -328,166 +105,11 @@ class NetworkEvaluator(object):
     def test_model(self):
         pass
 
-class TrainCallback(keras.callbacks.Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = {'batch':[], 'epoch':[]}
-        self.pearson_r = {'batch':[], 'epoch':[]}
-        self.val_loss = {'batch':[], 'epoch':[]}
-        self.val_pearson_r = {'batch':[], 'epoch':[]}
-
-    def on_train_end(self, logs=None):
-        pass
-
-    def on_epoch_begin(self, epoch, logs={}):
-        pass
-
-    def on_epoch_end(self, batch, logs={}):
-        self.losses['epoch'].append(logs.get('loss'))
-        self.pearson_r['epoch'].append(logs.get('pearson_r'))
-        self.val_loss['epoch'].append(logs.get('val_loss'))
-        self.val_pearson_r['epoch'].append(logs.get('val_pearson_r'))
-
-    def on_batch_begin(self, batch, logs={}):
-        pass
-
-    def on_batch_end(self, batch, logs={}):
-        self.losses['batch'].append(logs.get('loss'))
-        self.pearson_r['batch'].append(logs.get('pearson_r'))
-        self.val_loss['batch'].append(logs.get('val_loss'))
-        self.val_pearson_r['batch'].append(logs.get('val_pearson_r'))
 
 
-    def loss_plot(self, loss_type):
-        iters = range(len(self.losses[loss_type]))
-        plt.figure()
-        # acc
-        plt.plot(iters, self.pearson_r[loss_type], 'r', label='train_pearson_r')
-        # loss
-        plt.plot(iters, self.losses[loss_type], 'g', label='train_loss')
-        if loss_type == 'epoch':
-            # val_acc
-            plt.plot(iters, self.val_pearson_r[loss_type], 'b', label='val_pearson_r')
-            # val_loss
-            plt.plot(iters, self.val_loss[loss_type], 'k', label='val_loss')
-        plt.grid(True)
-        plt.xlabel(loss_type)
-        plt.ylabel('pearson_r-loss')
-        plt.legend(loc="upper right")
-        plt.savefig("/public/home/yels/project/Data_pre/QA_global.png")
-        # plt.show()
 
-class Metrics_Generator(object):
-    def pearson_r(self, y_true, y_pred):
-        x = y_true
-        y = y_pred
-        mx = K.mean(x, axis=0)
-        my = K.mean(y, axis=0)
-        xm, ym = x - mx, y - my
-        r_num = K.sum(xm * ym)
-        x_square_sum = K.sum(xm * xm)
-        y_square_sum = K.sum(ym * ym)
-        r_den = K.sqrt(x_square_sum * y_square_sum)
-        r = r_num / r_den
-        return K.mean(r)
 
-    def rmse(self,y_true, y_pred):
-        return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
 
-    def mcc(self,y_true, y_pred):
-        y_pred_pos = K.round(K.clip(y_pred, 0, 1))
-        y_pred_neg = 1 - y_pred_pos
-        y_pos = K.round(K.clip(y_true, 0, 1))
-        y_neg = 1 - y_pos
-        tp = K.sum(y_pos * y_pred_pos)
-        tn = K.sum(y_neg * y_pred_neg)
-        fp = K.sum(y_neg * y_pred_pos)
-        fn = K.sum(y_pos * y_pred_neg)
-        numerator = (tp * tn - fp * fn)
-        denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
-        return numerator / (denominator + K.epsilon())
-
-    def recall(self,y_true, y_pred):
-        # Calculates the recall
-        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-        possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-        recall = true_positives / (possible_positives + K.epsilon())
-        return recall
-
-    def recall_p(self,y_true,y_pred):
-        y_pred_pos = K.round(K.clip(y_pred, 0, 1))
-        y_pred_neg = 1 - y_pred_pos
-        y_pos = K.round(K.clip(y_true, 0, 1))
-        y_neg = 1 - y_pos
-        tp = K.sum(y_pos * y_pred_pos)
-        fn = K.sum(y_pos * y_pred_neg)
-        return tp/(tp + fn + K.epsilon())
-
-    def recall_n(self,y_true,y_pred):
-        y_pred_pos = K.round(K.clip(y_pred, 0, 1))
-        y_pred_neg = 1 - y_pred_pos
-        y_pos = K.round(K.clip(y_true, 0, 1))
-        y_neg = 1 - y_pos
-        tn = K.sum(y_neg * y_pred_neg)
-        fp = K.sum(y_neg * y_pred_pos)
-        return tn / (tn + fp + K.epsilon())
-
-    def precision(self,y_true, y_pred):
-        true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
-        predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-        precision = true_positives / (predicted_positives + K.epsilon())
-        return precision
-
-    def precision_p(self,y_true, y_pred):
-        y_pred_pos = K.round(K.clip(y_pred, 0, 1))
-        y_pred_neg = 1 - y_pred_pos
-        y_pos = K.round(K.clip(y_true, 0, 1))
-        y_neg = 1 - y_pos
-        tp = K.sum(y_pos * y_pred_pos)
-        fp = K.sum(y_neg * y_pred_pos)
-        return tp/(tp + fp + K.epsilon())
-
-    def precision_n(self,y_true, y_pred):
-        y_pred_pos = K.round(K.clip(y_pred, 0, 1))
-        y_pred_neg = 1 - y_pred_pos
-        y_pos = K.round(K.clip(y_true, 0, 1))
-        y_neg = 1 - y_pos
-        tn = K.sum(y_neg * y_pred_neg)
-        fn = K.sum(y_pos * y_pred_neg)
-        return tn/(tn + fn + K.epsilon())
-
-class LossFunction(object):
-    # def binary_crossentropy_focal_loss(y_true, y_pred):
-    #     alpha = 0.25; gamma = 2
-    #     label  = y_true[0]
-    #     output = K.clip(y_pred[0], K.epsilon(), 1 - K.epsilon())
-    #     pt = label*output + (1-label)*(1-output)
-    #     bc = - alpha * K.pow(1-pt, gamma) * K.log(pt)
-    #     positive = K.sum(label)
-    #     return K.sum(bc)/positive
-    def binary_focal_loss(gamma=2, alpha=0.25):
-        """
-        Binary form of focal loss.
-        适用于二分类问题的focal loss
-        focal_loss(p_t) = -alpha_t * (1 - p_t)**gamma * log(p_t)
-            where p = sigmoid(x), p_t = p or 1 - p depending on if the label is 1 or 0, respectively.
-        References:
-            https://arxiv.org/pdf/1708.02002.pdf
-        Usage:
-         model.compile(loss=[binary_focal_loss(alpha=.25, gamma=2)], metrics=["accuracy"], optimizer=adam)
-        """
-        alpha = tf.constant(alpha, dtype=tf.float32)
-        gamma = tf.constant(gamma, dtype=tf.float32)
-        def binary_focal_loss_fixed(y_true, y_pred):
-            """
-            y_true shape need be (None,1)
-            y_pred need be compute after sigmoid
-            """
-            y_true = tf.cast(y_true, tf.float32)
-            alpha_t = y_true*alpha + (K.ones_like(y_true)-y_true)*(1-alpha)
-            p_t = y_true*y_pred + (K.ones_like(y_true)-y_true)*(K.ones_like(y_true)-y_pred) + K.epsilon()
-            focal_loss = - alpha_t * K.pow((K.ones_like(y_true)-p_t),gamma) * K.log(p_t)
-            return K.mean(focal_loss)
-        return binary_focal_loss_fixed
 
 class ConvNet(LossFunction, Metrics_Generator):
     def __init__(self, data, nn_model, output_num, input_shape, kernel_size=(3,3),initializer='random_uniform',
@@ -751,12 +373,6 @@ class ConvNet(LossFunction, Metrics_Generator):
 
 
 
-
-
-
-
-
-
 def build_model(nn_model,sample_size,):
     print('sample_size: ',sample_size)
     try:
@@ -913,9 +529,102 @@ def build_model(nn_model,sample_size,):
 
 
 if __name__ == '__main__':
-    nn_model, sample_size = 3, (50,59)
-    model = build_model(nn_model, sample_size)
-    from IPython.display import SVG, display
-    from keras.utils.vis_utils import model_to_dot
-    # plot_model(model,show_shapes=True,to_file='model1.png')
-    # plot_model(model, show_shapes=True, to_file='model.png')
+    # get command line params ------------------------------------------------------------------------------------------
+    homedir = shell('echo $HOME')
+    ## Init container
+    container = {'mCNN_wild_dir': '', 'mCNN_mutant_dir': '', 'val_mCNN_wild_dir': '', 'val_mCNN_mutant_dir': '',
+                 'mCSM_wild_dir': '', 'mCSM_mutant_dir': '', 'val_mCSM_wild_dir': '', 'val_mCSM_mutant_dir': '', }
+    ## Input parameters.
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dataset_name',        type=str,   help='dataset_name.')
+    parser.add_argument('wild_or_mutant',      type=str,   default='wild',  choices=['wild','mutant','stack'],     help='wild, mutant or stack array, default is wild.')
+    parser.add_argument('--val_dataset_name',  type=str,   help='validation dataset_name.')
+    parser.add_argument('-C', '--center',      type=str,   default='CA',    choices=['CA', 'geometric'],   help='The MT site center, default is CA.')
+    ## parameters for reading mCNN array, array locates at: '~/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_50.npz'
+    parser.add_argument('--mCNN',              type=str,   nargs=2,         help='PCA, k_neighbor')
+    ## parameters for reading mCSM array, array locates at: '~/mCNN/dataset/S2648/feature/mCSM/mutant/npz/min_0.1_max_7.0_step_2.0_center_CA_class_2.npz'
+    parser.add_argument('--append',            type=str,   default='False', help='whether append mCSM features to mCNN features, default is False.')
+    parser.add_argument('--mCSM',              type=str,   nargs=4,         help='min, max, step, atom_class_num.')
+    ## Config data processing params
+    parser.add_argument('-n', '--normalize',   type=str,   choices=['norm', 'max'], default='norm', help='normalize_method to choose, default = norm.')
+    parser.add_argument('-s', '--sort',        type=str,
+                        choices=['chain', 'distance', 'octant', 'permutation', 'permutation1', 'permutation2'],
+                        default='chain',       help='row sorting methods to choose, default = "chain".')
+    parser.add_argument('-d', '--random_seed', type=int, nargs=3, default=(1,1,1), help='permutation-seed, k-fold-seed, split-val-seed, default sets to (1,1,1).')
+    ## Config training
+    parser.add_argument('-D', '--model',       type=str, help='Network model to chose.', required=True)
+    parser.add_argument('-K', '--Kfold',       type=int, help='Fold numbers to cross validation.')
+    parser.add_argument('-V', '--verbose',     type=int, choices=[0, 1], default=1, help='the verbose flag, default is 1.')
+    parser.add_argument('-E', '--epoch',       type=int, default=100, help='training epoch, default is 100.')
+    parser.add_argument('-B', '--batch_size',  type=int, default=64,  help='training batch size, default is 64.')
+    ## config hardware
+    parser.add_argument('--CUDA', type=str, default='0', choices=['0', '1', '2', '3'], help='Which gpu to use, default = "0"')
+    ## parser
+    args = parser.parse_args()
+    dataset_name   = args.dataset_name
+    wild_or_mutant = args.wild_or_mutant
+    center = args.center
+    if args.mCNN:
+        str_pca, str_k_neighbor = args.mCNN
+        if wild_or_mutant == 'stack':
+            container['mCNN_wild_dir']       = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,dataset_name,center,str_pca,str_k_neighbor)
+            container['mCNN_mutant_dir']     = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,dataset_name,center,str_pca,str_k_neighbor)
+            if args.val_dataset_name:
+                container['val_mCNN_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
+                container['val_mCNN_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
+        else:
+            container['mCNN_%s_dir'%wild_or_mutant]     = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
+            if args.val_dataset_name:
+                container['val_mCNN_%s_dir'%wild_or_mutant] = '%s/mCNN/dataset/%s/feature/mCNN/%s/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,wild_or_mutant,center,str_pca,str_k_neighbor)
+    elif args.mCSM:
+        min_, max_, step, atom_class_num = args.mCSM
+        if wild_or_mutant == 'stack':
+            container['mCNN_wild_dir']       = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
+            container['mCNN_mutant_dir']     = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
+            if args.val_dataset_name:
+                container['val_mCNN_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+                container['val_mCNN_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+        else:
+            container['mCSM_%s_dir'%wild_or_mutant]     = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
+            if args.val_dataset_name:
+                container['val_mCSM_%s_dir'%wild_or_mutant] = '%s/mCNN/dataset/%s/feature/mCSM/%s/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, wild_or_mutant, min_, max_, step, center, atom_class_num)
+    
+    else:
+        print('[ERROR] parsing feature_type param error, check the argparser code!')
+        exit(0)
+    append = args.append
+    ## parser for data processing
+    normalize_method = args.normalize
+    sort_method = args.sort
+    seed_tuple = tuple(args.random_seed)
+    ## parser for training
+    nn_model = args.model
+    k = args.Kfold
+    verbose = args.verbose
+    epoch = args.epoch
+    batch_size = args.batch_size
+    CUDA = args.CUDA
+    # print input info. ------------------------------------------------------------------------------------------------
+    print('dataset_name: %s, val_dateset_name: %s, wild_or_mutant: %s, center: %s,'
+          '\nmCNN_wild_dir: %s,'
+          '\nmCNN_mutant_dir: %s,'
+          '\nval_mCNN_wild_dir: %s,'
+          '\nval_mCNN_mutant_dir: %s,'
+          '\nmCSM_wild_dir: %s,'
+          '\nmCSM_mutant_dir: %s,'
+          '\nval_mCSM_wild_dir: %s,'
+          '\nval_mCSM_mutant_dir: %s,'
+          '\nappend: %s,'
+          '\nnormalize_method: %s,'
+          '\nsort_method: %s,'
+          '\n(permutation-seed, k-fold-seed, split-val-seed): %r,'
+          '\nmodel: %s,'
+          '\nkfold: %s,'
+          '\nverbose_flag: %s,'
+          '\nepoch: %s,'
+          '\nbatch_size: %s,'
+          '\nCUDA: %r.'
+          % (dataset_name, val_dataset_name, wild_or_mutant, center, container['mCNN_wild_dir'], container['mCNN_mutant_dir'], 
+             container['val_mCNN_wild_dir'], container['val_mCNN_mutant_dir'], container['mCSM_wild_dir'], container['mCSM_mutant_dir'], 
+             container['val_mCSM_wild_dir'], container['val_mCSM_mutant_dir'],append, normalize_method, sort_method, seed_tuple,
+             nn_model, k, verbose, epoch, batch_size, CUDA))

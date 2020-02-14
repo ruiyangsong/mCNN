@@ -11,3 +11,13 @@
 
 # code structure
 * 数据输入网络可能的形式{mCNN:[wild_only,mutant_only,stack,split],mCSM:[wild_only,mutant_only,stack,split]}
+
+
+# code note
+## plot model
+nn_model, sample_size = 3, (50,59)
+model = build_model(nn_model, sample_size)
+from IPython.display import SVG, display
+from keras.utils.vis_utils import model_to_dot
+/# plot_model(model,show_shapes=True,to_file='model1.png')
+/# plot_model(model, show_shapes=True, to_file='model.png'
