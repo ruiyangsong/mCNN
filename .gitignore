@@ -1,34 +1,20 @@
 *.tar.gz
 *.swp
+*.yml
 .idea/
-.vscode/
+# former code backups
+shell_former/
+src_former/
+# large data
+dataset/
+global/
+# tmp file
 tmp/*
 !tmp/note.md
-results/
-msa/
-datasets_array*/
-datasets_array*
-
-src_former/__pycache__/
-src_former/test.py
-src_former_bak/
+# shell result log
+result/
+# saved model
+model/
+# src
 src/test.py
-src/.idea/
-src/.vscode/
 src/__pycache__/
-src/*bak*
-
-src_former/.idea/
-src_former/.vscode/
-
-#datasets/S1925/pdbS1925
-datasets/S1925/
-/datasets/S1925/*.csv
-!S1925.csv
-!S1925_new.csv
-
-#datasets/S2648/pdbS2648
-datasets/S2648/
-/datasets/S2648/*.csv
-!S2648.csv
-!S2648_new.csv
