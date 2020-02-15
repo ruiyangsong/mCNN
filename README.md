@@ -1,7 +1,9 @@
-# mCNN (Predicting Protein Stability Changes upon Single Point Mutation)
+# mCNN 
+**Predicting Protein Stability Changes upon Single Point Mutation**
+
 ## Directory Structure  
 $ ls -F   
-README.md  dataset/  global/  shell_former/  src/  src_former/  tmp/
+README.md  dataset/  model/  result/  shell/  src/
 
 ## reference
 * R Song, H Meng. mCNN: A Convolutional Neural Network Based Method for Predicting Protein
