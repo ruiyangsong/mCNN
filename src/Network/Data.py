@@ -7,6 +7,7 @@
 
 import numpy as np
 import pandas as pd
+import os
 from sklearn.model_selection import StratifiedKFold
 
 class DataPacker(object):
@@ -77,6 +78,9 @@ class DataLoader(DataPacker):
 
 
     def load_data(self,container):
+        for value in container.values():
+            print(value)
+            assert os.path.exists(value)
         # mCNN
         if container['mCNN_wild_dir'] != '' and container['mCNN_mutant_dir'] != '':
             mCNN_wild = np.load(container['mCNN_wild_dir'])
