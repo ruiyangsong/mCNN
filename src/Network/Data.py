@@ -155,7 +155,7 @@ class DataLoader(DataPacker):
                 mCSM_wild_val = np.load(container['val_mCSM_wild_dir'])
                 x,y,ddg = self.sort_row(mCSM_wild_val['x']),mCSM_wild_val['y'],mCSM_wild_val['ddg']
                 self.mCSM_val = self.x_y_ddg(x,y,ddg)
-
+        print(self.mCNN,self.mCSM)
         assert self.mCNN is not None or self.mCSM is not None
 
         if self.mCNN is not None and self.mCSM is not None:
