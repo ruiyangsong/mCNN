@@ -3,6 +3,9 @@
 
 # To Do List
 ## stage 1
+***
+* Data 中加入normalization
+***
 * 开始写 cross_validation
 ## stage 2
 * 若 append mCSM to mCNN 检查 mCNN 和 mCSM 中每一个样本的顺序是否对应！(尽量不用这种拼接方法)

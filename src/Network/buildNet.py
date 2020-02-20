@@ -12,7 +12,6 @@
 import os, sys, argparse
 import numpy as np
 from keras.utils import to_categorical
-from sklearn.model_selection import StratifiedKFold
 from sklearn.utils import class_weight
 from mCNN.processing import shuffle_data, load_sort_data, shell, append_mCSM
 from keras.backend.tensorflow_backend import set_session
@@ -605,7 +604,7 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     CUDA = args.CUDA
     # print input info. ------------------------------------------------------------------------------------------------
-    print('dataset_name: %s, val_dateset_name: %s, wild_or_mutant: %s, center: %s,'
+    print('dataset_name: %s, wild_or_mutant: %s, center: %s,'
           '\nmCNN_wild_dir: %s,'
           '\nmCNN_mutant_dir: %s,'
           '\nval_mCNN_wild_dir: %s,'
@@ -624,7 +623,7 @@ if __name__ == '__main__':
           '\nepoch: %s,'
           '\nbatch_size: %s,'
           '\nCUDA: %r.'
-          % (dataset_name, val_dataset_name, wild_or_mutant, center, container['mCNN_wild_dir'], container['mCNN_mutant_dir'], 
+          % (dataset_name, wild_or_mutant, center, container['mCNN_wild_dir'], container['mCNN_mutant_dir'],
              container['val_mCNN_wild_dir'], container['val_mCNN_mutant_dir'], container['mCSM_wild_dir'], container['mCSM_mutant_dir'], 
              container['val_mCSM_wild_dir'], container['val_mCSM_mutant_dir'],append, normalize_method, sort_method, seed_tuple,
              nn_model, k, verbose, epoch, batch_size, CUDA))

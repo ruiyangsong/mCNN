@@ -17,4 +17,4 @@ result/
 model/
 # src
 src/test.py
-src/__pycache__/
+src/*/__pycache__/
