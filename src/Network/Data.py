@@ -460,10 +460,10 @@ if __name__ == '__main__':
     val_dataset_name = 'S1925'
     center = 'CA'
     str_pca = 'False'
-    str_k_neighbor = '50'
+    str_k_neighbor = '30'
     min_=0.1
-    max_=8.0
-    step=0.5
+    max_=5.0
+    step=2.0
     atom_class_num = '2'
     container = {}
 
