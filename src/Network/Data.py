@@ -469,11 +469,9 @@ if __name__ == '__main__':
     container['val_mCNN_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
 
     container['mCSM_wild_dir']       = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
-            container['mCSM_mutant_dir']     = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
-            if args.val_dataset_name:
-                val_dataset_name = args.val_dataset_name
-                container['val_mCSM_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
-                container['val_mCSM_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+    container['mCSM_mutant_dir']     = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
+    container['val_mCSM_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+    container['val_mCSM_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
 
     sort_method = 'chain'
     permuation_seed = 1
