@@ -10,22 +10,24 @@ import pandas as pd
 import os
 from sklearn.model_selection import StratifiedKFold
 
-class DataPacker(object):
-    def x_y_ddg(self,x,y,ddg):
+class X_Y_DDG(object):
+    def __init__(self,x,y,ddg):
         self.x = x
         self.y = y
         self.ddg = ddg
-    def train_test_val(self,train_data,test_data,val_data):
+
+class TTV(object):
+    def __init__(self,train_data,test_data,val_data):
         self.Train = train_data
         self.Test  = test_data
         self.Val   = val_data
 
-class DataLoader(DataPacker):
+class DataLoader(object):
     '''Load data and sort row'''
-    def __init__(self,container,sort_method,permuation_seed):
+    def __init__(self,container,sort_method,permutation_seed):
         '''load as npz data_object'''
         self.sort = sort_method
-        self.seed = permuation_seed
+        self.permutation_seed = permutation_seed
         # mCNN
         self.mCNN     = None
         self.mCNN_val = None
@@ -70,92 +72,117 @@ class DataLoader(DataPacker):
             indices = np.load('../global/permutation2/indices_%d.npy' % row_num)
         elif self.sort == 'permutation':
             indices = [i for i in range(row_num)]
-            np.random.seed(self.seed)
+            np.random.seed(self.permutation_seed)
             np.random.shuffle(indices)
         for i in range(data_num):
             x[i] = x[i][indices]
         return x
 
-
     def load_data(self,container):
         for value in container.values():
-            print(value)
-            assert os.path.exists(value)
+            if value != '':
+                print(value)
+                assert os.path.exists(value)
         # mCNN
         if container['mCNN_wild_dir'] != '' and container['mCNN_mutant_dir'] != '':
+            print('--load mCNN wild and mutant')
             mCNN_wild = np.load(container['mCNN_wild_dir'])
             mCNN_mutant = np.load(container['mCNN_mutant_dir'])
             x = np.vstack((self.sort_row(mCNN_wild['x']),self.sort_row(mCNN_mutant['x'])))
             y = np.vstack((mCNN_wild['y'],mCNN_mutant['y']))
             ddg = np.vstack((mCNN_wild['ddg'],mCNN_mutant['ddg']))
-            self.mCNN = self.x_y_ddg(x,y,ddg)
+            self.mCNN = X_Y_DDG(x,y,ddg)
+
             # Val data
             if container['val_mCNN_wild_dir'] != '' and container['val_mCNN_mutant_dir'] != '':
+                print('--load val_mCNN wild and mutant')
                 mCNN_wild_val = np.load(container['val_mCNN_wild_dir'])
                 mCNN_mutant_val = np.load(container['val_mCNN_mutant_dir'])
                 x = np.vstack((self.sort_row(mCNN_wild_val['x']), self.sort_row(mCNN_mutant_val['x'])))
                 y = np.vstack((mCNN_wild_val['y'], mCNN_mutant_val['y']))
                 ddg = np.vstack((mCNN_wild_val['ddg'], mCNN_mutant_val['ddg']))
-                self.mCNN_val = self.x_y_ddg(x, y, ddg)
+                self.mCNN_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):',self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
             elif container['val_mCNN_wild_dir'] != '' or container['val_mCNN_mutant_dir'] != '':
                 print('[ERROR] when mCNN_wild and mCNN_mutant are both used, [val_mCNN_wild, val_mCNN_mutant] should assigned None or Two, but one is assigned')
                 exit(0)
-
+            print('TT_data shape:              ',self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
+        # only mutant
         elif container['mCNN_wild_dir'] == '' and container['mCNN_mutant_dir'] != '':
+            print('--load mCNN muatant only')
             mCNN_mutant = np.load(container['mCNN_mutant_dir'])
             x, y, ddg = self.sort_row(mCNN_mutant['x']), mCNN_mutant['y'], mCNN_mutant['ddg']
-            self.mCNN = self.x_y_ddg(x,y,ddg)
+            self.mCNN = X_Y_DDG(x,y,ddg)
             if container['val_mCNN_wild_dir'] == '' and container['val_mCNN_mutant_dir'] != '':
+                print('--load val_mCNN mutant only')
                 mCNN_mutant_val = np.load(container['val_mCNN_mutant_dir'])
                 x,y,ddg = self.sort_row(mCNN_mutant_val['x']),mCNN_mutant_val['y'],mCNN_mutant_val['ddg']
-                self.mCNN_val = self.x_y_ddg(x,y,ddg)
-
+                self.mCNN_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
+            print('TT_data shape:              ', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
+        # only wild
         elif container['mCNN_wild_dir'] != '' and container['mCNN_mutant_dir'] == '':
+            print('--load mCNN wild only')
             mCNN_wild = np.load(container['mCNN_wild_dir'])
             x, y, ddg = self.sort_row(mCNN_wild['x']), mCNN_wild['y'], mCNN_wild['ddg']
-            self.mCNN = self.x_y_ddg(x, y, ddg)
+            self.mCNN = X_Y_DDG(x,y,ddg)
             if container['val_mCNN_wild_dir'] != '' and container['val_mCNN_mutant_dir'] == '':
+                print('--load val_mCNN wild only')
                 mCNN_wild_val = np.load(container['val_mCNN_wild_dir'])
                 x,y,ddg = self.sort_row(mCNN_wild_val['x']),mCNN_wild_val['y'],mCNN_wild_val['ddg']
-                self.mCNN_val = self.x_y_ddg(x,y,ddg)
+                self.mCNN_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
+            print('TT_data shape:              ', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
 
         ## mCSM
         if container['mCSM_wild_dir'] != '' and container['mCSM_mutant_dir'] != '':
+            print('--load mCSM wild and mutant')
             mCSM_wild = np.load(container['mCSM_wild_dir'])
             mCSM_mutant = np.load(container['mCSM_mutant_dir'])
-            x = np.vstack((self.sort_row(mCSM_wild['x']),self.sort_row(mCSM_mutant['x'])))
+            x = np.vstack((mCSM_wild['x'],mCSM_mutant['x']))
             y = np.vstack((mCSM_wild['y'],mCSM_mutant['y']))
             ddg = np.vstack((mCSM_wild['ddg'],mCSM_mutant['ddg']))
-            self.mCNN = self.x_y_ddg(x,y,ddg)
+            self.mCSM = X_Y_DDG(x,y,ddg)
             if container['val_mCSM_wild_dir'] != '' and container['val_mCSM_mutant_dir'] != '':
+                print('--load val_mCSM wild and mutant')
                 mCSM_wild_val = np.load(container['val_mCSM_wild_dir'])
                 mCSM_mutant_val = np.load(container['val_mCSM_mutant_dir'])
-                x = np.vstack((self.sort_row(mCSM_wild_val['x']), self.sort_row(mCSM_mutant_val['x'])))
+                x = np.vstack((mCSM_wild_val['x'], mCSM_mutant_val['x']))
                 y = np.vstack((mCSM_wild_val['y'], mCSM_mutant_val['y']))
                 ddg = np.vstack((mCSM_wild_val['ddg'], mCSM_mutant_val['ddg']))
-                self.mCSM_val = self.x_y_ddg(x, y, ddg)
+                self.mCSM_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
             elif container['val_mCSM_wild_dir'] or container['val_mCSM_mutant_dir']:
                 print('[ERROR] when mCSM_wild and mCSM_mutant are both used, [val_mCSM_wild, val_mCSM_mutant] should assigned None or Two, but one is assigned')
                 exit(0)
-
+            print('TT_data shape:              ', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+        # only mutant
         elif container['mCSM_wild_dir'] == '' and container['mCSM_mutant_dir'] != '':
+            print('--load mCSM mutant lony')
             mCSM_mutant = np.load(container['mCSM_mutant_dir'])
-            x, y, ddg = self.sort_row(mCSM_mutant['x']), mCSM_mutant['y'], mCSM_mutant['ddg']
-            self.mCSM = self.x_y_ddg(x,y,ddg)
-            if container['val_mCNN_wild_dir'] == '' and container['val_mCNN_mutant_dir'] != '':
+            x, y, ddg = mCSM_mutant['x'], mCSM_mutant['y'], mCSM_mutant['ddg']
+            self.mCSM = X_Y_DDG(x,y,ddg)
+            if container['val_mCSM_wild_dir'] == '' and container['val_mCSM_mutant_dir'] != '':
+                print('--load val_mCSM mutant only')
                 mCSM_mutant_val = np.load(container['val_mCSM_mutant_dir'])
-                x,y,ddg = self.sort_row(mCSM_mutant_val['x']),mCSM_mutant_val['y'],mCSM_mutant_val['ddg']
-                self.mCSM_val = self.x_y_ddg(x,y,ddg)
-
+                x,y,ddg = mCSM_mutant_val['x'],mCSM_mutant_val['y'],mCSM_mutant_val['ddg']
+                self.mCSM_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
+            print('TT_data shape:              ', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+        # only wild
         elif container['mCSM_wild_dir'] != '' and container['mCSM_mutant_dir'] == '':
+            print('--load mCSM wild only')
             mCSM_wild = np.load(container['mCSM_wild_dir'])
-            x, y, ddg = self.sort_row(mCSM_wild['x']), mCSM_wild['y'], mCSM_wild['ddg']
-            self.mCSM = self.x_y_ddg(x, y, ddg)
+            x, y, ddg = mCSM_wild['x'], mCSM_wild['y'], mCSM_wild['ddg']
+            self.mCSM = X_Y_DDG(x,y,ddg)
             if container['val_mCSM_wild_dir'] != '' and container['val_mCSM_mutant_dir'] == '':
+                print('--load val_mCSM wild only')
                 mCSM_wild_val = np.load(container['val_mCSM_wild_dir'])
-                x,y,ddg = self.sort_row(mCSM_wild_val['x']),mCSM_wild_val['y'],mCSM_wild_val['ddg']
-                self.mCSM_val = self.x_y_ddg(x,y,ddg)
-        print(self.mCNN,self.mCSM)
+                x,y,ddg = mCSM_wild_val['x'],mCSM_wild_val['y'],mCSM_wild_val['ddg']
+                self.mCSM_val = X_Y_DDG(x,y,ddg)
+                print('val_data shape (before cut):', self.mCSM_val.x.shape, self.mCSM_val.y.shape, self.mCSM_val.ddg.shape)
+            print('TT_data shape:              ', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+
         assert self.mCNN is not None or self.mCSM is not None
 
         if self.mCNN is not None and self.mCSM is not None:
@@ -190,8 +217,8 @@ class DataExtractor(DataLoader):
     ++ NOTICE: validation data are THE SAME for each fold. ++
     '''
 
-    def __init__(self,container, sort_method, permuation_seed, normalize_method = 'norm', val=True):
-        super().__init__(container,sort_method,permuation_seed)
+    def __init__(self,container, sort_method, permutation_seed, normalize_method = 'norm', val=True):
+        super().__init__(container,sort_method,permutation_seed)
 
         self.norm_method = normalize_method
         self.val = val
@@ -209,25 +236,24 @@ class DataExtractor(DataLoader):
         ################################################################################################################
         self.data_lst = data_lst
 
-    def split_kfold(self, fold_num, random_seed=10, train_ratio = 0.7):
-
+    def split_kfold(self, fold_num, k_fold_seed, val_seed, train_ratio = 0.7):
         if fold_num >= 3:
             val_num = int(self.mCNN.x.shape[0] / fold_num)  # val_num are same for mCNN and mCSM !
-            skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=random_seed)
+            skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=k_fold_seed)
             if self.mCNN is not None and self.mCSM is not None:
                 # mCNN
                 if self.mCNN_val is not None:
                     # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, random_seed, val_num)
-                    x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
+                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                 for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
                     tmp_dict = {}
-                    x_y_ddg_train = self.x_y_ddg(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
-                    x_y_ddg_test = self.x_y_ddg(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
+                    x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
+                    x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
                     if self.mCNN_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, random_seed)
-                        x_y_ddg_train = self.x_y_ddg(x_train, y_train, ddg_train)
-                        x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
+                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                     elif self.mCNN_val is None and self.val is False:
                         x_y_ddg_val = None
                     # Nomalization
@@ -240,23 +266,22 @@ class DataExtractor(DataLoader):
                         x_y_ddg_train.x = x_train
                         x_y_ddg_test.x = x_test
                         x_y_ddg_val.x = x_val
-
-                    tmp_dict['mCNN'] = self.train_test_val(x_y_ddg_train,x_y_ddg_test,x_y_ddg_val)
+                    tmp_dict['mCNN'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
                     self.data_lst.append(tmp_dict)
 
                 # mCSM
                 fold_index = 0
                 if self.mCSM_val is not None:
                     # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, random_seed, val_num)
-                    x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
+                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                 for train_index, test_index in skf.split(self.mCSM.x, self.mCSM.y):
-                    x_y_ddg_train = self.x_y_ddg(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
-                    x_y_ddg_test = self.x_y_ddg(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
+                    x_y_ddg_train = X_Y_DDG(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
+                    x_y_ddg_test = X_Y_DDG(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
                     if self.mCSM_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, random_seed)
-                        x_y_ddg_train = self.x_y_ddg(x_train, y_train, ddg_train)
-                        x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
+                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                     elif self.mCSM_val is None and self.val is False:
                         x_y_ddg_val = None
 
@@ -270,24 +295,23 @@ class DataExtractor(DataLoader):
                         x_y_ddg_train.x = x_train
                         x_y_ddg_test.x = x_test
                         x_y_ddg_val.x = x_val
-
-                    self.data_lst[fold_index]['mCSM'] = self.train_test_val(x_y_ddg_train,x_y_ddg_test,x_y_ddg_val)
+                    self.data_lst[fold_index]['mCSM'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
                     fold_index += 1
 
             elif self.mCNN is not None and self.mCSM is None:
                 # mCNN
                 if self.mCNN_val is not None:
                     # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, random_seed, val_num)
-                    x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
+                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                 for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
                     tmp_dict = {}
-                    x_y_ddg_train = self.x_y_ddg(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
-                    x_y_ddg_test = self.x_y_ddg(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
+                    x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
+                    x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
                     if self.mCNN_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, random_seed)
-                        x_y_ddg_train = self.x_y_ddg(x_train, y_train, ddg_train)
-                        x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
+                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                     elif self.mCNN_val is None and self.val is False:
                         x_y_ddg_val = None
                     # Nomalization
@@ -300,24 +324,23 @@ class DataExtractor(DataLoader):
                         x_y_ddg_train.x = x_train
                         x_y_ddg_test.x = x_test
                         x_y_ddg_val.x = x_val
-
-                    tmp_dict['mCNN'] = self.train_test_val(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
+                    tmp_dict['mCNN'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
                     self.data_lst.append(tmp_dict)
 
             elif self.mCSM is not None and self.mCNN is None:
                 # mCSM
                 if self.mCSM_val is not None:
                     # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, random_seed, val_num)
-                    x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
+                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                 for train_index, test_index in skf.split(self.mCSM.x, self.mCSM.y):
                     tmp_dict = {}
-                    x_y_ddg_train = self.x_y_ddg(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
-                    x_y_ddg_test = self.x_y_ddg(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
+                    x_y_ddg_train = X_Y_DDG(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
+                    x_y_ddg_test = X_Y_DDG(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
                     if self.mCSM_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg,random_seed)
-                        x_y_ddg_train = self.x_y_ddg(x_train, y_train, ddg_train)
-                        x_y_ddg_val = self.x_y_ddg(x_val, y_val, ddg_val)
+                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg,val_seed)
+                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
                     elif self.mCSM_val is None and self.val is False:
                         x_y_ddg_val = None
                     # Nomalization
@@ -330,8 +353,7 @@ class DataExtractor(DataLoader):
                         x_y_ddg_train.x = x_train
                         x_y_ddg_test.x = x_test
                         x_y_ddg_val.x = x_val
-
-                    tmp_dict['mCSM'] = self.train_test_val(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
+                    tmp_dict['mCSM'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
                     self.data_lst.append(tmp_dict)
 
         elif fold_num == 2:
@@ -364,7 +386,7 @@ class DataExtractor(DataLoader):
             print('[ERROR] The fold number should not smaller than 2!')
             exit(0)
 
-    def normalize(x_train, x_test, x_val = None, method='norm'):
+    def normalize(self, x_train, x_test, x_val=None, method='norm'):
         train_shape, test_shape = x_train.shape, x_test.shape
         col_train = x_train.shape[-1]
         col_test = x_test.shape[-1]
@@ -445,7 +467,7 @@ class DataExtractor(DataLoader):
 
     def get_val(self, x_y_ddg_obj, seed, val_num):
         '''get val_data from another dataset'''
-        indices = [i for i in range(x_y_ddg_obj.x.size[0])]
+        indices = [i for i in range(x_y_ddg_obj.x.shape[0])]
         np.random.seed(seed)
         np.random.shuffle(indices)
         val_indices = indices[:val_num]
@@ -455,7 +477,7 @@ class DataExtractor(DataLoader):
         return x_val, y_val, ddg_val
 
 if __name__ == '__main__':
-    homedir = '/public/home/sry'
+    homedir = '../../dataset'
     dataset_name = 'S2648'
     val_dataset_name = 'S1925'
     center = 'CA'
@@ -467,22 +489,28 @@ if __name__ == '__main__':
     atom_class_num = '2'
     container = {}
 
-    container['mCNN_wild_dir'] = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz/center_%s_PCA_%s_neighbor_%s.npz' % (homedir, dataset_name, center, str_pca, str_k_neighbor)
-    container['mCNN_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz/center_%s_PCA_%s_neighbor_%s.npz' % (homedir, dataset_name, center, str_pca, str_k_neighbor)
-    container['val_mCNN_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
-    container['val_mCNN_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
-
-    container['mCSM_wild_dir']       = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
-    container['mCSM_mutant_dir']     = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
-    container['val_mCSM_wild_dir']   = '%s/mCNN/dataset/%s/feature/mCSM/wild/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
-    container['val_mCSM_mutant_dir'] = '%s/mCNN/dataset/%s/feature/mCSM/mutant/npz/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+    container['mCNN_wild_dir'] = '%s/%s/mCNN/wild/center_%s_PCA_%s_neighbor_%s.npz' % (homedir, dataset_name, center, str_pca, str_k_neighbor)
+    container['mCNN_mutant_dir'] = '%s/%s/mCNN/mutant/center_%s_PCA_%s_neighbor_%s.npz' % (homedir, dataset_name, center, str_pca, str_k_neighbor)
+    container['val_mCNN_wild_dir']   = '%s/%s/mCNN/wild/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
+    container['val_mCNN_mutant_dir'] = '%s/%s/mCNN/mutant/center_%s_PCA_%s_neighbor_%s.npz' %(homedir,val_dataset_name,center,str_pca,str_k_neighbor)
+    # container['val_mCNN_wild_dir'] = ''
+    # container['val_mCNN_mutant_dir'] = ''
+    container['mCSM_wild_dir']       = '%s/%s/mCSM/wild/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
+    container['mCSM_mutant_dir']     = '%s/%s/mCSM/mutant/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, dataset_name, min_, max_, step, center, atom_class_num)
+    container['val_mCSM_wild_dir']   = '%s/%s/mCSM/wild/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+    container['val_mCSM_mutant_dir'] = '%s/%s/mCSM/mutant/min_%s_max_%s_step_%s_center_%s_class_%s.npz' %(homedir, val_dataset_name, min_, max_, step, center, atom_class_num)
+    # container['val_mCSM_wild_dir'] = ''
+    # container['val_mCSM_mutant_dir'] = ''
 
     sort_method = 'chain'
     permuation_seed = 1
-
+    k_fold_seed = 1
+    val_seed = 1
     fold_num = 5
-    random_seed = 1
 
-    DE = DataExtractor(container,sort_method,permuation_seed)
-    DE.split_kfold(fold_num,random_seed)
+    normalize_method = 'norm'
+    val = True
+
+    DE = DataExtractor(container,sort_method,permuation_seed,normalize_method, val)
+    DE.split_kfold(fold_num,k_fold_seed, val_seed, train_ratio = 0.7)
     print(DE.data_lst)
