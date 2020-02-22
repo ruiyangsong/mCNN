@@ -22,6 +22,6 @@ batch_size       = 128
 CUDA             = '1'
 
 # print('Begin at: %s' %)
-os.system('./Network/buildNet.py %s %s --val_dataset_name %s -C %s --split_val %s --mCNN %s -n %s -s %s -d %s -D %s -K %s -V %s -E %s -B %s --CUDA %s'
+os.system('./Network/BuildNet.py %s %s --val_dataset_name %s -C %s --split_val %s --mCNN %s -n %s -s %s -d %s -D %s -K %s -V %s -E %s -B %s --CUDA %s'
           %(dataset_name, wild_or_mutant, val_dataset_name, center, split_val, mCNN, normalize, sort, random_seed, model, Kfold, verbose, epoch, batch_size, CUDA))
 # print('End at: %s' %)

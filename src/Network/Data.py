@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import os
 from sklearn.model_selection import StratifiedKFold
+from keras.utils import to_categorical
 
 class X_Y_DDG(object):
     def __init__(self,x,y,ddg):
@@ -242,44 +243,56 @@ class DataExtractor(DataLoader):
 
     def split_kfold(self, fold_num, k_fold_seed, val_seed, train_ratio = 0.7):
         print('\n----------Split K-fold data')
+        self.data_lst = [{} for _ in range(fold_num)]
+
         if fold_num >= 3:
-            val_num = int(self.mCNN.x.shape[0] / fold_num)  # val_num are same for mCNN and mCSM !
+            fold_flag = 0
             skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=k_fold_seed)
-            if self.mCNN is not None and self.mCSM is not None:
-                # mCNN
+
+            if self.mCNN is not None:
+                class_num = len(np.unique(self.mCNN.y))
+                val_num = int(self.mCNN.x.shape[0] / fold_num)
                 if self.mCNN_val is not None:
                     # val_data is all the same for each fold
                     x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
                     x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
+                elif self.mCNN_val is None and self.val is False:
+                    x_y_ddg_val = None
                 for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
-                    tmp_dict = {}
                     x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
                     x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
                     if self.mCNN_val is None and self.val:
                         x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
                         x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
                         x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                    elif self.mCNN_val is None and self.val is False:
-                        x_y_ddg_val = None
-                    # Nomalization
+                    # Nomalization, add axis and to_categorical---------------------------------------------------------
                     if x_y_ddg_val is None:
                         x_train, x_test= self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=None, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
+
+                        x_y_ddg_train.x = x_train.reshape(x_train.shape+(1,))
+                        x_y_ddg_train.y = to_categorical(x_y_ddg_train.y,num_classes=class_num)
+                        x_y_ddg_test.x = x_test.reshape(x_test.shape+(1,))
+                        x_y_ddg_test.y = to_categorical(x_y_ddg_test.y, num_classes=class_num)
                     else:
                         x_train, x_test, x_val = self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=x_y_ddg_val.x, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                        x_y_ddg_val.x = x_val
-                    tmp_dict['mCNN'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
-                    self.data_lst.append(tmp_dict)
+                        x_y_ddg_train.x = x_train.reshape(x_train.shape+(1,))
+                        x_y_ddg_train.y = to_categorical(x_y_ddg_train.y, num_classes=class_num)
+                        x_y_ddg_test.x = x_test.reshape(x_test.shape+(1,))
+                        x_y_ddg_test.y = to_categorical(x_y_ddg_test.y, num_classes=class_num)
+                        x_y_ddg_val.x = x_val.reshape(x_val.shape+(1,))
+                        x_y_ddg_val.y = to_categorical(x_y_ddg_val.y, num_classes=class_num)
+                    self.data_lst[fold_flag]['mCNN'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
+                    fold_flag += 1
 
-                # mCSM
-                fold_index = 0
+            if self.mCSM is not None:
+                class_num = len(np.unique(self.mCNN.y))
+                val_num = int(self.mCSM.x.shape[0] / fold_num)
                 if self.mCSM_val is not None:
                     # val_data is all the same for each fold
                     x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
                     x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
+                elif self.mCSM_val is None and self.val is False:
+                    x_y_ddg_val = None
                 for train_index, test_index in skf.split(self.mCSM.x, self.mCSM.y):
                     x_y_ddg_train = X_Y_DDG(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
                     x_y_ddg_test = X_Y_DDG(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
@@ -287,79 +300,23 @@ class DataExtractor(DataLoader):
                         x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
                         x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
                         x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                    elif self.mCSM_val is None and self.val is False:
-                        x_y_ddg_val = None
-
-                    # Nomalization
+                    # Nomalization, add axis and to_categorical---------------------------------------------------------
                     if x_y_ddg_val is None:
                         x_train, x_test= self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=None, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
+                        x_y_ddg_train.x = x_train.reshape(x_train.shape+(1,))
+                        x_y_ddg_train.y = to_categorical(x_y_ddg_train.y, num_classes=class_num)
+                        x_y_ddg_test.x = x_test.reshape(x_test.shape+(1,))
+                        x_y_ddg_test.y = to_categorical(x_y_ddg_test.y, num_classes=class_num)
                     else:
                         x_train, x_test, x_val = self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=x_y_ddg_val.x, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                        x_y_ddg_val.x = x_val
-                    self.data_lst[fold_index]['mCSM'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
-                    fold_index += 1
-
-            elif self.mCNN is not None and self.mCSM is None:
-                # mCNN
-                if self.mCNN_val is not None:
-                    # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
-                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
-                    tmp_dict = {}
-                    x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
-                    x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
-                    if self.mCNN_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
-                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
-                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                    elif self.mCNN_val is None and self.val is False:
-                        x_y_ddg_val = None
-                    # Nomalization
-                    if x_y_ddg_val is None:
-                        x_train, x_test= self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=None, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                    else:
-                        x_train, x_test, x_val = self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=x_y_ddg_val.x, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                        x_y_ddg_val.x = x_val
-                    tmp_dict['mCNN'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
-                    self.data_lst.append(tmp_dict)
-
-            elif self.mCSM is not None and self.mCNN is None:
-                # mCSM
-                if self.mCSM_val is not None:
-                    # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
-                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                for train_index, test_index in skf.split(self.mCSM.x, self.mCSM.y):
-                    tmp_dict = {}
-                    x_y_ddg_train = X_Y_DDG(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
-                    x_y_ddg_test = X_Y_DDG(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
-                    if self.mCSM_val is None and self.val:
-                        x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg,val_seed)
-                        x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
-                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                    elif self.mCSM_val is None and self.val is False:
-                        x_y_ddg_val = None
-                    # Nomalization
-                    if x_y_ddg_val is None:
-                        x_train, x_test= self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=None, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                    else:
-                        x_train, x_test, x_val = self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=x_y_ddg_val.x, method=self.norm_method)
-                        x_y_ddg_train.x = x_train
-                        x_y_ddg_test.x = x_test
-                        x_y_ddg_val.x = x_val
-                    tmp_dict['mCSM'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
-                    self.data_lst.append(tmp_dict)
+                        x_y_ddg_train.x = x_train.reshape(x_train.shape+(1,))
+                        x_y_ddg_train.y = to_categorical(x_y_ddg_train.y, num_classes=class_num)
+                        x_y_ddg_test.x = x_test.reshape(x_test.shape+(1,))
+                        x_y_ddg_test.y = to_categorical(x_y_ddg_test.y, num_classes=class_num)
+                        x_y_ddg_val.x = x_val.reshape(x_val.shape+(1,))
+                        x_y_ddg_val.y = to_categorical(x_y_ddg_val.y, num_classes=class_num)
+                    self.data_lst[fold_flag]['mCSM'] = TTV(x_y_ddg_train, x_y_ddg_test, x_y_ddg_val)
+                    fold_flag += 1
 
         elif fold_num == 2:
             pass
@@ -392,6 +349,7 @@ class DataExtractor(DataLoader):
             exit(0)
 
     def normalize(self, x_train, x_test, x_val=None, method='norm'):
+        '''2D or 3D Tensor'''
         print('--Normalization')
         train_shape, test_shape = x_train.shape, x_test.shape
         col_train = x_train.shape[-1]
@@ -441,6 +399,7 @@ class DataExtractor(DataLoader):
         y = y[indices]
         ddg = ddg[indices]
         return x, y, ddg
+
 
     def split_val(self, train_x_y_ddg_obj, ddg_test, seed):
         '''split val_data from the same dataset'''

@@ -19,3 +19,4 @@ model/
 # src
 src/test.py
 src/Network/*bak*
+src/Network/*former*

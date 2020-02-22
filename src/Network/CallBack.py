@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import keras
+from keras.callbacks import Callback, CallbackList, ModelCheckpoint
 import matplotlib.pyplot as plt
 
-class TrainCallback(keras.callbacks.Callback):
+class TrainCallback(Callback):
     def on_train_begin(self, logs={}):
         self.losses = {'batch':[], 'epoch':[]}
         self.pearson_r = {'batch':[], 'epoch':[]}
