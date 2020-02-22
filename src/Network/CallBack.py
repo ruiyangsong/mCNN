@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import keras
+import matplotlib.pyplot as plt
 
 class TrainCallback(keras.callbacks.Callback):
     def on_train_begin(self, logs={}):

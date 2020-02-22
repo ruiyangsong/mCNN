@@ -2,6 +2,7 @@
 *.swp
 *.yml
 .idea/
+/**/__pycache__/
 # former code backups
 shell_former/
 src_former/
@@ -17,4 +18,4 @@ result/
 model/
 # src
 src/test.py
-src/*/__pycache__/
+src/Network/*bak*

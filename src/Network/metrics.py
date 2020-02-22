@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from keras import backend as K
 
 def pearson_r(y_true, y_pred):
     x = y_true
@@ -14,10 +15,10 @@ def pearson_r(y_true, y_pred):
     r = r_num / r_den
     return K.mean(r)
 
-def rmse(self,y_true, y_pred):
+def rmse(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_pred - y_true), axis=-1))
 
-def mcc(self,y_true, y_pred):
+def mcc(y_true, y_pred):
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -30,14 +31,14 @@ def mcc(self,y_true, y_pred):
     denominator = K.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
     return numerator / (denominator + K.epsilon())
 
-def recall(self,y_true, y_pred):
+def recall(y_true, y_pred):
     # Calculates the recall
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     recall = true_positives / (possible_positives + K.epsilon())
     return recall
 
-def recall_p(self,y_true,y_pred):
+def recall_p(y_true,y_pred):
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -46,7 +47,7 @@ def recall_p(self,y_true,y_pred):
     fn = K.sum(y_pos * y_pred_neg)
     return tp/(tp + fn + K.epsilon())
 
-def recall_n(self,y_true,y_pred):
+def recall_n(y_true,y_pred):
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -55,13 +56,13 @@ def recall_n(self,y_true,y_pred):
     fp = K.sum(y_neg * y_pred_pos)
     return tn / (tn + fp + K.epsilon())
 
-def precision(self,y_true, y_pred):
+def precision(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
     precision = true_positives / (predicted_positives + K.epsilon())
     return precision
 
-def precision_p(self,y_true, y_pred):
+def precision_p(y_true, y_pred):
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))
@@ -70,7 +71,7 @@ def precision_p(self,y_true, y_pred):
     fp = K.sum(y_neg * y_pred_pos)
     return tp/(tp + fp + K.epsilon())
 
-def precision_n(self,y_true, y_pred):
+def precision_n(y_true, y_pred):
     y_pred_pos = K.round(K.clip(y_pred, 0, 1))
     y_pred_neg = 1 - y_pred_pos
     y_pos = K.round(K.clip(y_true, 0, 1))

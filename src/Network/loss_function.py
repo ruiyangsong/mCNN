@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+from keras import backend as K
+import tensorflow as tf
 # def binary_crossentropy_focal_loss(y_true, y_pred):
 #     alpha = 0.25; gamma = 2
 #     label  = y_true[0]
