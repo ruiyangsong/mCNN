@@ -11,6 +11,7 @@
 * 若 append mCSM to mCNN 检查 mCNN 和 mCSM 中每一个样本的顺序是否对应！(尽量不用这种拼接方法)
 * CNN 加入残差
 * Res2Net 实验
+* dilation的作用
 
 # code structure
 * 数据输入网络可能的形式{mCNN:[wild_only,mutant_only,stack,split],mCSM:[wild_only,mutant_only,stack,split]}
