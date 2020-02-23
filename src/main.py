@@ -31,14 +31,14 @@ pathdict = {'log_dir': '../dataset/%s/log'             %dataset_name,
             'bak_dir': '../dataset/%s/bak'             %dataset_name,
             'pdb_dir': '../dataset/%s/pdb'             %dataset_name,
 
-            'rosetta_dir'   : '../dataset/%s/feature/rosetta' %dataset_name,
-            'msa_dir'       : '../dataset/%s/feature/msa'     %dataset_name,
-            'stride_dir'    : '../dataset/%s/feature/stride'  %dataset_name,
+            'rosetta_dir'    : '../dataset/%s/feature/rosetta' %dataset_name,
+            'msa_dir'        : '../dataset/%s/feature/msa'     %dataset_name,
+            'stride_dir'     : '../dataset/%s/feature/stride'  %dataset_name,
 
-            'mCNN_dir'      : '../dataset/%s/feature/mCNN'    %dataset_name,
-            'mCSM_dir'      : '../dataset/%s/feature/mCSM'    %dataset_name,
+            'mCNN_dir'       : '../dataset/%s/feature/mCNN'    %dataset_name,
+            'mCSM_dir'       : '../dataset/%s/feature/mCSM'    %dataset_name,
 
-            'train_data_dir': '../dataset/%s/train_data'      %dataset_name}
+            'saved_model_dir': '../dataset/%s/saved_model'     %dataset_name}
 
 for path_name in pathdict:
     if not os.path.exists(pathdict[path_name]):
