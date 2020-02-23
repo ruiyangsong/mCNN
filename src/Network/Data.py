@@ -107,11 +107,11 @@ class DataLoader(object):
                 y = np.vstack((mCNN_wild_val['y'], mCNN_mutant_val['y']))
                 ddg = np.vstack((mCNN_wild_val['ddg'], mCNN_mutant_val['ddg']))
                 self.mCNN_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):',self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):',self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
             elif container['val_mCNN_wild_dir'] != '' or container['val_mCNN_mutant_dir'] != '':
                 print('[ERROR] when mCNN_wild and mCNN_mutant are both used, [val_mCNN_wild, val_mCNN_mutant] should assigned None or Two, but one is assigned')
                 exit(0)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):',self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):',self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
         # only mutant
         elif container['mCNN_wild_dir'] == '' and container['mCNN_mutant_dir'] != '':
             print('--load mCNN muatant only')
@@ -123,8 +123,8 @@ class DataLoader(object):
                 mCNN_mutant_val = np.load(container['val_mCNN_mutant_dir'])
                 x,y,ddg = self.sort_row(mCNN_mutant_val['x']),mCNN_mutant_val['y'],mCNN_mutant_val['ddg']
                 self.mCNN_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
         # only wild
         elif container['mCNN_wild_dir'] != '' and container['mCNN_mutant_dir'] == '':
             print('--load mCNN wild only')
@@ -136,8 +136,8 @@ class DataLoader(object):
                 mCNN_wild_val = np.load(container['val_mCNN_wild_dir'])
                 x,y,ddg = self.sort_row(mCNN_wild_val['x']),mCNN_wild_val['y'],mCNN_wild_val['ddg']
                 self.mCNN_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCNN_val.x.shape, self.mCNN_val.y.shape, self.mCNN_val.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):', self.mCNN.x.shape, self.mCNN.y.shape, self.mCNN.ddg.shape)
 
         ## mCSM
         if container['mCSM_wild_dir'] != '' and container['mCSM_mutant_dir'] != '':
@@ -156,11 +156,11 @@ class DataLoader(object):
                 y = np.vstack((mCSM_wild_val['y'], mCSM_mutant_val['y']))
                 ddg = np.vstack((mCSM_wild_val['ddg'], mCSM_mutant_val['ddg']))
                 self.mCSM_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
             elif container['val_mCSM_wild_dir'] or container['val_mCSM_mutant_dir']:
                 print('[ERROR] when mCSM_wild and mCSM_mutant are both used, [val_mCSM_wild, val_mCSM_mutant] should assigned None or Two, but one is assigned')
                 exit(0)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
         # only mutant
         elif container['mCSM_wild_dir'] == '' and container['mCSM_mutant_dir'] != '':
             print('--load mCSM mutant lony')
@@ -172,8 +172,8 @@ class DataLoader(object):
                 mCSM_mutant_val = np.load(container['val_mCSM_mutant_dir'])
                 x,y,ddg = mCSM_mutant_val['x'],mCSM_mutant_val['y'],mCSM_mutant_val['ddg']
                 self.mCSM_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape,self.mCSM_val.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
         # only wild
         elif container['mCSM_wild_dir'] != '' and container['mCSM_mutant_dir'] == '':
             print('--load mCSM wild only')
@@ -185,8 +185,8 @@ class DataLoader(object):
                 mCSM_wild_val = np.load(container['val_mCSM_wild_dir'])
                 x,y,ddg = mCSM_wild_val['x'],mCSM_wild_val['y'],mCSM_wild_val['ddg']
                 self.mCSM_val = X_Y_DDG(x,y,ddg)
-                print('val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape, self.mCSM_val.ddg.shape)
-            print('TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
+                print('  val_data shape before cut (x.shape, y.shape, ddg.shape):', self.mCSM_val.x.shape, self.mCSM_val.y.shape, self.mCSM_val.ddg.shape)
+            print('  TT_data shape (x.shape, y.shape, ddg.shape):', self.mCSM.x.shape, self.mCSM.y.shape, self.mCSM.ddg.shape)
 
         assert self.mCNN is not None or self.mCSM is not None
 
@@ -246,26 +246,24 @@ class DataExtractor(DataLoader):
         self.data_lst = [{} for _ in range(fold_num)]
 
         if fold_num >= 3:
-            fold_flag = 0
             skf = StratifiedKFold(n_splits=fold_num, shuffle=True, random_state=k_fold_seed)
-
             if self.mCNN is not None:
+                fold_flag = 0
                 class_num = len(np.unique(self.mCNN.y))
                 val_num = int(self.mCNN.x.shape[0] / fold_num)
-                if self.mCNN_val is not None:
-                    # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
-                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                elif self.mCNN_val is None and self.val is False:
-                    x_y_ddg_val = None
                 for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
-                    print('\n@Fold %s is splitting...'%(fold_flag + 1))
+                    print('\n@mCNN, Fold %s is splitting...'%(fold_flag + 1))
                     x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
                     x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
-                    if self.mCNN_val is None and self.val:
+                    x_y_ddg_val = None
+                    if self.mCNN_val is not None:
+                        x_val, y_val, ddg_val = self.get_val(self.mCNN_val, val_seed, val_num)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
+                    elif self.mCNN_val is None and self.val:
                         x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
                         x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
                         x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
+
                     # Nomalization, add axis and to_categorical---------------------------------------------------------
                     if x_y_ddg_val is None:
                         x_train, x_test= self.normalize(x_y_ddg_train.x, x_y_ddg_test.x, x_val=None, method=self.norm_method)
@@ -286,18 +284,18 @@ class DataExtractor(DataLoader):
                     fold_flag += 1
 
             if self.mCSM is not None:
+                fold_flag = 0
                 class_num = len(np.unique(self.mCNN.y))
                 val_num = int(self.mCSM.x.shape[0] / fold_num)
-                if self.mCSM_val is not None:
-                    # val_data is all the same for each fold
-                    x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
-                    x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
-                elif self.mCSM_val is None and self.val is False:
-                    x_y_ddg_val = None
                 for train_index, test_index in skf.split(self.mCSM.x, self.mCSM.y):
+                    print('\n@mCSM, Fold %s is splitting...' % (fold_flag + 1))
                     x_y_ddg_train = X_Y_DDG(self.mCSM.x[train_index], self.mCSM.y[train_index], self.mCSM.ddg[train_index])
                     x_y_ddg_test = X_Y_DDG(self.mCSM.x[test_index], self.mCSM.y[test_index], self.mCSM.ddg[test_index])
-                    if self.mCSM_val is None and self.val:
+                    x_y_ddg_val = None
+                    if self.mCSM_val is not None:
+                        x_val, y_val, ddg_val = self.get_val(self.mCSM_val, val_seed, val_num)
+                        x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
+                    elif self.mCSM_val is None and self.val:
                         x_train, y_train, ddg_train, x_val, y_val, ddg_val = self.split_val(x_y_ddg_train, x_y_ddg_test.ddg, val_seed)
                         x_y_ddg_train = X_Y_DDG(x_train, y_train, ddg_train)
                         x_y_ddg_val = X_Y_DDG(x_val, y_val, ddg_val)
@@ -448,7 +446,11 @@ class DataExtractor(DataLoader):
 
     def get_val(self, x_y_ddg_obj, seed, val_num):
         '''get val_data from another dataset'''
-        print('--Cut val_data from val_data_all')
+        print('--Cut val_data from loaded val_data_all.'
+              '\n  Before cut, the val.x.shape is: %s'
+              '\n              the val.y.shape is: %s'
+              '\n              the val.ddg.shape is: %s'
+              %(x_y_ddg_obj.x.shape, x_y_ddg_obj.y.shape, x_y_ddg_obj.ddg.shape))
         indices = [i for i in range(x_y_ddg_obj.x.shape[0])]
         np.random.seed(seed)
         np.random.shuffle(indices)
@@ -456,6 +458,10 @@ class DataExtractor(DataLoader):
         x_val = x_y_ddg_obj.x[val_indices]
         y_val = x_y_ddg_obj.y[val_indices]
         ddg_val = x_y_ddg_obj.ddg[val_indices]
+        print('  After cut,  the val.x.shape is: %s'
+              '\n              the val.y.shape is: %s'
+              '\n              the val.ddg.shape is: %s'
+              %(x_val.shape, y_val.shape, ddg_val.shape))
         return x_val, y_val, ddg_val
 
 if __name__ == '__main__':
