@@ -259,6 +259,7 @@ class DataExtractor(DataLoader):
                 elif self.mCNN_val is None and self.val is False:
                     x_y_ddg_val = None
                 for train_index, test_index in skf.split(self.mCNN.x, self.mCNN.y):
+                    print('\n@Fold %s is splitting...'%(fold_flag + 1))
                     x_y_ddg_train = X_Y_DDG(self.mCNN.x[train_index], self.mCNN.y[train_index], self.mCNN.ddg[train_index])
                     x_y_ddg_test = X_Y_DDG(self.mCNN.x[test_index], self.mCNN.y[test_index], self.mCNN.ddg[test_index])
                     if self.mCNN_val is None and self.val:
@@ -350,7 +351,8 @@ class DataExtractor(DataLoader):
 
     def normalize(self, x_train, x_test, x_val=None, method='norm'):
         '''2D or 3D Tensor'''
-        print('--Normalization')
+        print('--Normalization'
+              '\n  norm_method is %s'%method)
         train_shape, test_shape = x_train.shape, x_test.shape
         col_train = x_train.shape[-1]
         col_test = x_test.shape[-1]
@@ -435,7 +437,7 @@ class DataExtractor(DataLoader):
 
         assert x_train_new.shape[0] + x_val.shape[0] == x_train.shape[0]
         assert x_val.shape[0] == ddg_test.shape[0]
-        print('   After split, the train.x.shape is: %s'
+        print('  After split,  the train.x.shape is: %s'
               '\n                the train.y.shape is: %s'
               '\n                the train.ddg.shape is: %s'
               '\n                the Val.x.shape is: %s'

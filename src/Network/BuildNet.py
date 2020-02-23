@@ -9,8 +9,8 @@ from keras.models import Model
 from keras.utils import plot_model
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, regularizers, optimizers
-from mCNN.Network.metrics import pearson_r, rmse, mcc, recall, recall_p, recall_n, precision, precision_p, precision_n
-from mCNN.Network.CallBack import TrainCallback
+from metrics import pearson_r, rmse, mcc, recall, recall_p, recall_n, precision, precision_p, precision_n
+from CallBack import TrainCallback
 
 
 class ConfigTF(object):
@@ -55,13 +55,13 @@ class Conv2DMultiTaskIn1(ConfigTF):
         self.loss_type_lst = ('mse', 'binary_crossentropy')
         self.loss_weights_lst = (0.5, 10.)
         self.metrics_lst = (['mae', pearson_r, rmse],
-                            ['accuracy', mcc, recall, recall_p, recall_n, precision, precision_p, precision_n]),
+                            ['accuracy', mcc, recall, recall_p, recall_n, precision, precision_p, precision_n])
         self.callbacks = None
 
 
     def build(self):
         '''mCNN feature inputs as a whole 2D array'''
-        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:] + (1,))
+        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:])
         conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
         conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
         pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
@@ -176,7 +176,7 @@ class Conv2DClassifierIn1(ConfigTF):
 
     def build(self):
         # mCNN feature inputs as a whole 2D array
-        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:] + (1,))
+        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:])
         conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
         conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
         pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
@@ -268,7 +268,7 @@ class Conv2DRegressorIn1(ConfigTF):
 
     def build(self):
         # mCNN feature inputs as a whole 2D array
-        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:] + (1,))
+        input_layer = Input(shape=self.data_dict['mCNN'].Train.x.shape[1:])
         conv1 = layers.Conv2D(16,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(input_layer)
         conv2 = layers.Conv2D(32,self.kernel_size,kernel_initializer=self.initializer,activation=self.activator)(conv1)
         pool1 = layers.MaxPooling2D(self.pool_size,padding=self.padding_style)(conv2)
