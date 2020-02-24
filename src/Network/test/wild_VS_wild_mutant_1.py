@@ -14,8 +14,8 @@ from keras.utils import to_categorical
 
 def data():
     random_seed = 10
-    # data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz')
-    data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    # data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_30.npz')
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=100,
+                                          max_evals=20,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
