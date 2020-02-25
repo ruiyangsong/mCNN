@@ -65,10 +65,10 @@ def data():
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         summary = True
         verbose = 1
-        CUDA = '0'
+        #CUDA = '0'
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 128
-        epoch = {{choice([25,50,75,100,150,200])}}
+        epoch = {{choice([50,100])}}
 
         kernel_size=(3,3)
         pool_size=(2,2)
@@ -88,11 +88,11 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         #                                           patience=5, min_lr=0.0001)
         my_callback = None
         # config TF-----------------------------------------------------------------------------------------------------
-        os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        set_session(tf.Session(config=config))
+        #os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+        #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        #config = tf.ConfigProto()
+        #config.gpu_options.allow_growth = True
+        #set_session(tf.Session(config=config))
 
         # build --------------------------------------------------------------------------------------------------------
         input_layer = Input(shape=x_train.shape[1:])
@@ -106,10 +106,10 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
         flat = layers.Flatten()(pool3)
 
-        dense = layers.Dense({{choice([128,256,512,1024])}}, activation=activator)(flat)
-        drop1 = layers.Dropout({{uniform(0, 1)}})(dense)
+        dense = layers.Dense(128, activation=activator)(flat)
+        drop1 = layers.Dropout(0.25)(dense)
         dense_BatchNorm = layers.BatchNormalization(axis=-1)(drop1)
-        drop  = layers.Dropout({{uniform(0, 1)}})(dense_BatchNorm)
+        drop  = layers.Dropout(0.25)(dense_BatchNorm)
 
         output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
         model = models.Model(inputs=input_layer, outputs=output_layer)
@@ -141,8 +141,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 
 if __name__ == '__main__':
-    # x_train, y_train, x_test, y_test = data()
-    # Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
+    x_train, y_train, x_test, y_test = data()
+    Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
 
 
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
