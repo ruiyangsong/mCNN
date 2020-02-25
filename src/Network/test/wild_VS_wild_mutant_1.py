@@ -68,15 +68,15 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         #CUDA = '0'
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 128
-        epoch = {{choice([50,100])}}
+        epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
         kernel_size=(3,3)
         pool_size=(2,2)
         initializer='random_uniform'
         padding_style='same'
         activator='relu'
-        l1_regular_rate=0.01
-        l2_regular_rate=0.01
+        l1_regular_rate={{uniform(0,1)}}
+        l2_regular_rate={{uniform(0,1)}}
         optimizer='adam'
         loss_type='binary_crossentropy'
         metrics=['accuracy']
@@ -141,14 +141,14 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 
 if __name__ == '__main__':
-    x_train, y_train, x_test, y_test = data()
-    Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
+    # x_train, y_train, x_test, y_test = data()
+    # Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
 
 
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=20,
+                                          max_evals=5,
                                           trials=Trials())
     for trial in Trials():
         print(trial)

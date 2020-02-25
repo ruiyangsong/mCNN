@@ -66,10 +66,10 @@ def data():
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
-        summary = True
+        summary = False
         verbose = 1
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([16, 32, 64])}}
+        batch_size = 128
         # batch_size = 16
         epoch = {{choice([2, 4, 6])}}
         # epoch = 25
