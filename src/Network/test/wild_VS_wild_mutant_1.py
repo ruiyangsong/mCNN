@@ -63,8 +63,8 @@ def data():
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
-        summary = True
-        verbose = 1
+        summary = False
+        verbose = 0
         #CUDA = '0'
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 128
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=5,
+                                          max_evals=20,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
