@@ -135,7 +135,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
                   shuffle=True,
                   class_weight=class_weights_dict
                   )
-        validation_acc = np.amax(result.history['val_acc'])
+        validation_acc = np.amax(result.history['val_accuracy'])
         print('Best validation acc of epoch:', validation_acc)
         return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
@@ -149,6 +149,7 @@ if __name__ == '__main__':
                                           data=data,
                                           algo=tpe.suggest,
                                           max_evals=20,
+					  keep_temp=True,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
