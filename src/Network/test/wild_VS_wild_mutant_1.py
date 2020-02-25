@@ -63,11 +63,11 @@ def data():
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
-        summary = False
-        verbose = 0
+        summary = True
+        verbose = 1
         #CUDA = '0'
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = 128
+        batch_size = {{choice([32,64,128,256,512])}}
         epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
         kernel_size=(3,3)
@@ -77,7 +77,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         activator='relu'
         l1_regular_rate={{uniform(0,1)}}
         l2_regular_rate={{uniform(0,1)}}
-        optimizer='adam'
+        optimizer={{choice(['adam','rmsprop','SGD'])}}
         loss_type='binary_crossentropy'
         metrics=['accuracy']
         # early_stopping = EarlyStopping(monitor='val_loss', patience=4)
@@ -96,20 +96,20 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
         # build --------------------------------------------------------------------------------------------------------
         input_layer = Input(shape=x_train.shape[1:])
-        conv1 = layers.Conv2D(16,kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
-        conv2 = layers.Conv2D(32,kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
+        conv1 = layers.Conv2D({{choice([8,16,32])}},kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
+        conv2 = layers.Conv2D({{choice([8,16,32])}},kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
         pool1 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv2)
-        conv3 = layers.Conv2D(64,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool1)
+        conv3 = layers.Conv2D({{choice([16,32,64,128,256])}},kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool1)
         conv3_BatchNorm = layers.BatchNormalization(axis=-1)(conv3)
         pool2 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv3_BatchNorm)
-        conv4 = layers.Conv2D(128,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool2)
+        conv4 = layers.Conv2D({{choice([32,64,128,256,512])}},kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool2)
         pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
         flat = layers.Flatten()(pool3)
 
-        dense = layers.Dense(128, activation=activator)(flat)
-        drop1 = layers.Dropout(0.25)(dense)
+        dense = layers.Dense({{choice([128,256,512,1024])}}, activation=activator)(flat)
+        drop1 = layers.Dropout({{uniform(0,1)}})(dense)
         dense_BatchNorm = layers.BatchNormalization(axis=-1)(drop1)
-        drop  = layers.Dropout(0.25)(dense_BatchNorm)
+        drop  = layers.Dropout({{uniform(0,1)}})(dense_BatchNorm)
 
         output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
         model = models.Model(inputs=input_layer, outputs=output_layer)
@@ -148,8 +148,8 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=20,
-					  keep_temp=True,
+                                          max_evals=10,
+                                          keep_temp=True,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
