@@ -177,7 +177,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
                   class_weight=class_weights_dict
                   )
 
-        validation_acc = np.amax(result.history['val_accuracy'])
+        validation_acc = np.amax(result.history['val_acc'])
         print('Best validation acc of epoch:', validation_acc)
         return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
