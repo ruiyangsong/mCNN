@@ -2,7 +2,7 @@ from hyperopt import Trials, STATUS_OK, tpe
 from hyperas import optim
 from hyperas.distributions import choice, uniform
 
-import os
+import os, sys
 import numpy as np
 from sklearn.utils import class_weight
 import tensorflow as tf
@@ -15,8 +15,8 @@ from keras.utils import to_categorical
 def data():
     random_seed = 10
     # data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
-    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
-    # data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_30.npz')
+    # data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_120.npz')
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)
@@ -66,61 +66,93 @@ def data():
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         summary = True
         verbose = 1
-        CUDA = '3'
+
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = {{choice([32,64,128,256,512])}}
         epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
-        kernel_size=(3,3)
-        pool_size=(2,2)
-        conv1_num={{choice([8, 16, 32])}}
-        conv2_num={{choice([16,32,64,128,256])}}
-        conv3_num={{choice([16,32,64,128,256])}}
-        conv4_num={{choice([32, 64, 128, 256, 512])}}
-        dense1_num={{choice([128, 256, 512, 1024])}}
-        drop1_num={{uniform(0, 1)}}
-        drop2_num={{uniform(0, 1)}}
+        conv_block={{choice(['two', 'three', 'four'])}}
 
-        initializer='random_uniform'
-        padding_style='same'
-        activator='relu'
-        l1_regular_rate={{uniform(0,1)}}
-        l2_regular_rate={{uniform(0,1)}}
+        conv1_num={{choice([8, 16, 32, 64])}}
+        conv2_num={{choice([16,32,64,128])}}
+        conv3_num={{choice([32,64,128])}}
+        conv4_num={{choice([32, 64, 128, 256])}}
+
+        dense1_num={{choice([128, 256, 512, 1024])}}
+        dense2_num={{choice([64, 128, 256])}}
+
+        l1_regular_rate = {{uniform(0.00001, 1)}}
+        l2_regular_rate = {{uniform(0.000001, 1)}}
+        drop1_num={{uniform(0.1, 1)}}
+        drop2_num={{uniform(0.0001, 1)}}
+
+        activator={{choice(['relu','elu','tanh'])}}
         optimizer={{choice(['adam','rmsprop','SGD'])}}
+
+        #---------------------------------------------------------------------------------------------------------------
+        kernel_size = (3, 3)
+        pool_size = (2, 2)
+        initializer = 'random_uniform'
+        padding_style = 'same'
         loss_type='binary_crossentropy'
         metrics=['accuracy']
+        my_callback = None
         # early_stopping = EarlyStopping(monitor='val_loss', patience=4)
         # checkpointer = ModelCheckpoint(filepath='keras_weights.hdf5',
         #                                verbose=1,
         #                                save_best_only=True)
         # my_callback = callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2,
         #                                           patience=5, min_lr=0.0001)
-        my_callback = None
-        # config TF-----------------------------------------------------------------------------------------------------
-        os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        set_session(tf.Session(config=config))
+
+
 
         # build --------------------------------------------------------------------------------------------------------
         input_layer = Input(shape=x_train.shape[1:])
-        conv1 = layers.Conv2D(conv1_num,kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
-        conv2 = layers.Conv2D(conv2_num,kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
-        pool1 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv2)
-        conv3 = layers.Conv2D(conv3_num,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool1)
-        conv3_BatchNorm = layers.BatchNormalization(axis=-1)(conv3)
-        pool2 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv3_BatchNorm)
-        conv4 = layers.Conv2D(conv4_num,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool2)
-        pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
-        flat = layers.Flatten()(pool3)
+        conv = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(input_layer)
+        conv = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+        pool = layers.MaxPooling2D(pool_size,padding=padding_style)(conv)
+        if conv_block == 'two':
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
+        elif conv_block == 'three':
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
 
-        dense = layers.Dense(dense1_num, activation=activator)(flat)
-        drop1 = layers.Dropout(drop1_num)(dense)
-        dense_BatchNorm = layers.BatchNormalization(axis=-1)(drop1)
-        drop  = layers.Dropout(drop2_num)(dense_BatchNorm)
+            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
+        elif conv_block == 'four':
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
 
-        output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
+            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
+
+            conv = layers.Conv2D(conv4_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(pool)
+            conv = layers.Conv2D(conv4_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
+            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
+            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
+
+        flat = layers.Flatten()(pool)
+        drop = layers.Dropout(drop1_num)(flat)
+
+        dense = layers.Dense(dense1_num, activation=activator, kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(drop)
+        BatchNorm = layers.BatchNormalization(axis=-1)(dense)
+        drop  = layers.Dropout(drop2_num)(BatchNorm)
+
+        dense = layers.Dense(dense2_num, activation=activator, kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(drop)
+
+        output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(dense)
+
         model = models.Model(inputs=input_layer, outputs=output_layer)
 
         if summary:
@@ -144,12 +176,21 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
                   shuffle=True,
                   class_weight=class_weights_dict
                   )
+
         validation_acc = np.amax(result.history['val_accuracy'])
         print('Best validation acc of epoch:', validation_acc)
         return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
 
 if __name__ == '__main__':
+    # config TF-----------------------------------------------------------------------------------------------------
+    CUDA, max_eval = sys.argv[1:]
+    os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
+
     # x_train, y_train, x_test, y_test = data()
     # Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
 
@@ -157,7 +198,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=20,
+                                          max_evals=int(max_eval),
                                           keep_temp=True,
                                           trials=Trials())
     for trial in Trials():
