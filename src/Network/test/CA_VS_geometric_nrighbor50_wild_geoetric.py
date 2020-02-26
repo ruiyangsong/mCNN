@@ -14,15 +14,12 @@ from keras.utils import to_categorical
 
 def data():
     random_seed = 10
-    ####################################################
-    # 处理data1
-    ####################################################
-    # data_1 = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
-    data_1 = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_120.npz')
-    # data_1 = np.load(r'E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_30.npz')
-    x = data_1['x']
-    y = data_1['y']
-    ddg = data_1['ddg'].reshape(-1)
+    # data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_geometric_PCA_False_neighbor_50.npz')
+    # data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_30.npz')
+    x = data['x']
+    y = data['y']
+    ddg = data['ddg'].reshape(-1)
     train_num = x.shape[0]
     indices = [i for i in range(train_num)]
     np.random.seed(random_seed)
@@ -62,39 +59,6 @@ def data():
     # reshape
     x_train = x_train.reshape(x_train.shape + (1,))
     x_test = x_test.reshape(x_test.shape + (1,))
-    # print(x_train.shape, y_train.shape)
-    ####################################################
-    # 处理data2
-    ####################################################
-    # data_2 = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\mutant\center_CA_PCA_False_neighbor_30.npz')
-    # data_2 = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_30.npz')
-    data_2 = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/mutant/npz/center_CA_PCA_False_neighbor_120.npz')
-    x = data_2['x']
-    y = data_2['y']
-    train_num = x.shape[0]
-    indices = [i for i in range(train_num)]
-    np.random.seed(random_seed)
-    np.random.shuffle(indices)
-    x = x[indices]
-    y = y[indices]
-
-    # sort row default is chain
-    # reshape and one-hot
-    y = to_categorical(y)
-    # normalization
-    x_shape = x.shape
-    col_x = train_shape[-1]
-    x = x.reshape((-1, col_x))
-    x -= mean
-    x /= std
-    x = x.reshape(x_shape)
-    # reshape
-    x = x.reshape(x.shape + (1,))
-
-    x_train = np.vstack((x_train,x))
-    y_train = np.vstack((y_train,y))
-    # print(x_train.shape,y_train.shape)
-
     return x_train, y_train, x_test, y_test
 
 
@@ -104,17 +68,17 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         verbose = 1
 
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([512,32,64,128,256])}}
-        epoch = {{choice([300,25,50,75,100,125,150,175,200])}}
+        batch_size = {{choice([32,64,128,256,512])}}
+        epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
-        conv_block={{choice(['four', 'three', 'two'])}}
+        conv_block={{choice(['two', 'three', 'four'])}}
 
         conv1_num={{choice([8, 16, 32, 64])}}
         conv2_num={{choice([16,32,64,128])}}
         conv3_num={{choice([32,64,128])}}
         conv4_num={{choice([32, 64, 128, 256])}}
 
-        dense1_num={{choice([128, 256, 512, 1024])}}
+        dense1_num={{choice([128, 256, 512])}}
         dense2_num={{choice([64, 128, 256])}}
 
         l1_regular_rate = {{uniform(0.00001, 1)}}
@@ -122,7 +86,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         drop1_num={{uniform(0.1, 1)}}
         drop2_num={{uniform(0.0001, 1)}}
 
-        activator={{choice(['relu','elu','tanh'])}}
+        activator={{choice(['elu','relu','tanh'])}}
         optimizer={{choice(['adam','rmsprop','SGD'])}}
 
         #---------------------------------------------------------------------------------------------------------------
@@ -235,7 +199,7 @@ if __name__ == '__main__':
                                           data=data,
                                           algo=tpe.suggest,
                                           max_evals=int(max_eval),
-                                          keep_temp=True,
+                                          keep_temp=False,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
