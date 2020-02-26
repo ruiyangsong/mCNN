@@ -65,27 +65,32 @@ def data():
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
-
+        CUDA = '2'
         summary = False
         verbose = 1
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 128
         # batch_size = 16
-        epoch = {{choice([2, 4, 6])}}
-        # epoch = 25
+        # epoch = {{choice([2, 4, 6])}}
+        epoch = 25
         kernel_size=(3,3)
         pool_size=(2,2)
         initializer='random_uniform'
         padding_style='same'
         activator='relu'
         regular_rate=(0.001,0.001)
-        dropout_rate = {{uniform(0, 1)}}
-        # dropout_rate = 0.1
+        # dropout_rate = {{uniform(0, 1)}}
+        dropout_rate = 0.1
         optimizer='adam'
         loss_type='binary_crossentropy'
         metrics=('accuracy', mcc, recall, recall_p, recall_n, precision, precision_p, precision_n)
         callbacks = None
-
+        # config TF-----------------------------------------------------------------------------------------------------
+        os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        set_session(tf.Session(config=config))
 
         # build --------------------------------------------------------------------------------------------------------
         # mCNN feature inputs as a whole 2D array
@@ -100,7 +105,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
         flat = layers.Flatten()(pool3)
 
-        dense = layers.Dense(128, activation=activator)(flat)
+        dense = layers.Dense(1024, activation=activator)(flat)
         dense_BatchNorm = layers.BatchNormalization(axis=-1)(dense)
         drop  = layers.Dropout(dropout_rate)(dense_BatchNorm)
 
@@ -134,17 +139,17 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 
 if __name__ == '__main__':
-    # x_train, y_train, x_test, y_test = data()
-    # Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
+    x_train, y_train, x_test, y_test = data()
+    Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
 
-
-    best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
-                                          data=data,
-                                          algo=tpe.suggest,
-                                          max_evals=5,
-                                          trials=Trials())
-    X_train, Y_train, X_test, Y_test = data()
-    print("Evalutation of best performing model:")
-    print(best_model.evaluate(X_test, Y_test))
-    print("Best performing model chosen hyper-parameters:")
-    print(best_run)
+    #
+    # best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
+    #                                       data=data,
+    #                                       algo=tpe.suggest,
+    #                                       max_evals=25,
+    #                                       trials=Trials())
+    # X_train, Y_train, X_test, Y_test = data()
+    # print("Evalutation of best performing model:")
+    # print(best_model.evaluate(X_test, Y_test))
+    # print("Best performing model chosen hyper-parameters:")
+    # print(best_run)
