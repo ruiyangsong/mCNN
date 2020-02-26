@@ -1,2 +1,2 @@
-python ./CA_VS_geometric_nrighbor50_wild_CA.py > ./CA_VS_geometric_nrighbor50_wild_CA.log
-python ./CA_VS_geometric_nrighbor50_wild_geometric.py > ./CA_VS_geometric_nrighbor50_wild_geometric.log
+python ./CA_VS_geometric_nrighbor50_wild_CA.py 3 50 > ./CA_VS_geometric_nrighbor50_wild_CA.log
+python ./CA_VS_geometric_nrighbor50_wild_geometric.py 3 50 > ./CA_VS_geometric_nrighbor50_wild_geometric.log
