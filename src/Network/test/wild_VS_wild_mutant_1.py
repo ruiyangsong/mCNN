@@ -14,7 +14,8 @@ from keras.utils import to_categorical
 
 def data():
     random_seed = 10
-    data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    # data = np.load('/public/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('/dl/home/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
     # data = np.load('E:/projects/mCNN/yanglab/mCNN-master/dataset/S2648/mCNN/wild/center_CA_PCA_False_neighbor_30.npz')
     x = data['x']
     y = data['y']
@@ -65,13 +66,21 @@ def data():
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         summary = True
         verbose = 1
-        #CUDA = '0'
+        CUDA = '3'
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = {{choice([32,64,128,256,512])}}
         epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
         kernel_size=(3,3)
         pool_size=(2,2)
+        conv1_num={{choice([8, 16, 32])}}
+        conv2_num={{choice([16,32,64,128,256])}}
+        conv3_num={{choice([16,32,64,128,256])}}
+        conv4_num={{choice([32, 64, 128, 256, 512])}}
+        dense1_num={{choice([128, 256, 512, 1024])}}
+        drop1_num={{uniform(0, 1)}}
+        drop2_num={{uniform(0, 1)}}
+
         initializer='random_uniform'
         padding_style='same'
         activator='relu'
@@ -88,28 +97,28 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         #                                           patience=5, min_lr=0.0001)
         my_callback = None
         # config TF-----------------------------------------------------------------------------------------------------
-        #os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
-        #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-        #config = tf.ConfigProto()
-        #config.gpu_options.allow_growth = True
-        #set_session(tf.Session(config=config))
+        os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        set_session(tf.Session(config=config))
 
         # build --------------------------------------------------------------------------------------------------------
         input_layer = Input(shape=x_train.shape[1:])
-        conv1 = layers.Conv2D({{choice([8,16,32])}},kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
-        conv2 = layers.Conv2D({{choice([8,16,32])}},kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
+        conv1 = layers.Conv2D(conv1_num,kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
+        conv2 = layers.Conv2D(conv2_num,kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
         pool1 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv2)
-        conv3 = layers.Conv2D({{choice([16,32,64,128,256])}},kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool1)
+        conv3 = layers.Conv2D(conv3_num,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool1)
         conv3_BatchNorm = layers.BatchNormalization(axis=-1)(conv3)
         pool2 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv3_BatchNorm)
-        conv4 = layers.Conv2D({{choice([32,64,128,256,512])}},kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool2)
+        conv4 = layers.Conv2D(conv4_num,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(pool2)
         pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
         flat = layers.Flatten()(pool3)
 
-        dense = layers.Dense({{choice([128,256,512,1024])}}, activation=activator)(flat)
-        drop1 = layers.Dropout({{uniform(0,1)}})(dense)
+        dense = layers.Dense(dense1_num, activation=activator)(flat)
+        drop1 = layers.Dropout(drop1_num)(dense)
         dense_BatchNorm = layers.BatchNormalization(axis=-1)(drop1)
-        drop  = layers.Dropout({{uniform(0,1)}})(dense_BatchNorm)
+        drop  = layers.Dropout(drop2_num)(dense_BatchNorm)
 
         output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
         model = models.Model(inputs=input_layer, outputs=output_layer)
@@ -148,7 +157,7 @@ if __name__ == '__main__':
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=10,
+                                          max_evals=20,
                                           keep_temp=True,
                                           trials=Trials())
     for trial in Trials():
