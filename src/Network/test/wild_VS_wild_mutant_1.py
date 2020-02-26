@@ -68,10 +68,10 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         verbose = 1
 
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([32,64,128,256,512])}}
-        epoch = {{choice([25,50,75,100,125,150,175,200])}}
+        batch_size = {{choice([512,32,64,128,256,512])}}
+        epoch = {{choice([300,50,75,100,125,150,175,200])}}
 
-        conv_block={{choice(['two', 'three', 'four'])}}
+        conv_block={{choice(['four', 'three', 'two'])}}
 
         conv1_num={{choice([8, 16, 32, 64])}}
         conv2_num={{choice([16,32,64,128])}}
