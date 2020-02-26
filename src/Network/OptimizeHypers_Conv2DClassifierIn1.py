@@ -18,7 +18,8 @@ from keras.utils import to_categorical
 
 def data():
     random_seed = 10
-    data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_30.npz')
+    # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)
@@ -133,9 +134,10 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
                   shuffle=True,
                   class_weight=class_weights_dict
                   )
-        validation_acc = np.amax(result.history['val_acc'])
-        print('Best validation acc of epoch:', validation_acc)
-        return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+        print(result.history)
+        # validation_acc = np.amax(result.history['val_acc'])
+        # print('Best validation acc of epoch:', validation_acc)
+        # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
 
 if __name__ == '__main__':
