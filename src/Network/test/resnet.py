@@ -200,7 +200,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 if __name__ == '__main__':
     # config TF-----------------------------------------------------------------------------------------------------
-    CUDA, max_eval, kneighbor = sys.argv[1:]
+    CUDA, max_eval = sys.argv[1:]
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     config = tf.ConfigProto()
