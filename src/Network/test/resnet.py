@@ -108,53 +108,34 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 
         # build --------------------------------------------------------------------------------------------------------
-        input_layer = Input(shape=x_train.shape[1:])
-        conv = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(input_layer)
-        conv = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-        BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-        block_out = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
+        x = Input(shape=x_train.shape[1:])
+        y = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(x)
+        y = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+        y = layers.BatchNormalization(axis=-1)(y)
+        y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
+        residual = layers.Conv2D(conv1_num, 1, strides=2, padding='same')(x)
+        y = layers.add([y, residual])
         if conv_block == 'two':
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-            residual = layers.Conv2D(128, 1, strides=2, padding='same')(input_layer)
-            block_out = layers.add([pool, residual])
+            y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+            y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+            y = layers.BatchNormalization(axis=-1)(y)
+            y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
+            residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
+            y = layers.add([y, residual])
         elif conv_block == 'three':
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-            residual = layers.Conv2D(128, 1, strides=2, padding='same')(input_layer)
-            block_out = layers.add([pool, residual])
+            y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+            y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+            y = layers.BatchNormalization(axis=-1)(y)
+            y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
+            residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
+            y = layers.add([y, residual])
 
-            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-            residual = layers.Conv2D(128, 1, strides=4, padding='same')(input_layer)
-            block_out = layers.add([pool, residual])
-        elif conv_block == 'four':
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-            residual = layers.Conv2D(128, 1, strides=2, padding='same')(input_layer)
-            block_out = layers.add([pool, residual])
+            y = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
+            y = layers.BatchNormalization(axis=-1)(y)
+            y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
 
-            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            pool = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-            residual = layers.Conv2D(128, 1, strides=4, padding='same')(input_layer)
-            block_out = layers.add([pool, residual])
 
-            conv = layers.Conv2D(conv4_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(block_out)
-            conv = layers.Conv2D(conv4_num,kernel_size,padding=padding_style,kernesssl_initializer=initializer,activation=activator)(conv)
-            BatchNorm = layers.BatchNormalization(axis=-1)(conv)
-            block_out = layers.MaxPooling2D(pool_size,padding=padding_style)(BatchNorm)
-
-        flat = layers.Flatten()(block_out)
+        flat = layers.Flatten()(y)
         drop = layers.Dropout(drop1_num)(flat)
 
         dense = layers.Dense(dense1_num, activation=activator, kernel_regularizer=regularizers.l1_l2(l1=l1_regular_rate,l2=l2_regular_rate))(drop)
@@ -165,7 +146,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
         output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(dense)
 
-        model = models.Model(inputs=input_layer, outputs=output_layer)
+        model = models.Model(inputs=x, outputs=output_layer)
 
         if summary:
             model.summary()
