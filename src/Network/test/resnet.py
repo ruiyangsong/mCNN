@@ -194,6 +194,7 @@ if __name__ == '__main__':
 
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
+                                          eval_space=True,
                                           algo=tpe.suggest,
                                           max_evals=int(max_eval),
                                           keep_temp=False,
