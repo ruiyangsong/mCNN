@@ -1,4 +1,4 @@
-from hyperopt import Trials, STATUS_OK, tpe
+from hyperopt import Trials, STATUS_OK, tpe, rand
 from hyperas import optim
 from hyperas.distributions import choice, uniform
 
@@ -184,21 +184,28 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
 
 if __name__ == '__main__':
     # config TF-----------------------------------------------------------------------------------------------------
-    CUDA, max_eval = sys.argv[1:]
+    CUDA, max_eval, algo_flag = sys.argv[1:]
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
+
+    config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.5),)
+
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
+    # set_session(tf.Session(config=config))
 
     # x_train, y_train, x_test, y_test = data()
     # Conv2DClassifierIn1(x_train, y_train, x_test, y_test)
 
+    if algo_flag == 'tpe':
+        algo=tpe.suggest
+    elif algo_flag == 'rand':
+        algo=rand.suggest
 
     best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                           data=data,
                                           eval_space=True,
-                                          algo=tpe.suggest,
+                                          algo=algo,
                                           max_evals=int(max_eval),
                                           keep_temp=False,
                                           verbose=False,
