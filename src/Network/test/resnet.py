@@ -72,12 +72,12 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         batch_size = {{choice([32,64,128,256,512])}}
         epoch = {{choice([25,50,75,100,125,150,175,200])}}
 
-        conv_block={{choice(['two', 'three', 'four'])}}
+        conv_block={{choice(['two', 'three'])}}
+        res_block={{choice(['two','one','zero'])}}
 
         conv1_num={{choice([8, 16, 32, 64])}}
         conv2_num={{choice([16,32,64,128])}}
         conv3_num={{choice([32,64,128])}}
-        conv4_num={{choice([32, 64, 128, 256])}}
 
         dense1_num={{choice([128, 256, 512])}}
         dense2_num={{choice([64, 128, 256])}}
@@ -113,22 +113,25 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test):
         y = layers.Conv2D(conv1_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
         y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
-        residual = layers.Conv2D(conv1_num, 1, strides=2, padding='same')(x)
-        y = layers.add([y, residual])
+        if res_block == 'one':
+            residual = layers.Conv2D(conv1_num, 1, strides=2, padding='same')(x)
+            y = layers.add([y, residual])
         if conv_block == 'two':
             y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.BatchNormalization(axis=-1)(y)
             y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
-            residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
-            y = layers.add([y, residual])
+            if res_block == 'two':
+                residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
+                y = layers.add([y, residual])
         elif conv_block == 'three':
             y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.Conv2D(conv2_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.BatchNormalization(axis=-1)(y)
             y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
-            residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
-            y = layers.add([y, residual])
+            if res_block == 'two':
+                residual = layers.Conv2D(conv2_num, 1, strides=4, padding='same')(x)
+                y = layers.add([y, residual])
 
             y = layers.Conv2D(conv3_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.BatchNormalization(axis=-1)(y)
@@ -198,6 +201,7 @@ if __name__ == '__main__':
                                           algo=tpe.suggest,
                                           max_evals=int(max_eval),
                                           keep_temp=False,
+                                          verbose=False,
                                           trials=Trials())
     for trial in Trials():
         print(trial)
