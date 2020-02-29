@@ -14,7 +14,14 @@ from keras.utils import to_categorical
 
 'suppose that we have neighbor 120'
 
-def data(kneighbor):
+def data(neighbor_obj):
+    kneighbor = neighbor_obj[:-1]
+    obj_flag = neighbor_obj[-1]
+    if obj_flag == 't':
+        obj = 'test_report'
+    elif obj_flag == 'v':
+        obj = 'val_acc'
+
     random_seed = 10
     # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
     data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
@@ -64,11 +71,11 @@ def data(kneighbor):
     # reshape
     x_train = x_train.reshape(x_train.shape + (1,))
     x_test = x_test.reshape(x_test.shape + (1,))
-    return x_train, y_train, x_test, y_test,class_weights_dict
+    return x_train, y_train, x_test, y_test,class_weights_dict,obj
 
 
-def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
-        summary = True
+def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
+        summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = {{choice([32,64,128,256])}}
@@ -198,22 +205,22 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
                   )
         # print('\n----------History:\n%s'%result.history)
 
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(model, x_test, y_test)
+        if obj == 'test_report':
+            acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(model, x_test, y_test)
+            print('\n----------Predict:\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
+                  % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+            objective = acc_test + 5 * mcc_test + recall_p_test+recall_n_test+precision_p_test+precision_n_test
+            return {'loss': -objective, 'status': STATUS_OK, 'model': model}
 
-        print('\n----------Predict:\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
-              % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+        elif obj == 'val_acc':
+            validation_acc = np.amax(result.history['val_acc'])
+            print('Best validation acc of epoch:', validation_acc)
+            return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
-
-        # validation_acc = np.amax(result.history['val_acc'])
-        # print('Best validation acc of epoch:', validation_acc)
-        # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
-
-        obj = acc_test + 5 * mcc_test + recall_p_test+recall_n_test+precision_p_test+precision_n_test
-        return {'loss': -obj, 'status': STATUS_OK, 'model': model}
 
 if __name__ == '__main__':
     import sys
-    neighbor,algo_flag,max_eval,CUDA = sys.argv[1:]
+    neighbor_obj,algo_flag,max_eval,CUDA = sys.argv[1:]
     ## config TF
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -229,7 +236,6 @@ if __name__ == '__main__':
     elif algo_flag == 'atpe':
         algo = atpe.suggest
 
-
         best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                               data=data,
                                               algo=algo,
@@ -238,9 +244,9 @@ if __name__ == '__main__':
                                               trials=Trials(),
                                               keep_temp=True,
                                               verbose=False,
-                                              data_args=(neighbor,))
+                                              data_args=(neighbor_obj,))
 
-        X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
+        X_train, Y_train, X_test, Y_test,class_weights,obj = data(neighbor_obj)
 
         acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
 
