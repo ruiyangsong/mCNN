@@ -1,104 +1,155 @@
-from hyperopt import Trials, STATUS_OK, tpe, rand, atpe
-from hyperas import optim
-from hyperas.distributions import choice, uniform, loguniform
+#coding=utf-8
 
-import os
-import numpy as np
-from sklearn.utils import class_weight
-import tensorflow as tf
-from keras import backend as K
-from keras.backend.tensorflow_backend import set_session
-from keras import Input, models, layers, regularizers, optimizers, callbacks
-from metrics_bak import test_report
-from keras.utils import to_categorical
+try:
+    from hyperopt import Trials, STATUS_OK, tpe, rand, atpe
+except:
+    pass
 
-'suppose that we have neighbor 120'
+try:
+    from hyperas import optim
+except:
+    pass
 
-def data(kneighbor):
-    random_seed = 10
-    # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    x = data['x']
-    y = data['y']
-    ddg = data['ddg'].reshape(-1)
-    train_num = x.shape[0]
-    indices = [i for i in range(train_num)]
-    np.random.seed(random_seed)
-    np.random.shuffle(indices)
-    x = x[indices]
-    y = y[indices]
+try:
+    from hyperas.distributions import choice, uniform, loguniform
+except:
+    pass
 
-    positive_indices, negative_indices = ddg >= 0, ddg < 0
-    x_positive, x_negative = x[positive_indices], x[negative_indices]
-    y_positive, y_negative = y[positive_indices], y[negative_indices]
-    left_positive, left_negative = round(0.8 * x_positive.shape[0]), round(0.8 * x_negative.shape[0])
-    x_train, x_test = np.vstack((x_positive[:left_positive], x_negative[:left_negative])), np.vstack(
-        (x_positive[left_positive:], x_negative[left_negative:]))
-    y_train, y_test = np.vstack((y_positive[:left_positive], y_negative[:left_negative])), np.vstack(
-        (y_positive[left_positive:], y_negative[left_negative:]))
+try:
+    import os
+except:
+    pass
 
-    class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
-    class_weights_dict = dict(enumerate(class_weights))
+try:
+    import numpy as np
+except:
+    pass
 
-    # sort row default is chain
-    # reshape and one-hot
-    y_train = to_categorical(y_train)
-    y_test = to_categorical(y_test)
-    # normalization
-    train_shape = x_train.shape
-    test_shape = x_test.shape
-    col_train = train_shape[-1]
-    col_test = test_shape[-1]
-    x_train = x_train.reshape((-1, col_train))
-    x_test = x_test.reshape((-1, col_test))
-    mean = x_train.mean(axis=0)
-    std = x_train.std(axis=0)
-    std[np.argwhere(std == 0)] = 0.01
-    x_train -= mean
-    x_train /= std
-    x_test -= mean
-    x_test /= std
-    x_train = x_train.reshape(train_shape)
-    x_test = x_test.reshape(test_shape)
+try:
+    from sklearn.utils import class_weight
+except:
+    pass
 
-    # reshape
-    x_train = x_train.reshape(x_train.shape + (1,))
-    x_test = x_test.reshape(x_test.shape + (1,))
-    return x_train, y_train, x_test, y_test,class_weights_dict
+try:
+    import tensorflow as tf
+except:
+    pass
+
+try:
+    from keras import backend as K
+except:
+    pass
+
+try:
+    from keras.backend.tensorflow_backend import set_session
+except:
+    pass
+
+try:
+    from keras import Input, models, layers, regularizers, optimizers, callbacks
+except:
+    pass
+
+try:
+    from metrics_bak import test_report
+except:
+    pass
+
+try:
+    from keras.utils import to_categorical
+except:
+    pass
+
+try:
+    import sys
+except:
+    pass
+from hyperopt import fmin, tpe, hp, STATUS_OK, Trials
+kneighbor = '120'
+random_seed = 10
+# data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+x = data['x']
+y = data['y']
+ddg = data['ddg'].reshape(-1)
+train_num = x.shape[0]
+indices = [i for i in range(train_num)]
+np.random.seed(random_seed)
+np.random.shuffle(indices)
+x = x[indices]
+y = y[indices]
+
+positive_indices, negative_indices = ddg >= 0, ddg < 0
+x_positive, x_negative = x[positive_indices], x[negative_indices]
+y_positive, y_negative = y[positive_indices], y[negative_indices]
+left_positive, left_negative = round(0.8 * x_positive.shape[0]), round(0.8 * x_negative.shape[0])
+x_train, x_test = np.vstack((x_positive[:left_positive], x_negative[:left_negative])), np.vstack(
+    (x_positive[left_positive:], x_negative[left_negative:]))
+y_train, y_test = np.vstack((y_positive[:left_positive], y_negative[:left_negative])), np.vstack(
+    (y_positive[left_positive:], y_negative[left_negative:]))
+
+class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
+class_weights_dict = dict(enumerate(class_weights))
+
+# sort row default is chain
+# reshape and one-hot
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
+# normalization
+train_shape = x_train.shape
+test_shape = x_test.shape
+col_train = train_shape[-1]
+col_test = test_shape[-1]
+x_train = x_train.reshape((-1, col_train))
+x_test = x_test.reshape((-1, col_test))
+mean = x_train.mean(axis=0)
+std = x_train.std(axis=0)
+std[np.argwhere(std == 0)] = 0.01
+x_train -= mean
+x_train /= std
+x_test -= mean
+x_test /= std
+x_train = x_train.reshape(train_shape)
+x_test = x_test.reshape(test_shape)
+
+# reshape
+x_train = x_train.reshape(x_train.shape + (1,))
+x_test = x_test.reshape(x_test.shape + (1,))
 
 
-def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
+def keras_fmin_fnct(space):
+
         summary = True
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([32,64,128,256])}}
-        epochs = {{choice([25,50,75,100,125,150,175,200])}}
+        batch_size = space['batch_size']
+        epochs = space['epochs']
 
-        lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
+        lr = space['lr']
 
-        optimizer = {{choice(['adam','sgd','rmsprop','adagrad','adadelta','adamax','nadam'])}}
+        optimizer = space['optimizer']
 
-        activator = {{choice(['elu', 'relu', 'tanh'])}}
+        activator = space['activator']
 
-        basic_conv2D_layers     = {{choice([1, 2])}}
-        basic_conv2D_filter_num = {{choice([16, 32])}}
+        basic_conv2D_layers     = space['basic_conv2D_layers']
+        basic_conv2D_filter_num = space['basic_conv2D_filter_num']
 
-        loop_dilation2D_layers = {{choice([1, 2, 3, 4, 5])}}
-        loop_dilation2D_filter_num = {{choice([16, 32, 64])}}#used in the loop
-        loop_dilation2D_dropout_rate = {{uniform(0.001, 0.35)}}
+        loop_dilation2D_layers = space['loop_dilation2D_layers']
+        loop_dilation2D_filter_num = space['loop_dilation2D_filter_num']#used in the loop
+        loop_dilation2D_dropout_rate = space['loop_dilation2D_dropout_rate']
         dilation_lower = 2
         dilation_upper = 16
 
         reduce_layers = 3  # conv 3 times: 120 => 60 => 30 => 15
-        reduce_conv2D_filter_num = {{choice([8, 16, 32])}}#used for reduce dimention
-        reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
+        reduce_conv2D_filter_num = space['reduce_conv2D_filter_num']#used for reduce dimention
+        reduce_conv2D_dropout_rate = space['reduce_conv2D_dropout_rate']
         residual_stride = 2
 
-        dense1_num = {{choice([128, 256, 512])}}
-        dense2_num = {{choice([32, 64, 128])}}
+        dense1_num = space['dense1_num']
+        dense2_num = space['dense2_num']
 
-        drop1_num = {{uniform(0.0001, 0.3)}}
-        drop2_num = {{uniform(0.0001, 0.1)}}
+        drop1_num = space['drop1_num']
+        drop2_num = space['drop2_num']
 
         kernel_size=(3,3)
         pool_size=(2,2)
@@ -212,40 +263,22 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
         obj = acc_test + 5 * mcc_test + recall_p_test+recall_n_test+precision_p_test+precision_n_test
         return {'loss': -obj, 'status': STATUS_OK, 'model': model}
 
-if __name__ == '__main__':
-    import sys
-    neighbor,algo_flag,max_eval,CUDA = sys.argv[1:]
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
-    set_session(tf.Session(config=config))
-
-    if algo_flag == 'tpe':
-        algo = tpe.suggest
-    elif algo_flag == 'rand':
-        algo = rand.suggest
-    elif algo_flag == 'atpe':
-        algo = atpe.suggest
-
-
-        best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
-                                              data=data,
-                                              algo=algo,
-                                              eval_space=True,
-                                              max_evals=int(max_eval),
-                                              trials=Trials(),
-                                              keep_temp=True,
-                                              verbose=False,
-                                              data_args=(neighbor,))
-
-        X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
-
-        print('\n----------Predict:'
-              '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
-              % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
-
-        print("Best performing model chosen hyper-parameters:")
-        print(best_run)
+def get_space():
+    return {
+        'batch_size': hp.choice('batch_size', [32,64,128,256]),
+        'epochs': hp.choice('epochs', [25,50,75,100,125,150,175,200]),
+        'lr': hp.loguniform('lr', np.log(1e-4), np.log(1e-2)),
+        'optimizer': hp.choice('optimizer', ['adam','sgd','rmsprop','adagrad','adadelta','adamax','nadam']),
+        'activator': hp.choice('activator', ['elu', 'relu', 'tanh']),
+        'basic_conv2D_layers': hp.choice('basic_conv2D_layers', [1, 2]),
+        'basic_conv2D_filter_num': hp.choice('basic_conv2D_filter_num', [16, 32]),
+        'loop_dilation2D_layers': hp.choice('loop_dilation2D_layers', [1, 2, 3, 4, 5]),
+        'loop_dilation2D_filter_num': hp.choice('loop_dilation2D_filter_num', [16, 32, 64]),
+        'loop_dilation2D_dropout_rate': hp.uniform('loop_dilation2D_dropout_rate', 0.001, 0.35),
+        'reduce_conv2D_filter_num': hp.choice('reduce_conv2D_filter_num', [8, 16, 32]),
+        'reduce_conv2D_dropout_rate': hp.uniform('reduce_conv2D_dropout_rate', 0.001, 0.25),
+        'dense1_num': hp.choice('dense1_num', [128, 256, 512]),
+        'dense2_num': hp.choice('dense2_num', [32, 64, 128]),
+        'drop1_num': hp.uniform('drop1_num', 0.0001, 0.3),
+        'drop2_num': hp.uniform('drop2_num', 0.0001, 0.1),
+    }
