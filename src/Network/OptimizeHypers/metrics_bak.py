@@ -129,6 +129,21 @@ def test_report(model,x_test,y_test):
     mcc = (tp*tn-fp*fn)/(np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))+K.epsilon())
     return acc, mcc, recall_p,recall_n,precision_p,precision_n
 
+def test_report_reg(model,x_test,ddg_test):
+    import numpy as np
+    import scipy.stats as stats
+    ddg_pred = model.predict(x_test, batch_size=32, verbose=0)  # 测试数据的ddg值
+    ddg_pred = ddg_pred.reshape(-1)
+    # print(ddg_pred,ddg_test)
+    # ## save ddg_real ad ddg_pre to npz array.
+    # file_name = 'nn_model' + str(nn_model) +'_'+ time.strftime("%Y%m%d%H%M%S", time.localtime())
+    # np.savez('./%s.npz'%file_name, ddg_real=ddg_test, ddg_pred=ddg_pred)
+
+    pearson_coeff, p_value = stats.pearsonr(ddg_test, ddg_pred)
+    # std = np.std(ddg_test-ddg_pred)
+    std = np.sum((ddg_test - ddg_pred) ** 2) / (len(ddg_test) - 2)
+    return pearson_coeff, std
+
 def tp_Concise(y,z):
     tp, tn, fp, fn = contingency_table(y, z)
     return tp
