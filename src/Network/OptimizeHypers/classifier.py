@@ -244,7 +244,7 @@ if __name__ == '__main__':
                                               eval_space=True,
                                               max_evals=int(max_eval),
                                               trials=Trials(),
-                                              keep_temp=True,
+                                              keep_temp=False,
                                               verbose=False,
                                               data_args=(neighbor_obj,))
 
