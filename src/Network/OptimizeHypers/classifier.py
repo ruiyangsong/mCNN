@@ -220,13 +220,15 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
 
 if __name__ == '__main__':
     import sys
-    neighbor_obj,algo_flag,max_eval,CUDA = sys.argv[1:]
+    neighbor_obj,algo_flag,max_eval,CUDA,CUDA_rate = sys.argv[1:]
     ## config TF
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
-    # config.gpu_options.allow_growth = True
+    if float(CUDA_rate)<0.1:
+        config.gpu_options.allow_growth = True
+    else:
+        config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
     set_session(tf.Session(config=config))
 
     if algo_flag == 'tpe':
