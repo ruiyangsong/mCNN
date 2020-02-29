@@ -46,8 +46,8 @@ def data(neighbor_obj):
     x_test  = np.vstack((x_positive[left_positive:], x_negative[left_negative:]))
     y_train = np.vstack((y_positive[:left_positive], y_negative[:left_negative]))
     y_test  = np.vstack((y_positive[left_positive:], y_negative[left_negative:]))
-    ddg_train = np.vstack((ddg_positive[:left_positive], ddg_negative[:left_negative]))
-    ddg_test  = np.vstack((ddg_positive[left_positive:], ddg_negative[left_negative:]))
+    ddg_train = np.hstack((ddg_positive[:left_positive], ddg_negative[:left_negative]))
+    ddg_test  = np.hstack((ddg_positive[left_positive:], ddg_negative[left_negative:]))
 
     class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
     class_weights_dict = dict(enumerate(class_weights))
