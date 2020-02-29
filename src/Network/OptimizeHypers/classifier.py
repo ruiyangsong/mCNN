@@ -196,14 +196,13 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
                   shuffle=True,
                   class_weight=class_weights_dict
                   )
-        print('\n----------History:'
-              '\n%s'%result.history)
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(
-            model, x_test, y_test)
-        print('\n----------Predict:'
-              '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
+        # print('\n----------History:\n%s'%result.history)
+
+        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(model, x_test, y_test)
+
+        print('\n----------Predict:\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
               % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
-        # return model
+
 
         # validation_acc = np.amax(result.history['val_acc'])
         # print('Best validation acc of epoch:', validation_acc)
@@ -215,11 +214,12 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict):
 if __name__ == '__main__':
     import sys
     neighbor,algo_flag,max_eval,CUDA = sys.argv[1:]
-
+    ## config TF
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    # config.gpu_options.allow_growth = True
     set_session(tf.Session(config=config))
 
     if algo_flag == 'tpe':
@@ -241,9 +241,10 @@ if __name__ == '__main__':
                                               data_args=(neighbor,))
 
         X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
+
         acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
 
-        print('\n----------Predict:'
+        print('\n----------Predict On Best Model:'
               '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
               % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
 
