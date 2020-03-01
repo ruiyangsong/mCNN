@@ -144,6 +144,8 @@ def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, c
             elif optimizer == 'nadam':
                 chosed_optimizer = optimizers.Nadam(lr=lr)
 
+        K.clear_session()
+
         # build --------------------------------------------------------------------------------------------------------
         ## basic Conv2D
         input_layer = Input(shape=x_train.shape[1:])
