@@ -1,4 +1,13 @@
 # Keras踩坑
+
+## 0.自定义metrics
+**!! ATTENTION !!**
+* For those custom metrics, the average accross minibatches is namely not equal to the metric evaluated on the whole dataset.
+* The metric on the validation set is calculated in batches, and then averaged (of course the trained model at the end of the epoch is used,
+ in contrast to how the metric score is calculated for the training set)
+* 1. How to compute precision and recall in Keras? --> https://www.thinbug.com/q/43076609
+* 2. How are metrics computed in Keras? --> https://stackoverflow.com/questions/49359489/how-are-metrics-computed-in-keras
+
 ## 1.设置earlystopping
 
 ```python
@@ -107,9 +116,21 @@ gpu_model.fit(..., callbacks=[
 **如果要<span style="color:#ff4635;">加上earlystopping</span>，则修改fit 的内容，比如：**
 
 ```python
-hist = gpu_model.fit(X_train, y_train, batch_size={{choice([64, 128, 256])}}, epochs=100, verbose=1, 
-                callbacks=[AltModelCheckpoint(filepath, model, monitor='val_loss', verbose=1, save_best_only=True, mode='min')],
-                validation_data=(X_test, y_test))
+hist = gpu_model.fit(X_train, y_train,
+                     batch_size={{choice([64, 128, 256])}},
+                     epochs=100,
+                     verbose=1, 
+                     callbacks=[
+                         AltModelCheckpoint(
+                             filepath,
+                             model,
+                             monitor='val_loss',
+                             verbose=1,
+                             save_best_only=True,
+                             mode='min'
+                         )
+                     ],
+                     validation_data=(X_test, y_test))
 ```
 
 **<span style="color:#f33b45;">因为AltModelCheckpoint是继承自ModelCheckpoint，所以可以直接添加。</span>**
@@ -208,22 +229,25 @@ def train():
 
 ```python
 input_embed = Input(shape=(700,), name='input_embed')
-    input_extra = Input(shape=(700, 25,), name='input_extra')
-    embedded = Embedding(num_amino_acids, 50, input_length=700)(input_embed)
-    x = concatenate([embedded, input_extra], axis=2)
-    ......
-    x = BatchNormalization()(x)
-    output = Activation(activation='sigmoid')(x)
-    model = Model(inputs=[input_embed, input_extra], outputs=output)
+input_extra = Input(shape=(700, 25,), name='input_extra')
+embedded = Embedding(num_amino_acids, 50, input_length=700)(input_embed)
+x = concatenate([embedded, input_extra], axis=2)
+......
+x = BatchNormalization()(x)
+output = Activation(activation='sigmoid')(x)
+model = Model(inputs=[input_embed, input_extra], outputs=output)
 
-    gpu_model = multi_gpu_model(model, 4)
-    gpu_model.compile(...)
-    callback_list = [early_stopping, checkpointer]
-    hist = gpu_model.fit(x={'input_embed': X_all, 'input_extra': X_extra},
-                         y=y_all,
-                         epochs=100, batch_size=256,
-                         verbose=1, callbacks=callback_list,
-                         class_weight=class_weights, validation_split=0.2)
+gpu_model = multi_gpu_model(model, 4)
+gpu_model.compile(...)
+callback_list = [early_stopping, checkpointer]
+hist = gpu_model.fit(x={'input_embed': X_all, 'input_extra': X_extra},
+                     y=y_all,
+                     epochs=100,
+                     batch_size=256,
+                     verbose=1,
+                     callbacks=callback_list,
+                     class_weight=class_weights,
+                     validation_split=0.2)
 ```
 虽然设置了validation_split但是在训练的时候只会在每一个epoch验证，每一个batch没有验证，而且，对于多输入来说，不能对validation_data里面添加多输入.
 
@@ -306,7 +330,7 @@ def data_generator(data1, data2, targets, batch_size):
 
 # 训练的时候用fit_generator
 hist=model.fit_generator(generator=data_generator(X_train,X_extra,y_train,batch_size=batch_size),
-                                 steps_per_epoch=(len(X_train)+batch_size-1)//batch_size,
-                                 epochs=150,verbose=1,callbacks=callback_list,
-                                 validation_data=([X_validate,X_validate_extra],y_validate))
+                         steps_per_epoch=(len(X_train)+batch_size-1)//batch_size,
+                         epochs=150,verbose=1,callbacks=callback_list,
+                         validation_data=([X_validate,X_validate_extra],y_validate))
 ```
