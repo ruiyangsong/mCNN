@@ -25,7 +25,7 @@ model.fit(X_train,y_train,epochs=100,batch_size=128,
 best_run,best_model=optim.minimize(model=train,data=prepare_data,algo=tpe.suggest, max_evals=100,trials=Trials())
 ```
 
-在这里max_eval=100表示在训练过程中要对不同的组合评估100次，每一次的模型参数都不一样。</span>这个只可以根据实际参数的多少来设置，越大可能训练的模型就越多。</p>
+在这里max_eval=100表示在训练过程中要对不同的组合评估100次，每一次的模型参数都不一样。</span>这个只可以根据实际参数的多少来设置，越大可能训练的模型就越多。**
 
 ## 3.模型的评估
 
@@ -70,7 +70,7 @@ pyplot.show()
 
 ## 5.诊断LSTM网络模型的过拟合和欠拟合
 
-<p><a href="https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc" rel="nofollow">https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc</a></p>
+**<a href="https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc" rel="nofollow">https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc</a>**
 
 ## 6.使用多GPU跑模型，并保存模型
 
@@ -146,7 +146,7 @@ gpu_model.complie()
 
 3.做预测: gpu_model.predict()
 
-<p><a href="https://github.com/keras-team/keras/issues/9342">https://github.com/keras-team/keras/issues/9342</a></p>
+**<a href="https://github.com/keras-team/keras/issues/9342">https://github.com/keras-team/keras/issues/9342</a>**
 
 **在keras的 saving.py文件中,添加这个：**
 
@@ -190,13 +190,13 @@ def train():
 
 **注意：使用多GPU训练的模型需要依旧使用多GPU来做预测，比如在节点g-1-4上训练，就仍要使用g-1-4predict，并且使用相同的GPU数量。**
 
-**<span style="color:#ff0000;"><strong>注</strong></span>：</p>
+**<span style="color:#ff0000;"><strong>注</strong></span>：**
 
-<p>1.在使用多GPU并且设置ModelCheckpoint的时候，不能设置save_model_only=True,只有设置save_weights_only=True的时候，才能够正常训练模型，并且代码运行正常结束。</p>
+**1.在使用多GPU并且设置ModelCheckpoint的时候，不能设置save_model_only=True,只有设置save_weights_only=True的时候，才能够正常训练模型，并且代码运行正常结束。**
 
-<p>2.使用多GPU+Hyperas+ModelCheckpoint</strong>时，因为按照第一条只能保存权重，而且hyperas的优化得到的best_model不能进行正常报错，会报错，can not pickle the module。并且即使能够保存，在进行预测的时候也要重构模型，并且要使用训练时相同的GPU数，但是却无法得知最优的是哪一个权重。因此就无法进行预测。</p>
+**2.使用多GPU+Hyperas+ModelCheckpoint</strong>时，因为按照第一条只能保存权重，而且hyperas的优化得到的best_model不能进行正常报错，会报错，can not pickle the module。并且即使能够保存，在进行预测的时候也要重构模型，并且要使用训练时相同的GPU数，但是却无法得知最优的是哪一个权重。因此就无法进行预测。**
 
-<p>解决方法是：</p>
+**解决方法是：**
 
 ```python
 def train():
@@ -219,11 +219,11 @@ def train():
     return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 ```
 
-<p>注意保存的时候是model，返回的模型是model</p>
+**注意保存的时候是model，返回的模型是model**
 
-<p>虽然没有compile model但是在fit结束后，model的权重就是gpu_model的权重。   </p>
+**虽然没有compile model但是在fit结束后，model的权重就是gpu_model的权重。   **
 
-<p> 经过测试，是可以得到best_model的。并且可以在单GPU上进行预测。</p>
+** 经过测试，是可以得到best_model的。并且可以在单GPU上进行预测。**
 
 ## 7.keras模型的多输入（此处使用了多GPU以及hyperas调参工具）
 
@@ -251,7 +251,7 @@ hist = gpu_model.fit(x={'input_embed': X_all, 'input_extra': X_extra},
 ```
 虽然设置了validation_split但是在训练的时候只会在每一个epoch验证，每一个batch没有验证，而且，对于多输入来说，不能对validation_data里面添加多输入.
 
-<p>注意：此处多次踩坑，特别重要，下面的代码中的X_train,X_extra,y_train很重要，必须得在prepare_data（）函数中是这个名称,否则会报错名称不存在</p>
+**注意：此处多次踩坑，特别重要，下面的代码中的X_train,X_extra,y_train很重要，必须得在prepare_data（）函数中是这个名称,否则会报错名称不存在**
 
 ```python
 def prepare_data():
@@ -266,7 +266,7 @@ if __name__ == "__main__":
 
 ## 8.设置earlystoppping的monitor监控自定义的值，比如auc值。
 
-<p>方法一：经过试验，当使用hyperas进行调参时，会报错，说没有auc_roc</p>
+**方法一：经过试验，当使用hyperas进行调参时，会报错，说没有auc_roc**
 
 ```python
 from tensorflow.contrib.metrics import streaming_auc
@@ -293,21 +293,22 @@ def train():
                                save_best_only=True,save_weights_only=True, mode='max')
 ```
 
-## 9.keras+hyperas调参时，出现00M happens的情况，分为三种情况：
+## 9.keras+hyperas调参时，出现OOM happens的情况，解决方案：
 
-<p>①hyperas调参时，默认返回的是</p>
+**1.hyperas调参时，默认返回的是**
 
 ```python
 # return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 ```
 
-<p>但是当调参次数max_evals设置很大，比如设置100或者200时，容易出现超出显存，此时，只需要将上面的代码修改为以下部分便可解决：</p>
+**但是当调参次数max_evals设置很大，比如设置100或者200时，容易出现超出显存，此时，只需要将上面的代码修改为以下部分便可解决：**
 
 ```python
 return {'loss': -acc, 'status': STATUS_OK}
 ```
 
-<p>②在每一次调参时，在代码部分要加上K.clear_session()</p>
+此外，在每一次调参时，在代码部分要加上K.clear_session()**  
+refers to Issue [#259](https://github.com/maxpumperla/hyperas/issues/259) of Hyperas.
 
 ```python
 def train():
@@ -316,7 +317,7 @@ def train():
     return {'loss': -acc, 'status': STATUS_OK}
 ```
 
-<p>③keras默认的训练函数为fit，fit函数默认一次性加载全部的数据，使用fit_generator代替fit函数，分批加载数据。</p>
+**2.keras默认的训练函数为fit，fit函数默认一次性加载全部的数据，使用fit_generator代替fit函数，分批加载数据。**
 
 ```python
 def data_generator(data1, data2, targets, batch_size):
@@ -334,3 +335,5 @@ hist=model.fit_generator(generator=data_generator(X_train,X_extra,y_train,batch_
                          epochs=150,verbose=1,callbacks=callback_list,
                          validation_data=([X_validate,X_validate_extra],y_validate))
 ```
+**3.减少batch_size**  
+refers to Issue [#16](https://github.com/maxpumperla/hyperas/issues/16) of Hyperas.

@@ -75,6 +75,7 @@ def data(neighbor_obj):
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
+        K.clear_session()
         summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
@@ -138,8 +139,6 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
                 chosed_optimizer = optimizers.Adamax(lr=lr)
             elif optimizer == 'nadam':
                 chosed_optimizer = optimizers.Nadam(lr=lr)
-
-        K.clear_session()
 
         # build --------------------------------------------------------------------------------------------------------
         ## basic Conv2D

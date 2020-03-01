@@ -80,6 +80,7 @@ def data(neighbor_obj):
 
 
 def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj):
+        K.clear_session()
         summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
@@ -144,7 +145,7 @@ def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, c
             elif optimizer == 'nadam':
                 chosed_optimizer = optimizers.Nadam(lr=lr)
 
-        K.clear_session()
+
 
         # build --------------------------------------------------------------------------------------------------------
         ## basic Conv2D
@@ -220,7 +221,8 @@ def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, c
         elif obj == 'val_mae':
             validation_mae = np.amax(result.history['val_mean_absolute_error'])
             print('Best validation mae of epoch:', validation_mae)
-            return {'loss': validation_mae, 'status': STATUS_OK, 'model': model}
+            # return {'loss': validation_mae, 'status': STATUS_OK, 'model': model}
+            return {'loss': validation_mae, 'status': STATUS_OK}
 
 
 if __name__ == '__main__':
