@@ -79,7 +79,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([32,64,128,256])}}
+        batch_size = {{choice([32,64,128])}}
         epochs = {{choice([25,50,75,100,125,150,175,200])}}
 
         lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
@@ -249,13 +249,12 @@ if __name__ == '__main__':
                                               verbose=False,
                                               data_args=(neighbor_obj,))
 
-        X_train, Y_train, X_test, Y_test,class_weights,obj = data(neighbor_obj)
-
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
-
-        print('\n----------Predict On Best Model:'
-              '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
-              % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+        ## This block only works when model was returned.
+        # X_train, Y_train, X_test, Y_test,class_weights,obj = data(neighbor_obj)
+        # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
+        # print('\n----------Predict On Best Model:'
+        #       '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
+        #       % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
 
         print("Best performing model chosen hyper-parameters:")
         print(best_run)

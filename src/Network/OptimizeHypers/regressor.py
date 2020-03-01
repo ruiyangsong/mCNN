@@ -84,7 +84,7 @@ def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, c
         summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([32,64,128,256])}}
+        batch_size = {{choice([32,64,128])}}
         epochs = {{choice([25,50,75,100,125,150,175,200])}}
 
         lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
@@ -254,12 +254,10 @@ if __name__ == '__main__':
                                               verbose=False,
                                               data_args=(neighbor_obj,))
 
-        x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj = data(neighbor_obj)
-
-        pearson_coeff, std = test_report_reg(best_model, x_test, ddg_test)
-
-        print('\n----------Predict On Best Model:'
-              '\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
+        # x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj = data(neighbor_obj)
+        # pearson_coeff, std = test_report_reg(best_model, x_test, ddg_test)
+        # print('\n----------Predict On Best Model:'
+        #       '\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
 
         print("Best performing model chosen hyper-parameters:")
         print(best_run)
