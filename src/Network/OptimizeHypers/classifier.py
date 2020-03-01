@@ -80,18 +80,18 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = {{choice([32,64,128])}}
-        epochs = {{choice([25,50,75,100,125,150,175,200])}}
+        epochs = {{choice([50,100,150,200])}}
 
         lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
 
-        optimizer = {{choice(['adam','sgd','rmsprop','adagrad','adadelta','adamax','nadam'])}}
+        optimizer = {{choice(['adam','sgd','rmsprop'])}}
 
         activator = {{choice(['elu', 'relu', 'tanh'])}}
 
         basic_conv2D_layers     = {{choice([1, 2])}}
         basic_conv2D_filter_num = {{choice([16, 32])}}
 
-        loop_dilation2D_layers = {{choice([1, 2, 3, 4, 5])}}
+        loop_dilation2D_layers = {{choice([2, 4, 6])}}
         loop_dilation2D_filter_num = {{choice([16, 32, 64])}}#used in the loop
         loop_dilation2D_dropout_rate = {{uniform(0.001, 0.35)}}
         dilation_lower = 2
@@ -105,8 +105,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         dense1_num = {{choice([128, 256, 512])}}
         dense2_num = {{choice([32, 64, 128])}}
 
-        drop1_num = {{uniform(0.0001, 0.3)}}
-        drop2_num = {{uniform(0.0001, 0.1)}}
+        drop_num = {{uniform(0.0001, 0.3)}}
 
         kernel_size=(3,3)
         pool_size=(2,2)
@@ -119,7 +118,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         my_callbacks = [
             callbacks.ReduceLROnPlateau(
                 monitor='val_loss',
-                factor=0.1,
+                factor=0.8,
                 patience=10,
                 )
             ]
@@ -131,14 +130,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
                 chosed_optimizer = optimizers.SGD(lr=lr)
             elif optimizer == 'rmsprop':
                 chosed_optimizer = optimizers.RMSprop(lr=lr)
-            elif optimizer == 'adagrad':
-                chosed_optimizer = optimizers.Adagrad(lr=lr)
-            elif optimizer == 'adadelta':
-                chosed_optimizer = optimizers.Adadelta(lr=lr)
-            elif optimizer == 'adamax':
-                chosed_optimizer = optimizers.Adamax(lr=lr)
-            elif optimizer == 'nadam':
-                chosed_optimizer = optimizers.Nadam(lr=lr)
+
 
         # build --------------------------------------------------------------------------------------------------------
         ## basic Conv2D
@@ -172,10 +164,10 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         y = layers.Flatten()(y)
         y = layers.Dense(dense1_num, activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
-        y  = layers.Dropout(drop1_num)(y)
+        y  = layers.Dropout(drop_num)(y)
         y = layers.Dense(dense2_num, activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
-        y = layers.Dropout(drop2_num)(y)
+        y = layers.Dropout(drop_num)(y)
 
         output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(y)
 
