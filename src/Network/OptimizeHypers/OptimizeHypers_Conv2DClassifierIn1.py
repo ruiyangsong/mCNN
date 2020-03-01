@@ -11,15 +11,14 @@ from keras.models import Model
 from keras.utils import plot_model
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, regularizers, optimizers
-from metrics import test_report
-from CallBack import TrainCallback
+from metrics_bak import test_report
 from keras.utils import to_categorical
 
 
 def data(kneighbor):
     random_seed = 10
-    data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    # data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)
@@ -68,115 +67,115 @@ def data(kneighbor):
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
-        CUDA = '2'
-        summary = True
-        verbose = 0
-        # setHyperParams------------------------------------------------------------------------------------------------
-        # batch_size = {{choice([32,64])}}
-        batch_size = 64
+    K.clear_session()
+    CUDA = '2'
+    summary = False
+    verbose = 0
+    # setHyperParams------------------------------------------------------------------------------------------------
+    # batch_size = {{choice([32,64])}}
+    batch_size = 64
 
-        epoch = 2
-        # epoch = {{choice([1,2])}}
-        kernel_size=(3,3)
-        pool_size=(2,2)
-        initializer='random_uniform'
-        padding_style='same'
-        activator='relu'
-        regular_rate=(0.001,0.001)
+    epoch = 2
+    # epoch = {{choice([1,2])}}
+    kernel_size=(3,3)
+    pool_size=(2,2)
+    initializer='random_uniform'
+    padding_style='same'
+    activator='relu'
+    regular_rate=(0.001,0.001)
 
-        dropout_rate = 0.1
-        optimizer='adam'
-        loss_type='binary_crossentropy'
-        # metrics=('accuracy',acc, mcc, mcc_concise, recall_p, recall_n, precision_p, precision_n, tp_Concise,tn_Concise,fp_Concise,fn_Concise, recall_p_Concise,recall_n_Concise,precision_p_Concise,precision_n_Concise)
-        metrics = ('accuracy',)
-        callbacks = None
-        # config TF-----------------------------------------------------------------------------------------------------
-        os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-        config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
-        set_session(tf.Session(config=config))
+    dropout_rate = 0.1
+    optimizer='adam'
+    loss_type='binary_crossentropy'
+    # metrics=('accuracy',acc, mcc, mcc_concise, recall_p, recall_n, precision_p, precision_n, tp_Concise,tn_Concise,fp_Concise,fn_Concise, recall_p_Concise,recall_n_Concise,precision_p_Concise,precision_n_Concise)
+    metrics = ('accuracy',)
+    callbacks = None
+    # config TF-----------------------------------------------------------------------------------------------------
+    os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=config))
 
 
 
-        # build --------------------------------------------------------------------------------------------------------
-        # mCNN feature inputs as a whole 2D array
-        input_layer = Input(shape=x_train.shape[1:])
-        conv1 = layers.Conv2D(16,kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
-        conv2 = layers.Conv2D(32,kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
-        pool1 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv2)
+    # build --------------------------------------------------------------------------------------------------------
+    # mCNN feature inputs as a whole 2D array
+    input_layer = Input(shape=x_train.shape[1:])
+    conv1 = layers.Conv2D(16,kernel_size,kernel_initializer=initializer,activation=activator)(input_layer)
+    conv2 = layers.Conv2D(32,kernel_size,kernel_initializer=initializer,activation=activator)(conv1)
+    pool1 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv2)
 
-        conv3 = layers.Conv2D(64,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=regular_rate[0],l2=regular_rate[1]))(pool1)
-        conv3_BatchNorm = layers.BatchNormalization(axis=-1)(conv3)
-        pool2 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv3_BatchNorm)
-        conv4 = layers.Conv2D(128,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=regular_rate[0],l2=regular_rate[1]))(pool2)
-        pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
-        flat = layers.Flatten()(pool3)
+    conv3 = layers.Conv2D(64,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=regular_rate[0],l2=regular_rate[1]))(pool1)
+    conv3_BatchNorm = layers.BatchNormalization(axis=-1)(conv3)
+    pool2 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv3_BatchNorm)
+    conv4 = layers.Conv2D(128,kernel_size,kernel_initializer=initializer,activation=activator,kernel_regularizer=regularizers.l1_l2(l1=regular_rate[0],l2=regular_rate[1]))(pool2)
+    pool3 = layers.MaxPooling2D(pool_size,padding=padding_style)(conv4)
+    flat = layers.Flatten()(pool3)
 
-        dense = layers.Dense(1024, activation=activator)(flat)
-        dense_BatchNorm = layers.BatchNormalization(axis=-1)(dense)
-        drop  = layers.Dropout(dropout_rate)(dense_BatchNorm)
+    dense = layers.Dense(1024, activation=activator)(flat)
+    dense_BatchNorm = layers.BatchNormalization(axis=-1)(dense)
+    drop  = layers.Dropout(dropout_rate)(dense_BatchNorm)
 
-        output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
-        model = models.Model(inputs=input_layer, outputs=output_layer)
+    output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
+    model = models.Model(inputs=input_layer, outputs=output_layer)
 
-        if summary:
-            model.summary()
+    if summary:
+        model.summary()
 
  # train(self):
 
-        class_weights_dict = dict(enumerate(class_weights))
-        print(class_weights_dict)
+    class_weights_dict = dict(enumerate(class_weights))
+    print(class_weights_dict)
 
-        model.compile(optimizer=optimizer,
-                      loss=loss_type,
-                      metrics=list(metrics) # accuracy
-                      )
-
-        K.set_session(tf.Session(graph=model.output.graph))
-        init = K.tf.global_variables_initializer()
-        K.get_session().run(init)
-
-        result = model.fit(x=x_train,
-                           y=y_train,
-                  batch_size=batch_size,
-                  epochs=epoch,
-                  verbose=verbose,
-                  callbacks=callbacks,
-                  validation_data=(x_test, y_test),
-                  shuffle=True,
-                  class_weight=class_weights_dict
+    model.compile(optimizer=optimizer,
+                  loss=loss_type,
+                  metrics=list(metrics) # accuracy
                   )
-        print('\n----------History:'
-              '\n%s'%result.history)
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(
-            model, x_test, y_test)
-        print('\n----------Predict:'
-              '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
-              % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
-        # return model
+
+    K.set_session(tf.Session(graph=model.output.graph))
+    init = K.tf.global_variables_initializer()
+    K.get_session().run(init)
+
+    result = model.fit(x=x_train,
+                       y=y_train,
+                       batch_size=batch_size,
+                       epochs=epoch,
+                       verbose=verbose,
+                       callbacks=callbacks,
+                       validation_data=(x_test, y_test),
+                       shuffle=True,
+                       class_weight=class_weights_dict
+                       )
+    # print('\n----------History:'
+    #       '\n%s'%result.history)
 
 
-        # print('----------',model.evaluate(x_test, y_test))
-        # score,acc,mcc_ = model.evaluate(x_test,y_test)
-        # print('Test score:', score)
-        # print('Test accuracy:', acc)
-        # return {'loss': -acc, 'status': STATUS_OK, 'model': model}
+    # print('----------',model.evaluate(x_test, y_test))
+    # score,acc,mcc_ = model.evaluate(x_test,y_test)
+    # print('Test score:', score)
+    # print('Test accuracy:', acc)
+    # return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 
-        # validation_acc = np.amax(result.history['val_acc'])
-        # print('Best validation acc of epoch:', validation_acc)
-        # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+    # validation_acc = np.amax(result.history['val_acc'])
+    # print('Best validation acc of epoch:', validation_acc)
+    # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
-        # acc_test, mcc_test, recall_p_ruiyang, recall_n_ruiyang, precision_p_ruiyang, precision_n_ruiyang = test_report(model, x_test, y_test)
-        # obj=acc_test+4.5*mcc_test
-        # return {'loss': -obj, 'status': STATUS_OK, 'model': model}
+    acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(
+        model, x_test, y_test)
+    print('\n----------Predict:'
+          '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
+          % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+
+    obj=acc_test+4.5*mcc_test
+    return {'loss': -obj, 'status': STATUS_OK}
+
 if __name__ == '__main__':
     import sys
     neighbor,algo_flag,ifOp = sys.argv[1:]
     if ifOp == 'False':
         x_train, y_train, x_test, y_test,class_weights = data(neighbor)
         Conv2DClassifierIn1(x_train, y_train, x_test, y_test,class_weights)
-
 
     elif ifOp == 'True':
         if algo_flag == 'tpe':
@@ -186,25 +185,28 @@ if __name__ == '__main__':
         elif algo_flag == 'atpe':
             algo = atpe.suggest
 
-
         best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                               data=data,
                                               algo=algo,
                                               eval_space=True,
-                                              max_evals=5,
+                                              max_evals=3,
                                               trials=Trials(),
                                               keep_temp=True,
                                               verbose=False,
                                               data_args=(neighbor,))
-        X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
-        acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
 
-        print("Evalutation of best performing model:")
-        print('\n----------Evaluate:'
-              '\n%s'%best_model.evaluate(X_test, Y_test))
-        print('\n----------Predict:'
-              '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
-              %(acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+        print('@',best_run)
+        print('@',best_model)
+
+        # X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
+        # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
+        #
+        # print("Evalutation of best performing model:")
+        # print('\n----------Evaluate:'
+        #       '\n%s'%best_model.evaluate(X_test, Y_test))
+        # print('\n----------Predict:'
+        #       '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
+        #       %(acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
 
         print("Best performing model chosen hyper-parameters:")
         print(best_run)
