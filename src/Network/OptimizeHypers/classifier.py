@@ -217,7 +217,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         elif obj == 'val_acc':
             validation_acc = np.amax(result.history['val_acc'])
             print('Best validation acc of epoch:', validation_acc)
-            return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+            # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+            return {'loss': -validation_acc, 'status': STATUS_OK}
 
 
 if __name__ == '__main__':
