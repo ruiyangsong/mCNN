@@ -79,8 +79,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = {{choice([32,64,128])}}
-        epochs = {{choice([50,100,150,200])}}
+        batch_size = 64
+        epochs = {{choice([50,100,150,200,250])}}
 
         lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
 
@@ -102,8 +102,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
         residual_stride = 2
 
-        dense1_num = {{choice([128, 256, 512])}}
-        dense2_num = {{choice([32, 64, 128])}}
+        dense1_num = {{choice([64, 128, 256])}}
+        dense2_num = {{choice([32, 64])}}
 
         drop_num = {{uniform(0.0001, 0.3)}}
 
