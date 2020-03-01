@@ -1,14 +1,14 @@
-# Keras踩坑
+# Keras Tricks
 
-## 0.自定义metrics
+## 0. Pitfalls of custom metrics
 **!! ATTENTION !!**
 * For those custom metrics, the average accross minibatches is namely not equal to the metric evaluated on the whole dataset.
 * The metric on the validation set is calculated in batches, and then averaged (of course the trained model at the end of the epoch is used,
- in contrast to how the metric score is calculated for the training set)
-* 1. How to compute precision and recall in Keras? --> https://www.thinbug.com/q/43076609
-* 2. How are metrics computed in Keras? --> https://stackoverflow.com/questions/49359489/how-are-metrics-computed-in-keras
+ in contrast to how the metric score is calculated for the training set)  
+**1. How to compute precision and recall in Keras?** --> <https://www.thinbug.com/q/43076609>  
+**2. How are metrics computed in Keras?** --> <https://stackoverflow.com/questions/49359489/how-are-metrics-computed-in-keras>
 
-## 1.设置earlystopping
+## 1. Set earlystopping
 
 ```python
 filepath = model_snapshot_directory + '/' + 'lstm_model-ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'
@@ -19,7 +19,7 @@ model.fit(X_train,y_train,epochs=100,batch_size=128,
 
 **checkpoint设置的监控值是monitor=val_loss,当val_loss值不发生很大的改善就不保存模型.**
 
-## 2.使用hyperas
+## 2. Use hyperas
 
 ```python
 best_run,best_model=optim.minimize(model=train,data=prepare_data,algo=tpe.suggest, max_evals=100,trials=Trials())
@@ -307,7 +307,7 @@ def train():
 return {'loss': -acc, 'status': STATUS_OK}
 ```
 
-此外，在每一次调参时，在代码部分要加上K.clear_session()**  
+此外，在每一次调参时，在代码部分要加上**K.clear_session()**  
 refers to Issue [#259](https://github.com/maxpumperla/hyperas/issues/259) of Hyperas.
 
 ```python
@@ -337,3 +337,9 @@ hist=model.fit_generator(generator=data_generator(X_train,X_extra,y_train,batch_
 ```
 **3.减少batch_size**  
 refers to Issue [#16](https://github.com/maxpumperla/hyperas/issues/16) of Hyperas.
+
+## Reference
+* [Keras](https://github.com/keras-team/keras)
+* [Hyperas](https://github.com/maxpumperla/hyperas)
+* [CSDN Blog by JNYxiaocao](https://blog.csdn.net/JNYxiaocao/article/details/84592273?depth_1-utm_source=distribute.pc_relevant.none-task&utm_source=distribute.pc_relevant.none-task)
+* F. Chollet, Deep Learning With Python, New York, NY, USA:Manning Publications Co, 2017. - ISBN 9781617294433
