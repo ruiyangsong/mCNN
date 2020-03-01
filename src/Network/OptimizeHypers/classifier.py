@@ -217,12 +217,13 @@ if __name__ == '__main__':
     ## config TF
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    config = tf.ConfigProto()
-    if float(CUDA_rate)<0.1:
-        config.gpu_options.allow_growth = True
-    else:
-        config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
-    set_session(tf.Session(config=config))
+    if CUDA_rate != 'full':
+        config = tf.ConfigProto()
+        if float(CUDA_rate)<0.1:
+            config.gpu_options.allow_growth = True
+        else:
+            config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
+        set_session(tf.Session(config=config))
 
     if algo_flag == 'tpe':
         algo = tpe.suggest
