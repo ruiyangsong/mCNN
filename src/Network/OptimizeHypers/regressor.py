@@ -216,12 +216,11 @@ def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, c
             pearson_coeff, std = test_report_reg(model, x_test, ddg_test)
             print('\n----------Predict:\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
             objective = pearson_coeff * 2 + std
-            return {'loss': -objective, 'status': STATUS_OK, 'model': model}
+            return {'loss': -objective, 'status': STATUS_OK}
 
         elif obj == 'val_mae':
             validation_mae = np.amax(result.history['val_mean_absolute_error'])
             print('Best validation mae of epoch:', validation_mae)
-            # return {'loss': validation_mae, 'status': STATUS_OK, 'model': model}
             return {'loss': validation_mae, 'status': STATUS_OK}
 
 

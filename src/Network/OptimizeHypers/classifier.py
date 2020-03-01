@@ -211,12 +211,11 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
             print('\n----------Predict:\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
                   % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
             objective = acc_test + 5 * mcc_test + recall_p_test+recall_n_test+precision_p_test+precision_n_test
-            return {'loss': -objective, 'status': STATUS_OK, 'model': model}
+            return {'loss': -objective, 'status': STATUS_OK}
 
         elif obj == 'val_acc':
             validation_acc = np.amax(result.history['val_acc'])
             print('Best validation acc of epoch:', validation_acc)
-            # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
             return {'loss': -validation_acc, 'status': STATUS_OK}
 
 
