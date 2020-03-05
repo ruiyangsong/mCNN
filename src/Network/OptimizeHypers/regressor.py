@@ -20,12 +20,12 @@ def data(neighbor_obj):
     if obj_flag == 't':
         obj = 'test_report_reg'
     elif obj_flag == 'v':
-        obj = 'val_acc'
+        obj = 'val_mae'
 
     random_seed = 10
     # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    # data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    data = np.load('/root/sry/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+    # data = np.load('/root/sry/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)

@@ -1,6 +1,6 @@
-# Keras Tricks
-
-## 0. Pitfalls of custom metrics
+# Keras Tricks and Some Known Issues
+## Tricks
+### 0. Pitfalls of custom metrics
 **!! ATTENTION !!**
 * For those custom metrics, the average accross minibatches is namely not equal to the metric evaluated on the whole dataset.
 * The metric on the validation set is calculated in batches, and then averaged (of course the trained model at the end of the epoch is used,
@@ -8,7 +8,7 @@
 **1. How to compute precision and recall in Keras?** --> <https://www.thinbug.com/q/43076609>  
 **2. How are metrics computed in Keras?** --> <https://stackoverflow.com/questions/49359489/how-are-metrics-computed-in-keras>
 
-## 1. Set earlystopping
+### 1. Set earlystopping
 
 ```python
 filepath = model_snapshot_directory + '/' + 'lstm_model-ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5'
@@ -19,7 +19,7 @@ model.fit(X_train,y_train,epochs=100,batch_size=128,
 
 **checkpoint设置的监控值是monitor=val_loss,当val_loss值不发生很大的改善就不保存模型.**
 
-## 2. Use hyperas
+### 2. Use hyperas
 
 ```python
 best_run,best_model=optim.minimize(model=train,data=prepare_data,algo=tpe.suggest, max_evals=100,trials=Trials())
@@ -27,7 +27,7 @@ best_run,best_model=optim.minimize(model=train,data=prepare_data,algo=tpe.sugges
 
 在这里max_eval=100表示在训练过程中要对不同的组合评估100次，每一次的模型参数都不一样。</span>这个只可以根据实际参数的多少来设置，越大可能训练的模型就越多。**
 
-## 3.模型的评估
+### 3.模型的评估
 
 ```python
 best_model.evaluate(X_test,y_test)
@@ -35,7 +35,7 @@ best_model.evaluate(X_test,y_test)
 
 **这个evaluate 的返回值是一个元组（score，acc），loss值=-score**
 
-## 4.model.fit的返回值
+### 4.model.fit的返回值
 
 ```python
 hist=model.fit(X_train, y_train, epochs=100, batch_size={{choice([64, 128, 256])}}, verbose=1,
@@ -68,11 +68,11 @@ pyplot.show()
 ```
 
 
-## 5.诊断LSTM网络模型的过拟合和欠拟合
+### 5.诊断LSTM网络模型的过拟合和欠拟合
 
 **<a href="https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc" rel="nofollow">https://baijiahao.baidu.com/s?id=1577431637601070077&amp;wfr=spider&amp;for=pc</a>**
 
-## 6.使用多GPU跑模型，并保存模型
+### 6.使用多GPU跑模型，并保存模型
 
 **新建一个py文件，内容如下：**
 
@@ -218,14 +218,11 @@ def train():
     print('Test accuracy:', acc)
     return {'loss': -acc, 'status': STATUS_OK, 'model': model}
 ```
+**注意保存的时候是model，返回的模型是model，虽然没有compile model，但是在fit结束后，model的权重就是gpu_model的权重。**
 
-**注意保存的时候是model，返回的模型是model**
+**经过测试，是可以得到best_model的。并且可以在单GPU上进行预测。**
 
-**虽然没有compile model但是在fit结束后，model的权重就是gpu_model的权重。   **
-
-** 经过测试，是可以得到best_model的。并且可以在单GPU上进行预测。**
-
-## 7.keras模型的多输入（此处使用了多GPU以及hyperas调参工具）
+### 7.keras模型的多输入（此处使用了多GPU以及hyperas调参工具）
 
 ```python
 input_embed = Input(shape=(700,), name='input_embed')
@@ -264,7 +261,7 @@ if __name__ == "__main__":
     X_train,X_extra,y_train=prepare_data()
 ```
 
-## 8.设置earlystoppping的monitor监控自定义的值，比如auc值。
+### 8.设置earlystoppping的monitor监控自定义的值，比如auc值。
 
 **方法一：经过试验，当使用hyperas进行调参时，会报错，说没有auc_roc**
 
@@ -293,7 +290,7 @@ def train():
                                save_best_only=True,save_weights_only=True, mode='max')
 ```
 
-## 9.keras+hyperas调参时，出现OOM happens的情况，解决方案：
+### 9.keras+hyperas调参时，出现OOM happens的情况，解决方案：
 
 **1.hyperas调参时，默认返回的是**
 
@@ -337,7 +334,53 @@ hist=model.fit_generator(generator=data_generator(X_train,X_extra,y_train,batch_
 ```
 **3.减少batch_size**  
 refers to Issue [#16](https://github.com/maxpumperla/hyperas/issues/16) of Hyperas.
+***
 
+## issues
+
+### FailedPreconditionError: lack of intialization of Keras variables when using with TensorFlow
+**Add this code after compile the model to initialize the variables.   
+See issue [#5427](https://github.com/keras-team/keras/issues/5427) of keras for more details.**
+```python
+from keras import backend as K
+import tensorflow as tf
+K.set_session(tf.Session(graph=model.output.graph))
+init = K.tf.global_variables_initializer()
+K.get_session().run(init)
+```
+
+### IndexError: list index out of range
+```text
+job exception: list index out of range
+Traceback (most recent call last):
+  File "regressor.py", line 248, in <module>
+    data_args=(neighbor_obj,))
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperas/optim.py", line 72, in minimize
+    data_args=data_args)
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperas/optim.py", line 142, in base_minimizer
+    return_argmin=True),
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/fmin.py", line 482, in fmin
+    show_progressbar=show_progressbar,
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/base.py", line 686, in fmin
+    show_progressbar=show_progressbar,
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/fmin.py", line 509, in fmin
+    rval.exhaust()
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/fmin.py", line 330, in exhaust
+    self.run(self.max_evals - n_done, block_until_done=self.asynchronous)
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/fmin.py", line 286, in run
+    self.serial_evaluate()
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/fmin.py", line 165, in serial_evaluate
+    result = self.domain.evaluate(spec, ctrl)
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/base.py", line 892, in evaluate
+    print_node_on_error=self.rec_eval_print_node_on_error,
+  File "/root/anaconda3/envs/python367/lib/python3.6/site-packages/hyperopt/pyll/base.py", line 874, in rec_eval
+    rval_var = node.pos_args[int(switch_i) + 1]
+IndexError: list index out of range
+```
+**This is a known bug, see Issue [#615](https://github.com/hyperopt/hyperopt/issues/615) and [#7058](https://github.com/ray-project/ray/issues/7058) of ray,
+ this problem does only occur when using ATPE instead of TPE.**
+ 
+ ***
 ## Reference
 * [Keras](https://github.com/keras-team/keras)
 * [Hyperas](https://github.com/maxpumperla/hyperas)
