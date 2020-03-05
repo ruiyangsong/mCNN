@@ -336,9 +336,9 @@ hist=model.fit_generator(generator=data_generator(X_train,X_extra,y_train,batch_
 refers to Issue [#16](https://github.com/maxpumperla/hyperas/issues/16) of Hyperas.
 ***
 
-## issues
+## Issues
 
-### FailedPreconditionError: lack of intialization of Keras variables when using with TensorFlow
+### 1. FailedPreconditionError: lack of intialization of Keras variables when using with TensorFlow
 **Add this code after compile the model to initialize the variables.   
 See issue [#5427](https://github.com/keras-team/keras/issues/5427) of keras for more details.**
 ```python
@@ -349,7 +349,7 @@ init = K.tf.global_variables_initializer()
 K.get_session().run(init)
 ```
 
-### IndexError: list index out of range
+### 2. IndexError: list index out of range
 ```text
 job exception: list index out of range
 Traceback (most recent call last):
