@@ -377,7 +377,7 @@ Traceback (most recent call last):
     rval_var = node.pos_args[int(switch_i) + 1]
 IndexError: list index out of range
 ```
-**This is a known bug, see Issue [#615](https://github.com/hyperopt/hyperopt/issues/615) and [#7058](https://github.com/ray-project/ray/issues/7058) of ray,
+**This is a known BUG of ray, see Issue [#615](https://github.com/hyperopt/hyperopt/issues/615) and [#7058](https://github.com/ray-project/ray/issues/7058),
  this problem does only occur when using ATPE instead of TPE.**
  
  ***

@@ -1,7 +1,7 @@
 # mCNN
 This is the code archive of: **mCNN: A Convolutional Neural Network Based Method for Predicting Protein Stability Changes upon Single Point Mutation."**
 
-**Some trics and known issues, see [keras+hyperas+multi-GPU.md](keras+hyperas+multi-GPU.md)**
+**Some Keras trics and known issues, see [keras+hyperas+issues.md](keras+hyperas+issues.md)**
 ***
 ## Code directory structure  
 $ ls -F   
