@@ -9,7 +9,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, regularizers, optimizers, callbacks
-from metrics_bak import test_report
+from metrics_bak import test_report_cla
 from keras.utils import to_categorical
 
 'suppose that we have neighbor 120'
@@ -18,7 +18,7 @@ def data(neighbor_obj):
     kneighbor = neighbor_obj[:-1]
     obj_flag = neighbor_obj[-1]
     if obj_flag == 't':
-        obj = 'test_report'
+        obj = 'test_report_cla'
     elif obj_flag == 'v':
         obj = 'val_acc'
 
@@ -77,7 +77,7 @@ def data(neighbor_obj):
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         K.clear_session()
-        summary = False
+        summary = True
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 64
@@ -199,8 +199,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
                   )
         # print('\n----------History:\n%s'%result.history)
 
-        if obj == 'test_report':
-            acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(model, x_test, y_test)
+        if obj == 'test_report_cla':
+            acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report_cla(model, x_test, y_test)
             print('\n----------Predict:\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
                   % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
             objective = acc_test + 5 * mcc_test + recall_p_test+recall_n_test+precision_p_test+precision_n_test
@@ -233,22 +233,22 @@ if __name__ == '__main__':
     elif algo_flag == 'atpe':
         algo = atpe.suggest
 
-        best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
-                                              data=data,
-                                              algo=algo,
-                                              eval_space=True,
-                                              max_evals=int(max_eval),
-                                              trials=Trials(),
-                                              keep_temp=False,
-                                              verbose=False,
-                                              data_args=(neighbor_obj,))
+    best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
+                                          data=data,
+                                          algo=algo,
+                                          eval_space=True,
+                                          max_evals=int(max_eval),
+                                          trials=Trials(),
+                                          keep_temp=False,
+                                          verbose=False,
+                                          data_args=(neighbor_obj,))
 
-        ## This block only works when model was returned.
-        # X_train, Y_train, X_test, Y_test,class_weights,obj = data(neighbor_obj)
-        # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
-        # print('\n----------Predict On Best Model:'
-        #       '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
-        #       % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+    ## This block only works when model was returned.
+    # X_train, Y_train, X_test, Y_test,class_weights,obj = data(neighbor_obj)
+    # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
+    # print('\n----------Predict On Best Model:'
+    #       '\nacc_test: %s, mcc_test: %s, recall_p_test: %s, recall_n_test: %s, precision_p_test: %s, precision_n_test: %s'
+    #       % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
 
-        print("Best performing model chosen hyper-parameters:")
-        print(best_run)
+    print("Best performing model chosen hyper-parameters:")
+    print(best_run)

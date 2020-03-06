@@ -101,7 +101,42 @@ def precision_n(y_true, y_pred):
     fn = K.sum(y_pos * y_pred_neg)
     return tn/(tn + fn + K.epsilon())
 
-def test_report(model,x_test,y_test):
+def test_report(model,x_test,y_test,ddg_test):
+    import numpy as np
+    import scipy.stats as stats
+    ddg_pred, p_pred = model.predict(x_test, batch_size=32, verbose=0)  # 测试数据属于每一个类的概率,ndarray
+
+    ddg_pred = ddg_pred.reshape(-1)
+    pearson_coeff, p_value = stats.pearsonr(ddg_test, ddg_pred)
+    std = np.sum((ddg_test - ddg_pred) ** 2) / (len(ddg_test) - 2)
+
+    y_pred = np.argmax(p_pred, axis=1)  # 0D array
+    y_real = np.argmax(y_test, axis=1)
+    # print(y_real.shape) # 1D
+    # print(y_pred.shape) # 1D
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
+    for i in range(y_pred.shape[0]):
+        if y_real[i] == 1 and y_pred[i] == 1:
+            tp += 1
+        elif y_real[i] == 1 and y_pred[i] == 0:
+            fn += 1
+        elif y_real[i] == 0 and y_pred[i] == 0:
+            tn += 1
+        elif y_real[i] == 0 and y_pred[i] == 1:
+            fp += 1
+    acc = (tp + tn) / (tp + tn + fp + fn + K.epsilon())
+    recall_p = tp / (tp + fn + K.epsilon())
+    recall_n = tn / (tn + fp + K.epsilon())
+    precision_p = tp / (tp + fp + K.epsilon())
+    precision_n = tn / (tn + fn + K.epsilon())
+    mcc = (tp * tn - fp * fn) / (np.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)) + K.epsilon())
+    return pearson_coeff, std, acc, mcc, recall_p, recall_n, precision_p, precision_n
+
+
+def test_report_cla(model,x_test,y_test):
     import numpy as np
     p_pred = model.predict(x_test, batch_size=32, verbose=0)  # 测试数据属于每一个类的概率,ndarray
     y_pred = np.argmax(p_pred, axis=1)  # 0D array
@@ -144,7 +179,7 @@ def test_report_reg(model,x_test,ddg_test):
     std = np.sum((ddg_test - ddg_pred) ** 2) / (len(ddg_test) - 2)
     return pearson_coeff, std
 
-
+#-----------------------------------------------------------------------------------------------------------------------
 def tp_Concise(y,z):
     tp, tn, fp, fn = contingency_table(y, z)
     return tp

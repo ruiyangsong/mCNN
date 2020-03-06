@@ -9,7 +9,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, optimizers, callbacks
-from metrics_bak import test_report, test_report_reg
+from metrics_bak import test_report_reg
 from keras.utils import to_categorical
 
 'suppose that we have neighbor 120'
@@ -80,9 +80,9 @@ def data(neighbor_obj):
     return x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj
 
 
-def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj):
+def Conv2DRegressorIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj):
         K.clear_session()
-        summary = False
+        summary = True
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 64
@@ -237,20 +237,20 @@ if __name__ == '__main__':
     elif algo_flag == 'atpe':
         algo = atpe.suggest
 
-        best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
-                                              data=data,
-                                              algo=algo,
-                                              eval_space=True,
-                                              max_evals=int(max_eval),
-                                              trials=Trials(),
-                                              keep_temp=False,
-                                              verbose=False,
-                                              data_args=(neighbor_obj,))
+    best_run, best_model = optim.minimize(model=Conv2DRegressorIn1,
+                                          data=data,
+                                          algo=algo,
+                                          eval_space=True,
+                                          max_evals=int(max_eval),
+                                          trials=Trials(),
+                                          keep_temp=False,
+                                          verbose=False,
+                                          data_args=(neighbor_obj,))
 
-        # x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj = data(neighbor_obj)
-        # pearson_coeff, std = test_report_reg(best_model, x_test, ddg_test)
-        # print('\n----------Predict On Best Model:'
-        #       '\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
+    # x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj = data(neighbor_obj)
+    # pearson_coeff, std = test_report_reg(best_model, x_test, ddg_test)
+    # print('\n----------Predict On Best Model:'
+    #       '\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
 
-        print("Best performing model chosen hyper-parameters:")
-        print(best_run)
+    print("Best performing model chosen hyper-parameters:")
+    print(best_run)
