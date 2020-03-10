@@ -98,7 +98,7 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj):
         dilation_lower = 2
         dilation_upper = 16
 
-        reduce_layers = 3  # conv 3 times: 120 => 60 => 30 => 15
+        reduce_layers = 5  # conv 3 times: 120 => 60 => 30 => 15
         reduce_conv2D_filter_num = {{choice([8, 16, 32])}}#used for reduce dimention
         reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
         residual_stride = 2
