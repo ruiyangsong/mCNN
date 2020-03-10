@@ -11,17 +11,26 @@ from keras.models import Model
 from keras.utils import plot_model
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, regularizers, optimizers
-from metrics_bak import test_report
+from metrics_bak import test_report,test_report_reg
 from keras.utils import to_categorical
 
 
-def data(kneighbor):
+def data(neighbor_obj):
+    kneighbor = neighbor_obj[:-1]
+    obj_flag = neighbor_obj[-1]
+    if obj_flag == 't':
+        obj = 'test_report_reg'
+    elif obj_flag == 'v':
+        obj = 'val_mae'
+
     random_seed = 10
-    # data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
-    data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_30.npz')
+    data = np.load('E:\projects\mCNN\yanglab\mCNN-master\dataset\S2648\mCNN\wild\center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+    # data = np.load('/dl/sry/mCNN/dataset/S2648/feature/mCNN/wild/npz/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
+    # data = np.load('/root/sry/center_CA_PCA_False_neighbor_%s.npz'%kneighbor)
     x = data['x']
     y = data['y']
     ddg = data['ddg'].reshape(-1)
+
     train_num = x.shape[0]
     indices = [i for i in range(train_num)]
     np.random.seed(random_seed)
@@ -32,13 +41,19 @@ def data(kneighbor):
     positive_indices, negative_indices = ddg >= 0, ddg < 0
     x_positive, x_negative = x[positive_indices], x[negative_indices]
     y_positive, y_negative = y[positive_indices], y[negative_indices]
+    ddg_positive, ddg_negative = ddg[positive_indices], ddg[negative_indices]
+
     left_positive, left_negative = round(0.8 * x_positive.shape[0]), round(0.8 * x_negative.shape[0])
-    x_train, x_test = np.vstack((x_positive[:left_positive], x_negative[:left_negative])), np.vstack(
-        (x_positive[left_positive:], x_negative[left_negative:]))
-    y_train, y_test = np.vstack((y_positive[:left_positive], y_negative[:left_negative])), np.vstack(
-        (y_positive[left_positive:], y_negative[left_negative:]))
+    x_train = np.vstack((x_positive[:left_positive], x_negative[:left_negative]))
+    x_test  = np.vstack((x_positive[left_positive:], x_negative[left_negative:]))
+    y_train = np.vstack((y_positive[:left_positive], y_negative[:left_negative]))
+    y_test  = np.vstack((y_positive[left_positive:], y_negative[left_negative:]))
+    ddg_train = np.hstack((ddg_positive[:left_positive], ddg_negative[:left_negative]))
+    ddg_test  = np.hstack((ddg_positive[left_positive:], ddg_negative[left_negative:]))
 
     class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
+    class_weights_dict = dict(enumerate(class_weights))
+
     # sort row default is chain
     # reshape and one-hot
     y_train = to_categorical(y_train)
@@ -63,20 +78,20 @@ def data(kneighbor):
     # reshape
     x_train = x_train.reshape(x_train.shape + (1,))
     x_test = x_test.reshape(x_test.shape + (1,))
-    return x_train, y_train, x_test, y_test,class_weights
+    return x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj
 
 
-def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
+def Conv2DClassifierIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj):
     K.clear_session()
     CUDA = '2'
     summary = False
     verbose = 0
     # setHyperParams------------------------------------------------------------------------------------------------
-    # batch_size = {{choice([32,64])}}
-    batch_size = 64
+    batch_size = {{choice([32,64])}}
+    # batch_size = 64
 
-    epoch = 2
-    # epoch = {{choice([1,2])}}
+    # epoch = 2
+    epoch = {{choice([1,2])}}
     kernel_size=(3,3)
     pool_size=(2,2)
     initializer='random_uniform'
@@ -86,9 +101,9 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
 
     dropout_rate = 0.1
     optimizer='adam'
-    loss_type='binary_crossentropy'
+    loss_type='mse'
     # metrics=('accuracy',acc, mcc, mcc_concise, recall_p, recall_n, precision_p, precision_n, tp_Concise,tn_Concise,fp_Concise,fn_Concise, recall_p_Concise,recall_n_Concise,precision_p_Concise,precision_n_Concise)
-    metrics = ('accuracy',)
+    metrics = ('mae',)
     callbacks = None
     # config TF-----------------------------------------------------------------------------------------------------
     os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
@@ -117,7 +132,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
     dense_BatchNorm = layers.BatchNormalization(axis=-1)(dense)
     drop  = layers.Dropout(dropout_rate)(dense_BatchNorm)
 
-    output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
+    # output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(drop)
+    output_layer = layers.Dense(1)(drop)
     model = models.Model(inputs=input_layer, outputs=output_layer)
 
     if summary:
@@ -125,8 +141,8 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
 
  # train(self):
 
-    class_weights_dict = dict(enumerate(class_weights))
-    print(class_weights_dict)
+    # class_weights_dict = dict(enumerate(class_weights))
+    # print(class_weights_dict)
 
     model.compile(optimizer=optimizer,
                   loss=loss_type,
@@ -138,18 +154,28 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
     K.get_session().run(init)
 
     result = model.fit(x=x_train,
-                       y=y_train,
+                       y=ddg_train,
                        batch_size=batch_size,
                        epochs=epoch,
                        verbose=verbose,
                        callbacks=callbacks,
-                       validation_data=(x_test, y_test),
+                       validation_data=(x_test, ddg_test),
                        shuffle=True,
-                       class_weight=class_weights_dict
                        )
     # print('\n----------History:'
     #       '\n%s'%result.history)
 
+    if obj == 'test_report_reg':
+        pearson_coeff, std = test_report_reg(model, x_test, ddg_test)
+        print('\n----------Predict:\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
+        objective = pearson_coeff * 2 + std
+        return {'loss': -objective, 'status': STATUS_OK}
+
+    elif obj == 'val_mae':
+        print(result.history)
+        validation_mae = np.amax(result.history['val_mean_absolute_error'])
+        print('Best validation mae of epoch:', validation_mae)
+        return {'loss': validation_mae, 'status': STATUS_OK}
 
     # print('----------',model.evaluate(x_test, y_test))
     # score,acc,mcc_ = model.evaluate(x_test,y_test)
@@ -161,52 +187,51 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights):
     # print('Best validation acc of epoch:', validation_acc)
     # return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
-    acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(
-        model, x_test, y_test)
-    print('\n----------Predict:'
-          '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
-          % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
-
-    obj=acc_test+4.5*mcc_test
-    return {'loss': -obj, 'status': STATUS_OK}
+    # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(
+    #     model, x_test, y_test)
+    # print('\n----------Predict:'
+    #       '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
+    #       % (acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+    #
+    # obj=acc_test+4.5*mcc_test
+    # return {'loss': -obj, 'status': STATUS_OK}
 
 if __name__ == '__main__':
     import sys
-    neighbor,algo_flag,ifOp = sys.argv[1:]
-    if ifOp == 'False':
-        x_train, y_train, x_test, y_test,class_weights = data(neighbor)
-        Conv2DClassifierIn1(x_train, y_train, x_test, y_test,class_weights)
+    neighbor_obj,algo_flag,max_eval,CUDA,CUDA_rate = sys.argv[1:]
+    ## config TF
+    os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-    elif ifOp == 'True':
-        if algo_flag == 'tpe':
-            algo = tpe.suggest
-        elif algo_flag == 'rand':
-            algo = rand.suggest
-        elif algo_flag == 'atpe':
-            algo = atpe.suggest
+    if CUDA_rate != 'full':
+        config = tf.ConfigProto()
+        if float(CUDA_rate)<0.1:
+            config.gpu_options.allow_growth = True
+        else:
+            config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
+        set_session(tf.Session(config=config))
+
+    if algo_flag == 'tpe':
+        algo = tpe.suggest
+    elif algo_flag == 'rand':
+        algo = rand.suggest
+    elif algo_flag == 'atpe':
+        algo = atpe.suggest
 
         best_run, best_model = optim.minimize(model=Conv2DClassifierIn1,
                                               data=data,
                                               algo=algo,
                                               eval_space=True,
-                                              max_evals=3,
+                                              max_evals=int(max_eval),
                                               trials=Trials(),
-                                              keep_temp=True,
+                                              keep_temp=False,
                                               verbose=False,
-                                              data_args=(neighbor,))
+                                              data_args=(neighbor_obj,))
 
-        print('@',best_run)
-        print('@',best_model)
-
-        # X_train, Y_train, X_test, Y_test,class_weights = data(neighbor)
-        # acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report(best_model, X_test, Y_test)
-        #
-        # print("Evalutation of best performing model:")
-        # print('\n----------Evaluate:'
-        #       '\n%s'%best_model.evaluate(X_test, Y_test))
-        # print('\n----------Predict:'
-        #       '\nacc_test%s, mcc_test%s, recall_p_test%s, recall_n_test%s, precision_p_test%s, precision_n_test%s'
-        #       %(acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test))
+        # x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj = data(neighbor_obj)
+        # pearson_coeff, std = test_report_reg(best_model, x_test, ddg_test)
+        # print('\n----------Predict On Best Model:'
+        #       '\npearson_coeff: %s, std: %s'%(pearson_coeff, std))
 
         print("Best performing model chosen hyper-parameters:")
         print(best_run)
