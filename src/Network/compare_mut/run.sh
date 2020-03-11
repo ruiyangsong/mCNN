@@ -6,10 +6,10 @@
 #num=`ps aux | grep 20523 | wc -l`
 #done
 
-#for neighbor in {30,40,50,60,70,80,90,100,110,120,130,140,150,160,170,180,190,200}
-for neighbor in {30}
+lst="30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200"
+for neighbor in $lst
 do
-echo -e '\n----------neighbor'$neighbor 'Begin neighbor at: ' `date`
+echo -e '\n----------neighbor' $neighbor 'Begin at: ' `date`
 
 echo -e '\n@classifier begin at: ' `date`
 time python classifier.py $neighbor 3 full > classifier.log
