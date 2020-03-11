@@ -1,10 +1,10 @@
-#num=`ps aux | grep 20523 | wc -l`
-#while [ ${num} -eq 2 ]
-#do
-#echo `date`', The former pid 20513 is still running...'
-#sleep 300
-#num=`ps aux | grep 20523 | wc -l`
-#done
+num=`ps aux | grep 20523 | wc -l`
+while [ ${num} -eq 2 ]
+do
+echo `date`', The former pid 20523 is still running...'
+sleep 300
+num=`ps aux | grep 20523 | wc -l`
+done
 
 lst="30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200"
 for neighbor in $lst
@@ -25,3 +25,9 @@ echo -e '\n@multi_task end at: ' `date`
 
 echo -e '\n----------neighbor' $neighbor 'End at: ' `date`
 done
+
+
+sleep 5
+kill -CONT 20521
+sleep 10
+kill -CONT 20518
