@@ -6,7 +6,7 @@
 #num=`ps aux | grep 20523 | wc -l`
 #done
 
-/dl/sry/bin/queueGPU
+/dl/sry/bin/queueGPU 2600
 CUDA_RATE=$1
 lst="30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200"
 for neighbor in $lst
