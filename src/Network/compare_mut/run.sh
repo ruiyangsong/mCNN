@@ -7,7 +7,7 @@
 #done
 
 /dl/sry/bin/queueGPU
-$CUDA_RATE=$1
+CUDA_RATE=$1
 lst="30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200"
 for neighbor in $lst
 do
@@ -19,7 +19,7 @@ time python classifier.py $neighbor $CUDA_RATE >> classifier.log
 echo -e '\n@classifier end at: ' `date`
 
 echo -e '\n@regressor begin at: ' `date`
-time python regressor.py $neighbor full >> regressor.log
+time python regressor.py $neighbor $CUDA_RATE >> regressor.log
 time python regressor.py $neighbor $CUDA_RATE >> regressor.log
 echo -e '\n@regressor end at: ' `date`
 
