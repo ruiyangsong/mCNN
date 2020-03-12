@@ -207,9 +207,9 @@ def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj,kne
 
 if __name__ == '__main__':
     import sys
-    neighbor_obj,CUDA,CUDA_rate = sys.argv[1:]
+    neighbor_obj,CUDA_rate = sys.argv[1:]
     ## config TF
-    os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
+    # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
         config = tf.ConfigProto()
