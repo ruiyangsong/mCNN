@@ -241,8 +241,7 @@ if __name__ == '__main__':
     x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj,kneighbor = data(neighbor_obj)
     model = Conv2DRegressorIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj,kneighbor)
     pearson_coeff, std = test_report_reg(model, x_test, ddg_test)
-    print('\n'
-          '--reg_pearson_coeff_%s: %s'
-          '--reg_std_%s: %s'
-          %(pearson_coeff,kneighbor, std, kneighbor))
+    print('\n--reg_pearson_coeff_%s: %s'
+          '\n--reg_std_%s: %s'
+          %(kneighbor, pearson_coeff,kneighbor, std))
 

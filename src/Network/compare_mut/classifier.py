@@ -224,12 +224,11 @@ if __name__ == '__main__':
     X_train, Y_train, X_test, Y_test,class_weights,obj,kneighbor = data(neighbor_obj)
     model = Conv2DClassifierIn1(X_train, Y_train, X_test, Y_test,class_weights,obj,kneighbor)
     acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report_cla(model, X_test, Y_test)
-    print('\n'
-          '--cla_acc_%s: %s'
-          '--cla_mcc_%s: %s'
-          '--cla_recall_p_%s: %s'
-          '--cla_recall_n_%s: %s'
-          '--cla_precision_p_%s: %s'
-          '--cla_precision_n_%s: %s'
-          % (acc_test, kneighbor, mcc_test, kneighbor, recall_p_test, kneighbor, recall_n_test, kneighbor,
-             precision_p_test, kneighbor, precision_n_test, kneighbor))
+    print('\n--cla_acc_%s: %s'
+          '\n--cla_mcc_%s: %s'
+          '\n--cla_recall_p_%s: %s'
+          '\n--cla_recall_n_%s: %s'
+          '\n--cla_precision_p_%s: %s'
+          '\n--cla_precision_n_%s: %s'
+          % (kneighbor, acc_test, kneighbor, mcc_test, kneighbor, recall_p_test, kneighbor, recall_n_test, kneighbor,
+             precision_p_test, kneighbor, precision_n_test))

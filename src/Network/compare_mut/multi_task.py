@@ -246,14 +246,13 @@ if __name__ == '__main__':
 
     pearson_coeff, std, acc, mcc, recall_p, recall_n, precision_p, precision_n = test_report(model, x_test, y_test,
                                                                                              ddg_test)
-    print('\n'
-          '--mul_pearson_coeff_%s: %s'
-          '--mul_std_%s: %s'
-          '--mul_acc_%s: %s'
-          '--mul_mcc_%s: %s'
-          '--mul_recall_p_%s: %s'
-          '--mul_recall_n_%s: %s'
-          '--mul_precision_p_%s: %s'
-          '--mul_precision_n_%s: %s'
-          % (pearson_coeff, kneighbor, std, kneighbor, acc, kneighbor, mcc, kneighbor, recall_p, kneighbor,
-             recall_n, kneighbor, precision_p, kneighbor, precision_n, kneighbor))
+    print('\n--mul_pearson_coeff_%s: %s'
+          '\n--mul_std_%s: %s'
+          '\n--mul_acc_%s: %s'
+          '\n--mul_mcc_%s: %s'
+          '\n--mul_recall_p_%s: %s'
+          '\n--mul_recall_n_%s: %s'
+          '\n--mul_precision_p_%s: %s'
+          '\n--mul_precision_n_%s: %s'
+          % (kneighbor, pearson_coeff, kneighbor, std, kneighbor, acc, kneighbor, mcc, kneighbor, recall_p, kneighbor,
+             recall_n, kneighbor, precision_p, kneighbor, precision_n))
