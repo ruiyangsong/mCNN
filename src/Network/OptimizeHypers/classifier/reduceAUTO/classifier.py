@@ -10,7 +10,7 @@ from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, regularizers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_cla
-from mCNN.Network.queueGPU import queueGPU
+from mCNN.queueGPU import queueGPU
 from keras.utils import to_categorical
 
 'suppose that we have neighbor 120'
