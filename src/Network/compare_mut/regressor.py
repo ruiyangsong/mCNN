@@ -9,7 +9,7 @@ import tensorflow as tf
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, optimizers, callbacks
-from metrics_bak import test_report_reg
+from mCNN.Network.metrics import test_report_reg
 from keras.utils import to_categorical
 
 'suppose that we have neighbor 120'

@@ -3,22 +3,31 @@
 *.yml
 .idea/
 /**/__pycache__/
+/**/*.log
+
+# test_TrRosetta
+Rosetta_vs_TrRosetta/
+
 # former code backups
 shell_former/
 src_former/
+
 # large data
 dataset/
 global/
+
 # tmp file
 tmp/*
 !tmp/note.md
+
 # shell result log
 result/
+
 # saved model
 model/
+
 # src
 src/test.py
 src/Network/*bak*
 src/Network/*former*
 
-/**/*.log
