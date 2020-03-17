@@ -4,6 +4,7 @@
 .idea/
 /**/__pycache__/
 /**/*.log
+/**/temp_model.py
 
 # test_TrRosetta
 Rosetta_vs_TrRosetta/
