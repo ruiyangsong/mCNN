@@ -35,6 +35,7 @@ def data(neighbor_obj):
     np.random.shuffle(indices)
     x = x[indices]
     y = y[indices]
+    ddg = ddg[indices]
 
     positive_indices, negative_indices = ddg >= 0, ddg < 0
     x_positive, x_negative = x[positive_indices], x[negative_indices]

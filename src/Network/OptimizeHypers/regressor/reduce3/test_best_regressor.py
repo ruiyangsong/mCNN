@@ -33,6 +33,7 @@ def data(neighbor_obj):
     np.random.shuffle(indices)
     x = x[indices]
     y = y[indices]
+    ddg = ddg[indices]
 
     positive_indices, negative_indices = ddg >= 0, ddg < 0
     x_positive, x_negative = x[positive_indices], x[negative_indices]
@@ -222,8 +223,8 @@ if __name__ == '__main__':
     neighbor_obj,CUDA_rate = sys.argv[1:]
     ## config TF
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0' 
-    from mCNN.queueGPU import main
-    main()
+    from mCNN.queueGPU import queueGPU
+    queueGPU()
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
     if CUDA_rate != 'full':

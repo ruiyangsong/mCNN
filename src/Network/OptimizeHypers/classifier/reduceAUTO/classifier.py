@@ -73,150 +73,160 @@ def data(neighbor_obj):
     # reshape
     x_train = x_train.reshape(x_train.shape + (1,))
     x_test = x_test.reshape(x_test.shape + (1,))
-    return x_train, y_train, x_test, y_test,class_weights_dict,obj,kneighbor
+    return x_train, y_train, x_test, y_test, class_weights_dict,obj,kneighbor
 
 
 def Conv2DClassifierIn1(x_train,y_train,x_test,y_test,class_weights_dict,obj,kneighbor):
-        K.clear_session()
-        summary = False
-        verbose = 0
-        # setHyperParams------------------------------------------------------------------------------------------------
-        batch_size = 64
-        epochs = {{choice([50,100,150,200,250])}}
+    K.clear_session()
+    summary = False
+    verbose = 0
+    # setHyperParams------------------------------------------------------------------------------------------------
+    batch_size = 64
+    epochs     = {{choice([50,100,150,200,250])}}
+    lr         = {{loguniform(np.log(1e-4), np.log(1e-2))}}
+    optimizer  = {{choice(['adam','sgd','rmsprop'])}}
+    activator  = {{choice(['elu', 'relu', 'tanh'])}}
 
-        lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
+    basic_conv2D_layers     = {{choice([1, 2])}}
+    basic_conv2D_filter_num = {{choice([16, 32])}}
 
-        optimizer = {{choice(['adam','sgd','rmsprop'])}}
+    loop_dilation2D_layers       = {{choice([2, 4, 6, 8, 10, 12])}}
+    loop_dilation2D_filter_num   = {{choice([16, 32])}}#used in the loop
+    loop_dilation2D_dropout_rate = {{uniform(0.001, 0.35)}}
+    dilation_lower               = 2
+    dilation_upper               = 16
 
-        activator = {{choice(['elu', 'relu', 'tanh'])}}
+    reduce_conv2D_filter_num   = {{choice([8, 16, 32])}}  # used for reduce dimention
+    reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
+    residual_stride            = 2
 
-        basic_conv2D_layers     = {{choice([1, 2])}}
-        basic_conv2D_filter_num = {{choice([16, 32])}}
+    reduce_layers = 0
+    flag = int(kneighbor)
+    while True:
+        if flag >= 7:
+            flag = flag / 2 if flag % 2 == 0 else (flag + 1) / 2
+            reduce_layers += 1
+        else:
+            break
 
-        loop_dilation2D_layers = {{choice([2, 4, 6, 8, 10, 12])}}
-        loop_dilation2D_filter_num = {{choice([16, 32])}}#used in the loop
-        loop_dilation2D_dropout_rate = {{uniform(0.001, 0.35)}}
-        dilation_lower = 2
-        dilation_upper = 16
+    dense1_num = {{choice([64, 128, 256])}}
+    dense2_num = {{choice([32, 64])}}
+    drop_num   = {{uniform(0.0001, 0.3)}}
 
-        # reduce_layers = 5  # conv 3 times: 120 => 60 => 30 => 15
-        reduce_layers = 0  # conv 3 times: 120 => 60 => 30 => 15
-        kneighbor = int(kneighbor)
-        while True:
-            if kneighbor >= 7:
-                kneighbor = kneighbor / 2 if kneighbor % 2 == 0 else (kneighbor + 1) / 2
-                reduce_layers += 1
-            else:
-                break
-        reduce_conv2D_filter_num = {{choice([8, 16, 32])}}#used for reduce dimention
-        reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
-        residual_stride = 2
-
-        dense1_num = {{choice([64, 128, 256])}}
-        dense2_num = {{choice([32, 64])}}
-
-        drop_num = {{uniform(0.0001, 0.3)}}
-
-        kernel_size=(3,3)
-        pool_size=(2,2)
-        initializer='random_uniform'
-        padding_style='same'
-        loss_type='binary_crossentropy'
-        metrics = ('accuracy',)
+    kernel_size   = (3,3)
+    pool_size     = (2,2)
+    initializer   = 'random_uniform'
+    padding_style = 'same'
+    loss_type     = 'binary_crossentropy'
+    metrics       = ('accuracy',)
 
 
-        my_callbacks = [
-            callbacks.ReduceLROnPlateau(
-                monitor='val_loss',
-                factor=0.8,
-                patience=5,
-                )
-            ]
+    my_callbacks = [
+        callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=5,
+            )
+        ]
 
-        if lr > 0:
-            if optimizer == 'adam':
-                chosed_optimizer = optimizers.Adam(lr=lr)
-            elif optimizer == 'sgd':
-                chosed_optimizer = optimizers.SGD(lr=lr)
-            elif optimizer == 'rmsprop':
-                chosed_optimizer = optimizers.RMSprop(lr=lr)
+    if lr > 0:
+        if optimizer == 'adam':
+            chosed_optimizer = optimizers.Adam(lr=lr)
+        elif optimizer == 'sgd':
+            chosed_optimizer = optimizers.SGD(lr=lr)
+        elif optimizer == 'rmsprop':
+            chosed_optimizer = optimizers.RMSprop(lr=lr)
 
-
-        # build --------------------------------------------------------------------------------------------------------
-        ## basic Conv2D
-        input_layer = Input(shape=x_train.shape[1:])
-        y = layers.Conv2D(basic_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(input_layer)
+    # build --------------------------------------------------------------------------------------------------------
+    ## basic Conv2D
+    input_layer = Input(shape=x_train.shape[1:])
+    y = layers.Conv2D(basic_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(input_layer)
+    y = layers.BatchNormalization(axis=-1)(y)
+    if basic_conv2D_layers == 2:
+        y = layers.Conv2D(basic_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
-        if basic_conv2D_layers == 2:
-            y = layers.Conv2D(basic_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
-            y = layers.BatchNormalization(axis=-1)(y)
 
-        ## loop with Conv2D with dilation (padding='same')
-        for _ in range(loop_dilation2D_layers):
-            y = layers.Conv2D(loop_dilation2D_filter_num, kernel_size, padding=padding_style,dilation_rate=dilation_lower, kernel_initializer=initializer, activation=activator)(y)
-            y = layers.BatchNormalization(axis=-1)(y)
-            y = layers.Dropout(loop_dilation2D_dropout_rate)(y)
-            dilation_lower*=2
-            if dilation_lower>dilation_upper:
-                dilation_lower=2
-
-        ## Conv2D with dilation (padding='valaid') and residual block to reduce dimention.
-        for _ in range(reduce_layers):
-            y = layers.Conv2D(reduce_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
-            y = layers.BatchNormalization(axis=-1)(y)
-            y = layers.Dropout(reduce_conv2D_dropout_rate)(y)
-            y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
-            residual = layers.Conv2D(reduce_conv2D_filter_num, 1, strides=residual_stride, padding='same')(input_layer)
-            y = layers.add([y, residual])
-            residual_stride*=2
-
-        ## flat & dense
-        y = layers.Flatten()(y)
-        y = layers.Dense(dense1_num, activation=activator)(y)
+    ## loop with Conv2D with dilation (padding='same')
+    for _ in range(loop_dilation2D_layers):
+        y = layers.Conv2D(loop_dilation2D_filter_num, kernel_size, padding=padding_style,dilation_rate=dilation_lower, kernel_initializer=initializer, activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
-        y  = layers.Dropout(drop_num)(y)
-        y = layers.Dense(dense2_num, activation=activator)(y)
+        y = layers.Dropout(loop_dilation2D_dropout_rate)(y)
+        dilation_lower*=2
+        if dilation_lower>dilation_upper:
+            dilation_lower=2
+
+    ## Conv2D with dilation (padding='valaid') and residual block to reduce dimention.
+    for _ in range(reduce_layers):
+        y = layers.Conv2D(reduce_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
         y = layers.BatchNormalization(axis=-1)(y)
-        y = layers.Dropout(drop_num)(y)
+        y = layers.Dropout(reduce_conv2D_dropout_rate)(y)
+        y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
+        residual = layers.Conv2D(reduce_conv2D_filter_num, 1, strides=residual_stride, padding='same')(input_layer)
+        y = layers.add([y, residual])
+        residual_stride*=2
 
-        output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(y)
+    ## flat & dense
+    y = layers.Flatten()(y)
+    y = layers.Dense(dense1_num, activation=activator)(y)
+    y = layers.BatchNormalization(axis=-1)(y)
+    y  = layers.Dropout(drop_num)(y)
+    y = layers.Dense(dense2_num, activation=activator)(y)
+    y = layers.BatchNormalization(axis=-1)(y)
+    y = layers.Dropout(drop_num)(y)
 
-        model = models.Model(inputs=input_layer, outputs=output_layer)
+    output_layer = layers.Dense(len(np.unique(y_train)),activation='softmax')(y)
 
-        if summary:
-            model.summary()
+    model = models.Model(inputs=input_layer,
+                         outputs=output_layer
+                         )
 
+    if summary:
+        model.summary()
 
-        model.compile(optimizer=chosed_optimizer,
-                      loss=loss_type,
-                      metrics=list(metrics) # accuracy
-                      )
-
-        K.set_session(tf.Session(graph=model.output.graph))
-        init = K.tf.global_variables_initializer()
-        K.get_session().run(init)
-
-        result = model.fit(x=x_train,
-                           y=y_train,
-                  batch_size=batch_size,
-                  epochs=epochs,
-                  verbose=verbose,
-                  callbacks=my_callbacks,
-                  validation_data=(x_test, y_test),
-                  shuffle=True,
-                  class_weight=class_weights_dict
+    model.compile(optimizer=chosed_optimizer,
+                  loss=loss_type,
+                  metrics=list(metrics) # accuracy
                   )
-        # print('\n----------History:\n%s'%result.history)
 
-        if obj == 'val_acc':
-            validation_acc = np.amax(result.history['val_acc'])
-            print('Best validation acc of epoch:', validation_acc)
-            return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+    K.set_session(tf.Session(graph=model.output.graph))
+    init = K.tf.global_variables_initializer()
+    K.get_session().run(init)
+
+    result = model.fit(x=x_train,
+                       y=y_train,
+                       batch_size=batch_size,
+                       epochs=epochs,
+                       verbose=verbose,
+                       callbacks=my_callbacks,
+                       validation_data=(x_test, y_test),
+                       shuffle=True,
+                       class_weight=class_weights_dict
+                       )
+
+    # print('\n----------History:\n%s'%result.history)
+    acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report_cla(model,x_test,y_test)
+    print('\n----------Predict On OptionalHyper Model:'
+          '\n--Hyper_acc_%s: %s'
+          '\n--Hyper_mcc_%s: %s'
+          '\n--Hyper_recall_p_%s: %s'
+          '\n--Hyper_recall_n_%s: %s'
+          '\n--Hyper_precision_p_%s: %s'
+          '\n--Hyper_precision_n_%s: %s'
+          % (kneighbor, acc_test, kneighbor, mcc_test, kneighbor, recall_p_test, kneighbor, recall_n_test, kneighbor,
+             precision_p_test, kneighbor, precision_n_test))
+
+    if obj == 'val_acc':
+        validation_acc = np.amax(result.history['val_acc'])
+        print('Best validation acc of epoch:', validation_acc)
+        return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
 
 
 if __name__ == '__main__':
+    # neighbor_obj, algo_flag, max_eval, CUDA_rate = '120v', 'tpe', '1', 'full'
+
     import sys
     neighbor_obj,algo_flag,max_eval,CUDA_rate = sys.argv[1:]
+
     ## config TF
     queueGPU()
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -249,12 +259,12 @@ if __name__ == '__main__':
     X_train, Y_train, X_test, Y_test,class_weights,obj,kneighbor = data(neighbor_obj)
     acc_test, mcc_test, recall_p_test, recall_n_test, precision_p_test, precision_n_test = test_report_cla(best_model, X_test, Y_test)
     print('\n----------Predict On Best Model:'
-          '\n--Best_cla_acc_%s: %s'
-          '\n--Best_cla_mcc_%s: %s'
-          '\n--Best_cla_recall_p_%s: %s'
-          '\n--Best_cla_recall_n_%s: %s'
-          '\n--Best_cla_precision_p_%s: %s'
-          '\n--Best_cla_precision_n_%s: %s'
+          '\n--Best_acc_%s: %s'
+          '\n--Best_mcc_%s: %s'
+          '\n--Best_recall_p_%s: %s'
+          '\n--Best_recall_n_%s: %s'
+          '\n--Best_precision_p_%s: %s'
+          '\n--Best_precision_n_%s: %s'
           % (kneighbor, acc_test, kneighbor, mcc_test, kneighbor, recall_p_test, kneighbor, recall_n_test, kneighbor,
              precision_p_test, kneighbor, precision_n_test))
 
