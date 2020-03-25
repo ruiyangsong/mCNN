@@ -151,7 +151,7 @@ class CoordRunner(object):
 
         energy_dir = '%s/%s/energy.csv' % (self.mut_pdb_dir, rosetta_mut_tag)
         mapping_dir = '%s/%s.csv' % (self.map_csv_dir, pdbid)
-        sa_dir = '%s/mutant/%s.stride' % (self.stride_dir, pdbid)
+        sa_dir = '%s/mutant/%s.stride' % (self.stride_dir, rosetta_mut_tag)
         # -----------------------------qsub-----------------------------
         filename = 'center_%s_neighbor_%s'%(center,k_neighbor)
 

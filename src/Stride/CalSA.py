@@ -32,7 +32,7 @@ def calSA(appdir,outdir_mutant,outdir_wild,pdb_ref_path,pdb_mut_path):
     for tagname in mut_tag_name_lst:
         pdbid = tagname.split('_')[0]
         pdbdir = '%s/%s/%s_mut.pdb'%(pdb_mut_path,tagname,pdbid)
-        os.system('%s %s > %s/%s.stride' % (appdir, pdbdir, outdir_mutant, pdbid))
+        os.system('%s %s > %s/%s.stride' % (appdir, pdbdir, outdir_mutant, tagname))
     print('---stride done!')
 if __name__ == '__main__':
     main()
