@@ -55,7 +55,7 @@ print('\n***Cleaning old files...')
 # os.system('rm -rf %s/*' % pathdict['rosetta_dir'])
 # os.system('rm -rf %s/*' % pathdict['stride_dir'])
 # os.system('rm -rf %s/*' % pathdict['mCNN_dir'])
-os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
+# os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
 print('---cleaning done!')
 #-----------------------------------------------------------------------------------------------------------------------
 ## calculating features
@@ -73,15 +73,15 @@ print('---cleaning done!')
 # print('\n***Calculating rosetta feature...')
 # os.system('./Rosetta/CalRosetta.py %s second'%dataset_name)
 #
-# ## stride
-# print('\n***Calculating stride feature...')
-# os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
+## stride
+print('\n***Calculating stride feature...')
+os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
 
-## mCSM
-print('\n***Calculating mCSM feature...')
-os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
-# os.system('./Spatial/run_mCSM.py %s'%(dataset_name))
-os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
+# ## mCSM
+# print('\n***Calculating mCSM feature...')
+# os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
+# # os.system('./Spatial/run_mCSM.py %s'%(dataset_name))
+# os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
 
 ## mCNN
 print('\n***Calculating mCNN feature...')
