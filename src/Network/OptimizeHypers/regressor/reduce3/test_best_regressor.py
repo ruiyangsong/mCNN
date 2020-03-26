@@ -88,7 +88,7 @@ def Conv2DRegressorIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
         batch_size = 64
         epochs = 200
 
-        lr = 0.004
+        lr = 0.0049
 
         optimizer = 'sgd'
 
@@ -97,23 +97,23 @@ def Conv2DRegressorIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
         basic_conv2D_layers     = 1
         basic_conv2D_filter_num = 16
 
-        loop_dilation2D_layers = 6
-        loop_dilation2D_filter_num = 32
-        loop_dilation2D_dropout_rate = 0.2893
+        loop_dilation2D_layers = 2
+        loop_dilation2D_filter_num = 64
+        loop_dilation2D_dropout_rate = 0.2008
         dilation_lower = 2
         dilation_upper = 16
 
         reduce_layers = 3  # conv 3 times: 120 => 60 => 30 => 15
         # print(reduce_layers)
 
-        reduce_conv2D_filter_num = 8
-        reduce_conv2D_dropout_rate = 0.2063
+        reduce_conv2D_filter_num = 16
+        reduce_conv2D_dropout_rate = 0.1783
         residual_stride = 2
 
-        dense1_num = 64
-        dense2_num = 64
+        dense1_num = 128
+        dense2_num = 32
 
-        drop_num = 0.1112
+        drop_num = 0.2605
 
         kernel_size=(3,3)
         pool_size=(2,2)
