@@ -31,8 +31,8 @@ def main():
     centerlst     = args.center
     pca           = str2bool(args.pca)
 
-    QR = CoordRunner(homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst)
-    QR.coord_runner()
+    # QR = CoordRunner(homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst)
+    # QR.coord_runner()
 
     if flag == 'first':
         exit(0)
