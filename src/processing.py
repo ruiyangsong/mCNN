@@ -24,7 +24,7 @@ aa_123dict = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'C': 'CYS',
 def log(func):
     @functools.wraps(func)
     def wrapper(*args, **kw):
-        print('\n@call %s()' % func.__name__)
+        print('@call %s()' % func.__name__)
         start = time.time()
         res = func(*args, **kw)
         print('runtime: %f seconds.' % (time.time() - start))
@@ -109,7 +109,7 @@ def save_data_array(x,y,ddg_value,filename,outdir):
     if not os.path.exists(outdir):
         os.system('mkdir -p %s'%outdir)
     np.savez('%s/%s.npz' % (outdir,filename), x=x,y=y,ddg=ddg_value)
-    print('The 3D array which stored numerical representation has stored at %s.'%outdir)
+    print('The 3D array has stored at %s/%s.npz'%(outdir, filename))
 
 ## function for appending mCSM array
 def append_mCSM(x_mCNN_dict, x_mCSM_dict):

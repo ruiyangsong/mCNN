@@ -11,7 +11,7 @@ dataset_name = sys.argv[1]
 #-----------------------------------------------------------------------------------------------------------------------
 ## drop duplicates of the original mutant csv and rewrite it, the original one namely %s_old.csv.
 ## the primary key is: ['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT'].
-print('\n***drop duplicates of the original mutant csv...')
+print('\n***drop duplicates of the original mutant csv (dataset %s)...'%dataset_name)
 mt_csv_dir = '../dataset/%s/%s.csv'%(dataset_name,dataset_name)
 df = read_csv(csvdir=mt_csv_dir)
 len_1 = len(df)
