@@ -14,6 +14,7 @@ dataset_name = sys.argv[1]
 print('\n***drop duplicates of the original mutant csv (dataset %s)...'%dataset_name)
 mt_csv_dir = '../dataset/%s/%s.csv'%(dataset_name,dataset_name)
 df = read_csv(csvdir=mt_csv_dir)
+print(df.dtypes)
 len_1 = len(df)
 df.drop_duplicates(subset=['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT'],keep='first',inplace=True)
 len_2 = len(df)
