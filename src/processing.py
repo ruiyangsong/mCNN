@@ -102,7 +102,7 @@ def str2bool(v):
 def read_csv(csvdir):
     f = open(csvdir, 'r')
     df = pd.read_csv(f)
-    f.close
+    f.close()
     return df
 
 def save_data_array(x,y,ddg_value,filename,outdir):
