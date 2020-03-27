@@ -49,30 +49,30 @@ for path_name in pathdict:
 # !!! USE COMMAND "rm -rf" WITH CARE !!! #
 ##########################################
 print('\n***Cleaning old files...')
-# os.system('rm -rf %s/*' % pathdict['log_dir'])
-# os.system('rm -rf %s/*' % pathdict['err_dir'])
-# os.system('rm -rf %s/*' % pathdict['msa_dir'])
-# os.system('rm -rf %s/*' % pathdict['rosetta_dir'])
-# os.system('rm -rf %s/*' % pathdict['stride_dir'])
-# os.system('rm -rf %s/*' % pathdict['mCNN_dir'])
-# os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
+os.system('rm -rf %s/*' % pathdict['log_dir'])
+os.system('rm -rf %s/*' % pathdict['err_dir'])
+os.system('rm -rf %s/*' % pathdict['msa_dir'])
+os.system('rm -rf %s/*' % pathdict['rosetta_dir'])
+os.system('rm -rf %s/*' % pathdict['stride_dir'])
+os.system('rm -rf %s/*' % pathdict['mCNN_dir'])
+os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
 print('---cleaning done!')
 #-----------------------------------------------------------------------------------------------------------------------
 ## calculating features
 
-# ## generate mdl 0
-# print('\n***Calculating mdl0...')
-# os.system('./Rosetta/CalRosetta.py %s first'%dataset_name)
-#
-# ## msa by unrefined structure_mdl0
-# print('\n***Calculating msa feature based on mdl_0...')
-# # os.system('./MSA/CalMSA.py %s'%dataset_name)
-# os.system('nohup ./MSA/CalMSA.py %s > %s/cal_msa_features.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
-#
-# ## rosetta
-# print('\n***Calculating rosetta feature...')
-# os.system('./Rosetta/CalRosetta.py %s second'%dataset_name)
-#
+## generate mdl 0
+print('\n***Calculating mdl0...')
+os.system('./Rosetta/CalRosetta.py %s first'%dataset_name)
+
+## msa by unrefined structure_mdl0
+print('\n***Calculating msa feature based on mdl_0...')
+# os.system('./MSA/CalMSA.py %s'%dataset_name)
+os.system('nohup ./MSA/CalMSA.py %s > %s/cal_msa_features.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
+
+## rosetta
+print('\n***Calculating rosetta feature...')
+os.system('./Rosetta/CalRosetta.py %s second'%dataset_name)
+
 ## stride
 print('\n***Calculating stride feature...')
 os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
@@ -84,6 +84,7 @@ os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and muta
 # os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
 
 ## mCNN
+os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
 print('\n***Calculating mCNN feature...')
 # os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA geometric -T False'%dataset_name)
 # os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 --center CA geometric -T False'%dataset_name)
