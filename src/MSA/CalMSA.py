@@ -4,7 +4,6 @@
 import os, sys, time, warnings
 import numpy as np
 from mCNN.processing import shell, aa_321dict, read_csv,PDBparser, check_qsub, log
-from run_psiblast import qsub_wild, qsub_mutant
 
 def main():
     dataset_name = sys.argv[1]
