@@ -48,7 +48,7 @@ def qsub_ref(homedir,app,pdbpath,outpath,qsubid_prefix):
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'% homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.1)
 
 def qsub_mut(homedir,app,pdbpath,outpath,mt_csvdir,qsubid_prefix):
@@ -77,7 +77,7 @@ def qsub_mut(homedir,app,pdbpath,outpath,mt_csvdir,qsubid_prefix):
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'% homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.1)
 
 

@@ -14,8 +14,6 @@ dataset_name = sys.argv[1]
 print('\n***drop duplicates of the original mutant csv (dataset %s)...'%dataset_name)
 mt_csv_dir = '../dataset/%s/%s.csv'%(dataset_name,dataset_name)
 df = read_csv(csvdir=mt_csv_dir)
-
-
 len_1 = len(df)
 df.drop_duplicates(subset=['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT'],keep='first',inplace=True)
 len_2 = len(df)
@@ -61,41 +59,47 @@ os.system('rm -rf %s/*' % pathdict['mCSM_dir'])
 print('---cleaning done!')
 #-----------------------------------------------------------------------------------------------------------------------
 ## calculating features
+run_code = 0
 
 ## generate mdl 0
-print('\n***Calculating mdl0...')
-os.system('./Rosetta/CalRosetta.py %s first'%dataset_name)
+if run_code == 0:
+    print('\n***Calculating mdl0...')
+    run_code += os.system('./Rosetta/CalRosetta.py %s first'%dataset_name)
 
 ## msa by unrefined structure_mdl0
-print('\n***Calculating msa feature based on mdl_0...')
-# os.system('./MSA/CalMSA.py %s'%dataset_name)
-os.system('nohup ./MSA/CalMSA.py %s > %s/cal_msa_features.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
+if run_code == 0:
+    print('\n***Calculating msa feature based on mdl_0...')
+    os.system('./MSA/CalMSA.py %s'%dataset_name)
 
 ## rosetta
-print('\n***Calculating rosetta feature...')
-os.system('./Rosetta/CalRosetta.py %s second'%dataset_name)
+if run_code == 0:
+    print('\n***Calculating rosetta feature...')
+    os.system('./Rosetta/CalRosetta.py %s second'%dataset_name)
 
 ## stride
-print('\n***Calculating stride feature...')
-os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
+if run_code == 0:
+    print('\n***Calculating stride feature...')
+    os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and mutant structures
 
 # ## mCSM
-# print('\n***Calculating mCSM feature...')
-# os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
-# # os.system('./Spatial/run_mCSM.py %s'%(dataset_name))
-# os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
+# if run_code == 0:
+    # print('\n***Calculating mCSM feature...')
+    # os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
+    # # os.system('./Spatial/run_mCSM.py %s'%(dataset_name))
+    # os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
 
 ## mCNN
-os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA -T False'%dataset_name)#@@++
-print('\n***Calculating mCNN feature...')
-# os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA -T False'%dataset_name)
-os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA -T False'%dataset_name)
+if run_code == 0:
+    # os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA -T False'%dataset_name)#@@++
+    print('\n***Calculating mCNN feature...')
+    # os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA -T False'%dataset_name)
+    os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 --center CA -T False'%dataset_name)
 
-# from processing import shell
-# homedir = shell('echo $HOME')
-# if homedir == '/home/sry':
-#     print('---On server ibm')
-#     os.system('./Spatial/run_coord.py %s --flag all -k 130 140 150 160 170 180 190 200 --center CA geometric -T False' % dataset_name)
-# elif homedir == '/public/home/sry':
-#     print('---On server hp')
-#     os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA geometric -T False' % dataset_name)
+    # from processing import shell
+    # homedir = shell('echo $HOME')
+    # if homedir == '/home/sry':
+    #     print('---On server ibm')
+    #     os.system('./Spatial/run_coord.py %s --flag all -k 130 140 150 160 170 180 190 200 --center CA geometric -T False' % dataset_name)
+    # elif homedir == '/public/home/sry':
+    #     print('---On server hp')
+    #     os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA geometric -T False' % dataset_name)

@@ -43,7 +43,7 @@ def qsub_wild(app, libdir, seq_path, qsubid_prefix):
 
             os.system('chmod 755 %s' % run_psiblast)
             os.system('/public/home/sry/bin/getQ.pl')
-            os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_psiblast))
+            os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_psiblast))
             time.sleep(1)
 
 def qsub_mutant(app, libdir, seq_path, qsubid_prefix):
@@ -74,7 +74,7 @@ def qsub_mutant(app, libdir, seq_path, qsubid_prefix):
 
         os.system('chmod 755 %s' % run_psiblast)
         os.system('/public/home/sry/bin/getQ.pl')
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_psiblast))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_psiblast))
         time.sleep(1)
 
 

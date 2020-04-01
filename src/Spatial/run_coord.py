@@ -137,7 +137,7 @@ class CoordRunner(object):
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'%self.homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.01)
 
     def run_cal_mutant(self, rosetta_mut_tag,mutant_tag,k_neighbor,center,thermo,ddg):
@@ -179,7 +179,7 @@ class CoordRunner(object):
         g.close()
         os.system('chmod 755 %s' % run_prog)
         os.system('%s/bin/getQ.pl'%self.homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.01)
 
 class ArrayGenerator(object):

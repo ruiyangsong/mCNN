@@ -92,7 +92,7 @@ class QsubRunner(object):
         g.close()
         os.system('chmod 755 %s' % run_CalmCSM)
         os.system('%s/bin/getQ.pl'%self.homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_CalmCSM))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_CalmCSM))
         time.sleep(0.01)
 
     def run_mutant_mCSM(self,class_num,center,maximum,step):
@@ -121,7 +121,7 @@ class QsubRunner(object):
         g.close()
         os.system('chmod 755 %s' % run_CalmCSM)
         os.system('%s/bin/getQ.pl'%self.homedir)
-        os.system('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_CalmCSM))
+        os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_CalmCSM))
         time.sleep(0.01)
 
 if __name__ == '__main__':
