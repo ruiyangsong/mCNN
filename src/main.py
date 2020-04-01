@@ -15,11 +15,6 @@ print('\n***drop duplicates of the original mutant csv (dataset %s)...'%dataset_
 mt_csv_dir = '../dataset/%s/%s.csv'%(dataset_name,dataset_name)
 df = read_csv(csvdir=mt_csv_dir)
 
-df['PDB'] = df['PDB'].astype(str)
-df['WILD_TYPE'] = df['WILD_TYPE'].astype(str)
-df['POSITION'] = df['POSITION'].astype(str)
-df['MUTANT'] = df['MUTANT'].astype(str)
-df['Fold'] = df['Fold'].astype(str)
 
 len_1 = len(df)
 df.drop_duplicates(subset=['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT'],keep='first',inplace=True)
@@ -91,16 +86,16 @@ os.system('./Stride/CalSA.py %s'%dataset_name) #stride based on refined and muta
 # os.system('nohup ./Spatial/run_mCSM.py %s > %s/run_mCSM.log 2>&1 &'%(dataset_name,pathdict['log_dir']))
 
 ## mCNN
-os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA geometric -T False'%dataset_name)#@@++
+os.system('./Spatial/run_coord.py %s --flag first -k 5 --center CA -T False'%dataset_name)#@@++
 print('\n***Calculating mCNN feature...')
-# os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA geometric -T False'%dataset_name)
-# os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 130 140 150 160 170 180 190 200 --center CA geometric -T False'%dataset_name)
+# os.system('./Spatial/run_coord.py %s --flag all -k 30 --center CA -T False'%dataset_name)
+os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA -T False'%dataset_name)
 
-from processing import shell
-homedir = shell('echo $HOME')
-if homedir == '/home/sry':
-    print('---On server ibm')
-    os.system('./Spatial/run_coord.py %s --flag all -k 130 140 150 160 170 180 190 200 --center CA geometric -T False' % dataset_name)
-elif homedir == '/public/home/sry':
-    print('---On server hp')
-    os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA geometric -T False' % dataset_name)
+# from processing import shell
+# homedir = shell('echo $HOME')
+# if homedir == '/home/sry':
+#     print('---On server ibm')
+#     os.system('./Spatial/run_coord.py %s --flag all -k 130 140 150 160 170 180 190 200 --center CA geometric -T False' % dataset_name)
+# elif homedir == '/public/home/sry':
+#     print('---On server hp')
+#     os.system('./Spatial/run_coord.py %s --flag all -k 30 40 50 60 70 80 90 100 110 120 --center CA geometric -T False' % dataset_name)

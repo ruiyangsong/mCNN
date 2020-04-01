@@ -6,8 +6,11 @@
 /**/*.log
 /**/temp_model.py
 
-# test_TrRosetta
-Rosetta_vs_TrRosetta/
+# RO_TR aln
+Rosetta_and_TrRosetta/
+
+# TrRosetta output
+src/Network/output/
 
 # former code backups
 shell_former/
@@ -31,4 +34,4 @@ model/
 src/test.py
 src/Network/*bak*
 src/Network/*former*
-
+src/Network/**/*.png

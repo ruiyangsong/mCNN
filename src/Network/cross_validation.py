@@ -146,8 +146,6 @@ class ParamsParserWin(object):
               % (self.container, self.k, self.append, self.split_val, self.normalize_method, self.sort_method, self.seed_tuple,
                  self.nn_model, self.summary, self.verbose, self.epoch, self.batch_size, self.CUDA))
 
-
-
 class ParamsParser(object):
     def __init__(self):
         self.parse_params()
