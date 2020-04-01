@@ -10,7 +10,7 @@
 Rosetta_and_TrRosetta/
 
 # TrRosetta output
-src/Network/output/
+src/Network/TrRosetta/output/
 
 # former code backups
 shell_former/
