@@ -2,7 +2,14 @@
 # -*- coding: utf-8 -*-
 
 '''
-** Script for Calculate mCNN features (for each mutation). which was revoked by run_coord.py for "qsub" action on server.
+** Script for Calculate mCNN features (for each mutation). which was revoked by run_coord.py for "qsub" action on cluster.
+   i.e., integrating all the features to specific (k-neighboring) csv file.
+
+** NOTICE
+   1. Both rosetta ref and rosetta mut are considered. It should be pointed out that all the items are based on those
+      successful runs of rosetta_[ref|mut], i.e., those failed items (rosetta runs failed) were dropped.
+   2. Other spatial feature such as orientation, sine or cosine values of dihedral angles, etc. can be calculated by coords in the csv file.
+   3. left for blank
 
 ** File Name: coord.py rather than mCNN.py for the reason that it is contradict-free with the self-defined module named mCNN.
    The self-defined module mCNN was implemented by the following mapping:
@@ -71,13 +78,12 @@ def main():
     NC = NeighborCalculator(pdbdir,mutant_tag,k_neighbor,center)
 
     if flag == 'first' and not os.path.exists('%s/center_%s.csv' % (OUTDIR, center)):
-        ## cals df_feature only.
+        ## cals df_feature (ALL the ATOMS) only.
         df_pdb, center_coord = NC.ParsePDB()
         FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR, WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR, REVERSE)
         df_feature = FG.append_feature()
         save_csv(df=df_feature, outdir=OUTDIR, filename='center_%s' % center)
         exit(0)
-        print('[ERROR] Program does not exit!')
 
     elif flag == 'all':
         ## calc df_feature and df_neighbor.
@@ -100,8 +106,8 @@ def main():
         if center == 'geometric':
             np.save('%s/%s_center_coord.npy' % (OUTDIR, FILENAME), center_coord)
         if center == 'CA':
-            if not os.path.exists('%s/center_CA_neighbor_all_center_coord.npy' % OUTDIR):
-                np.save('%s/center_CA_neighbor_all_center_coord.npy' % OUTDIR, center_coord)
+            if not os.path.exists('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR):
+                np.save('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR, center_coord)
 
     ####################################################################################################################
     ## main program ENDs here
