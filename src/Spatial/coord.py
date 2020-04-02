@@ -94,24 +94,41 @@ def main():
             FG = FeatureGenerator(df_pdb, mutant_tag, OUTDIR, FILENAME, featurelst, THERMO[0], THERMO[1], DDG, SADIR, WTBLASTDIR, MTBLASTDIR, ENERGYDIR, MAPPINGDIR, REVERSE)
             df_feature = FG.append_feature()
             save_csv(df=df_feature, outdir=OUTDIR, filename='center_%s' % center)
+            param_acider(NC, df_feature, OUTDIR, FILENAME, center, center_coord)
         ## 如果包含全部原子的文件已经存在，则基于此直接筛选近邻。
         else:
             df_feature = read_csv('%s/center_%s.csv'%(OUTDIR,center))
+            param_acider(NC, df_feature, OUTDIR, FILENAME, center, center_coord)
 
-        ## calc df_neighbor based on df_feature.
-        df_neighbor = NC.CalNeighbor(df_feature)
-        df_neighbor.reset_index(drop=True, inplace=True)
-        save_csv(df=df_neighbor,outdir=OUTDIR,filename=FILENAME)
-        ## save center_coord
-        if center == 'geometric':
-            np.save('%s/%s_center_coord.npy' % (OUTDIR, FILENAME), center_coord)
-        if center == 'CA':
-            if not os.path.exists('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR):
-                np.save('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR, center_coord)
+        # ==============================================================================================================
+        ## This block was replaced by function param_acider(NC, df_feature,OUTDIR,FILENAME,center,center_coord)
+        # ==============================================================================================================
+        # ## calc df_neighbor based on df_feature.
+        # df_neighbor = NC.CalNeighbor(df_feature)
+        # df_neighbor.reset_index(drop=True, inplace=True)
+        # save_csv(df=df_neighbor,outdir=OUTDIR,filename=FILENAME)
+        # ## save center_coord
+        # if center == 'geometric':
+        #     np.save('%s/%s_center_coord.npy' % (OUTDIR, FILENAME), center_coord)
+        # if center == 'CA':
+        #     if not os.path.exists('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR):
+        #         np.save('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR, center_coord)
 
     ####################################################################################################################
     ## main program ENDs here
     ####################################################################################################################
+def param_acider(NC, df_feature,OUTDIR,FILENAME,center,center_coord):
+    '''this func helps to pass local variable "df_feature"'''
+    ## calc df_neighbor based on df_feature.
+    df_neighbor = NC.CalNeighbor(df_feature)
+    df_neighbor.reset_index(drop=True, inplace=True)
+    save_csv(df=df_neighbor, outdir=OUTDIR, filename=FILENAME)
+    ## save center_coord
+    if center == 'geometric':
+        np.save('%s/%s_center_coord.npy' % (OUTDIR, FILENAME), center_coord)
+    if center == 'CA':
+        if not os.path.exists('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR):
+            np.save('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR, center_coord)
 
 def save_csv(df,outdir,filename):
     if not os.path.exists(outdir):
