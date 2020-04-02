@@ -5,8 +5,6 @@
 其中不考虑rosetta mut 失败的条目（根据 rosetta mut 的结果反向去 mt_csv 中查找 ddg温度等 特征指标）
 '''
 
-#'File name format: MT_pdb_wtaa_chain_position_mtaa_serial'
-
 import os, sys, time, argparse
 import numpy as np
 from mCNN.processing import shell, str2bool, read_csv, log, check_qsub, save_data_array, transform
@@ -35,10 +33,11 @@ def main():
     QR.coord_runner()
 
     if flag == 'first':
+        ## first means only calc df_feature (ALL the ATOMS)
         exit(0)
 
-    AG = ArrayGenerator(homedir, dataset_name, k_neighborlst,centerlst,pca)
-    AG.array_runner()
+    # AG = ArrayGenerator(homedir, dataset_name, k_neighborlst,centerlst,pca)
+    # AG.array_runner()
 #-----------------------------------------------------------------------------------------------------------------------
 class CoordRunner(object):
     def __init__(self,homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst):
@@ -182,142 +181,148 @@ class CoordRunner(object):
         os.popen('qsub -e %s -o %s -l %s -N %s %s' % (errfile, outfile, walltime, qsubid, run_prog))
         time.sleep(0.01)
 
-class ArrayGenerator(object):
-    def __init__(self,homedir, dataset_name, k_neighborlst,centerlst,pca):
-        self.homedir       = homedir
-        self.dataset_name  = dataset_name
-        self.k_neighborlst = k_neighborlst
-        self.centerlst     = centerlst
-        self.pca           = pca
-        self.dataset_dir     = '%s/mCNN/dataset/%s' % (self.homedir,self.dataset_name)
-        self.wild_csv_path   = '%s/feature/mCNN/wild/csv' % (self.dataset_dir)
-        self.mutant_csv_path = '%s/feature/mCNN/mutant/csv' % (self.dataset_dir)
 
-        # set output dir for feature array
-        self.wild_outdir_k   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz' % (self.homedir, self.dataset_name)
-        self.mutant_outdir_k = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz' % (self.homedir, self.dataset_name)
-        if not os.path.exists(self.wild_outdir_k):
-            os.makedirs(self.wild_outdir_k)
-        if not os.path.exists(self.mutant_outdir_k):
-            os.makedirs(self.mutant_outdir_k)
 
-        self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
+# ======================================================================================================================
+# Generating numpy array of the whole dataset.
+# ======================================================================================================================
 
-                     's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
-                     's_Helix', 's_Strand', 's_Coil',
-
-                     'sa', 'rsa', 'asa', 'phi', 'psi',
-
-                     'ph', 'temperature',
-
-                     'C', 'O', 'N', 'Other',
-
-                     'C_mass', 'O_mass', 'N_mass', 'S_mass',
-
-                     'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
-                     'hydrophobic_bak', 'polar',
-
-                     'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
-                     'hbond_bb_sc', 'hbond_sc', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref', 'rama_prepro', 'total',
-
-                     'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
-                     'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
-                     'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
-                     'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
-
-                     'dC', 'dH', 'dO', 'dN', 'dOther',
-
-                     'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
-
-                     'dhydrophobic_bak', 'dpolar',
-
-                     'dEntropy', 'entWT', 'entMT']
-
-        # self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
-        #
-        #              's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
-        #              's_Helix', 's_Strand', 's_Coil',
-        #
-        #              'sa', 'rsa', 'asa', 'phi', 'psi',
-        #
-        #              'ph', 'temperature',
-        #
-        #              'C', 'O', 'N', 'Other',
-        #
-        #              'C_mass', 'O_mass', 'N_mass', 'S_mass',
-        #
-        #              'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
-        #              'hydrophobic_bak', 'polar',
-        #
-        #              'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
-        #              'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
-        #              'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
-        #              'rama_prepro', 'total',
-        #
-        #              'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
-        #              'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
-        #              'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
-        #              'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
-        #
-        #              'dC', 'dH', 'dO', 'dN', 'dOther',
-        #
-        #              'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
-        #
-        #              'dhydrophobic_bak', 'dpolar',
-        #
-        #              'dEntropy', 'entWT', 'entMT']
-
-    @log
-    def array_runner(self):
-        wild_tag_lst = os.listdir(self.wild_csv_path)
-        mutant_tag_lst = os.listdir(self.mutant_csv_path)
-        with open('%s/wild_array_idx.lst'%self.dataset_dir,mode='w') as f:
-            for x in wild_tag_lst:
-                f.writelines('%s\n'%x)
-        with open('%s/mutant_array_idx.lst'%self.dataset_dir,mode='w') as f:
-            for x in mutant_tag_lst:
-                f.writelines('%s\n'%x)
-
-        for k_neighbor in self.k_neighborlst:
-            for center in self.centerlst:
-                filename = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, k_neighbor)
-                ## for wild
-                wild_csvdirlst = [self.wild_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in wild_tag_lst]
-                self.array_generator(wild_csvdirlst,filename,k_neighbor,center,self.wild_outdir_k)
-
-                ## for mutant
-                mutant_csvdirlst = [self.mutant_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in mutant_tag_lst]
-                self.array_generator(mutant_csvdirlst,filename,k_neighbor,center,self.mutant_outdir_k)
-
-    def array_generator(self, csvdirlst,filename,k_neighbor,center,outdir_k):
-        ddglst = []
-        ylst = []
-        arrlst = []
-        for csvdir in csvdirlst:
-            df = read_csv(csvdir)
-            ddg = df.loc[:, 'ddg'].values[0]
-            ddglst.append(ddg)
-            if ddg >= 0:
-                ylst.append(1)
-            else:
-                ylst.append(0)
-            tmp_arr = df.loc[:, self.keys].values
-            if self.pca:
-                try:
-                    prefix = '/'.join(csvdir.split('/')[:-1])
-                    center_coord_dir = '%s/center_%s_neighbor_%s_center_coord.npy' % (prefix, center, k_neighbor)
-                except:
-                    center_coord_dir = '%s/center_%s_neighbor_all_center_coord.npy' % (prefix, center)
-                center_coord = np.load(center_coord_dir)
-                tmp_arr[:, 1:4] = transform(tmp_arr[:, 1:4], center_coord)
-
-            arrlst.append(tmp_arr)
-
-        x = np.array(arrlst).reshape(-1, k_neighbor, len(self.keys))
-        ddg = np.array(ddglst).reshape(-1, 1)
-        y = np.array(ylst).reshape(-1, 1)
-        assert x.shape[0] == ddg.shape[0] and ddg.shape[0] == y.shape[0]
-        save_data_array(x, y, ddg, filename, outdir_k)
+# class ArrayGenerator(object):
+#     def __init__(self,homedir, dataset_name, k_neighborlst,centerlst,pca):
+#         self.homedir       = homedir
+#         self.dataset_name  = dataset_name
+#         self.k_neighborlst = k_neighborlst
+#         self.centerlst     = centerlst
+#         self.pca           = pca
+#         self.dataset_dir     = '%s/mCNN/dataset/%s' % (self.homedir,self.dataset_name)
+#         self.wild_csv_path   = '%s/feature/mCNN/wild/csv' % (self.dataset_dir)
+#         self.mutant_csv_path = '%s/feature/mCNN/mutant/csv' % (self.dataset_dir)
+#
+#         # set output dir for feature array
+#         self.wild_outdir_k   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz' % (self.homedir, self.dataset_name)
+#         self.mutant_outdir_k = '%s/mCNN/dataset/%s/feature/mCNN/mutant/npz' % (self.homedir, self.dataset_name)
+#         if not os.path.exists(self.wild_outdir_k):
+#             os.makedirs(self.wild_outdir_k)
+#         if not os.path.exists(self.mutant_outdir_k):
+#             os.makedirs(self.mutant_outdir_k)
+#
+#         self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
+#
+#                      's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
+#                      's_Helix', 's_Strand', 's_Coil',
+#
+#                      'sa', 'rsa', 'asa', 'phi', 'psi',
+#
+#                      'ph', 'temperature',
+#
+#                      'C', 'O', 'N', 'Other',
+#
+#                      'C_mass', 'O_mass', 'N_mass', 'S_mass',
+#
+#                      'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
+#                      'hydrophobic_bak', 'polar',
+#
+#                      'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
+#                      'hbond_bb_sc', 'hbond_sc', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref', 'rama_prepro', 'total',
+#
+#                      'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
+#                      'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
+#                      'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
+#                      'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
+#
+#                      'dC', 'dH', 'dO', 'dN', 'dOther',
+#
+#                      'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
+#
+#                      'dhydrophobic_bak', 'dpolar',
+#
+#                      'dEntropy', 'entWT', 'entMT']
+#
+#         # self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
+#         #
+#         #              's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
+#         #              's_Helix', 's_Strand', 's_Coil',
+#         #
+#         #              'sa', 'rsa', 'asa', 'phi', 'psi',
+#         #
+#         #              'ph', 'temperature',
+#         #
+#         #              'C', 'O', 'N', 'Other',
+#         #
+#         #              'C_mass', 'O_mass', 'N_mass', 'S_mass',
+#         #
+#         #              'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
+#         #              'hydrophobic_bak', 'polar',
+#         #
+#         #              'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
+#         #              'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
+#         #              'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
+#         #              'rama_prepro', 'total',
+#         #
+#         #              'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
+#         #              'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
+#         #              'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
+#         #              'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
+#         #
+#         #              'dC', 'dH', 'dO', 'dN', 'dOther',
+#         #
+#         #              'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
+#         #
+#         #              'dhydrophobic_bak', 'dpolar',
+#         #
+#         #              'dEntropy', 'entWT', 'entMT']
+#
+#     @log
+#     def array_runner(self):
+#         wild_tag_lst = os.listdir(self.wild_csv_path)
+#         mutant_tag_lst = os.listdir(self.mutant_csv_path)
+#         with open('%s/wild_array_idx.lst'%self.dataset_dir,mode='w') as f:
+#             for x in wild_tag_lst:
+#                 f.writelines('%s\n'%x)
+#         with open('%s/mutant_array_idx.lst'%self.dataset_dir,mode='w') as f:
+#             for x in mutant_tag_lst:
+#                 f.writelines('%s\n'%x)
+#
+#         for k_neighbor in self.k_neighborlst:
+#             for center in self.centerlst:
+#                 filename = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, k_neighbor)
+#                 ## for wild
+#                 wild_csvdirlst = [self.wild_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in wild_tag_lst]
+#                 self.array_generator(wild_csvdirlst,filename,k_neighbor,center,self.wild_outdir_k)
+#
+#                 ## for mutant
+#                 mutant_csvdirlst = [self.mutant_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in mutant_tag_lst]
+#                 self.array_generator(mutant_csvdirlst,filename,k_neighbor,center,self.mutant_outdir_k)
+#
+#     def array_generator(self, csvdirlst,filename,k_neighbor,center,outdir_k):
+#         ddglst = []
+#         ylst = []
+#         arrlst = []
+#         for csvdir in csvdirlst:
+#             df = read_csv(csvdir)
+#             ddg = df.loc[:, 'ddg'].values[0]
+#             ddglst.append(ddg)
+#             if ddg >= 0:
+#                 ylst.append(1)
+#             else:
+#                 ylst.append(0)
+#             tmp_arr = df.loc[:, self.keys].values
+#             if self.pca:
+#                 try:
+#                     prefix = '/'.join(csvdir.split('/')[:-1])
+#                     center_coord_dir = '%s/center_%s_neighbor_%s_center_coord.npy' % (prefix, center, k_neighbor)
+#                 except:
+#                     center_coord_dir = '%s/center_%s_neighbor_all_center_coord.npy' % (prefix, center)
+#                 center_coord = np.load(center_coord_dir)
+#                 tmp_arr[:, 1:4] = transform(tmp_arr[:, 1:4], center_coord)
+#
+#             arrlst.append(tmp_arr)
+#
+#         x = np.array(arrlst).reshape(-1, k_neighbor, len(self.keys))
+#         ddg = np.array(ddglst).reshape(-1, 1)
+#         y = np.array(ylst).reshape(-1, 1)
+#         assert x.shape[0] == ddg.shape[0] and ddg.shape[0] == y.shape[0]
+#         save_data_array(x, y, ddg, filename, outdir_k)
 
 if __name__ == '__main__':
     main()
