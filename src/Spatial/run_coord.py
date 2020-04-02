@@ -189,9 +189,9 @@ class ArrayGenerator(object):
         self.k_neighborlst = k_neighborlst
         self.centerlst     = centerlst
         self.pca           = pca
-
-        self.wild_csv_path   = '%s/mCNN/dataset/%s/feature/mCNN/wild/csv' % (self.homedir,self.dataset_name)
-        self.mutant_csv_path = '%s/mCNN/dataset/%s/feature/mCNN/mutant/csv' % (self.homedir,self.dataset_name)
+        self.dataset_dir     = '%s/mCNN/dataset/%s' % (self.homedir,self.dataset_name)
+        self.wild_csv_path   = '%s/feature/mCNN/wild/csv' % (self.dataset_dir)
+        self.mutant_csv_path = '%s/feature/mCNN/mutant/csv' % (self.dataset_dir)
 
         # set output dir for feature array
         self.wild_outdir_k   = '%s/mCNN/dataset/%s/feature/mCNN/wild/npz' % (self.homedir, self.dataset_name)
@@ -218,9 +218,7 @@ class ArrayGenerator(object):
                      'hydrophobic_bak', 'polar',
 
                      'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
-                     'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
-                     'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
-                     'rama_prepro', 'total',
+                     'hbond_bb_sc', 'hbond_sc', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref', 'rama_prepro', 'total',
 
                      'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
                      'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
@@ -235,17 +233,60 @@ class ArrayGenerator(object):
 
                      'dEntropy', 'entWT', 'entMT']
 
+        # self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
+        #
+        #              's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
+        #              's_Helix', 's_Strand', 's_Coil',
+        #
+        #              'sa', 'rsa', 'asa', 'phi', 'psi',
+        #
+        #              'ph', 'temperature',
+        #
+        #              'C', 'O', 'N', 'Other',
+        #
+        #              'C_mass', 'O_mass', 'N_mass', 'S_mass',
+        #
+        #              'hydrophobic', 'positive', 'negative', 'neutral', 'acceptor', 'donor', 'aromatic', 'sulphur',
+        #              'hydrophobic_bak', 'polar',
+        #
+        #              'fa_atr', 'fa_rep', 'fa_sol', 'fa_intra_rep', 'fa_intra_sol_xover4', 'lk_ball_wtd', 'fa_elec', 'pro_close',
+        #              'hbond_sr_bb', 'hbond_lr_bb', 'hbond_bb_sc', 'hbond_sc', 'dslf_fa13', 'atom_pair_constraint',
+        #              'angle_constraint', 'dihedral_constraint', 'omega', 'fa_dun', 'p_aa_pp', 'yhh_planarity', 'ref',
+        #              'rama_prepro', 'total',
+        #
+        #              'WT_A', 'WT_R', 'WT_N', 'WT_D', 'WT_C', 'WT_Q', 'WT_E', 'WT_G', 'WT_H', 'WT_I', 'WT_L', 'WT_K', 'WT_M',
+        #              'WT_F', 'WT_P', 'WT_S', 'WT_T', 'WT_W', 'WT_Y', 'WT_V', 'WT_-',
+        #              'MT_A', 'MT_R', 'MT_N', 'MT_D', 'MT_C', 'MT_Q', 'MT_E', 'MT_G', 'MT_H', 'MT_I', 'MT_L', 'MT_K', 'MT_M',
+        #              'MT_F', 'MT_P', 'MT_S', 'MT_T', 'MT_W', 'MT_Y', 'MT_V', 'MT_-',
+        #
+        #              'dC', 'dH', 'dO', 'dN', 'dOther',
+        #
+        #              'dhydrophobic', 'dpositive', 'dnegative', 'dneutral', 'dacceptor', 'ddonor', 'daromatic', 'dsulphur',
+        #
+        #              'dhydrophobic_bak', 'dpolar',
+        #
+        #              'dEntropy', 'entWT', 'entMT']
+
     @log
     def array_runner(self):
+        wild_tag_lst = os.listdir(self.wild_csv_path)
+        mutant_tag_lst = os.listdir(self.mutant_csv_path)
+        with open('%s/wild_array_idx.lst'%self.dataset_dir,mode='w') as f:
+            for x in wild_tag_lst:
+                f.writelines('%s\n'%x)
+        with open('%s/mutant_array_idx.lst'%self.dataset_dir,mode='w') as f:
+            for x in mutant_tag_lst:
+                f.writelines('%s\n'%x)
+
         for k_neighbor in self.k_neighborlst:
             for center in self.centerlst:
                 filename = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, k_neighbor)
                 ## for wild
-                wild_csvdirlst = [self.wild_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in os.listdir(self.wild_csv_path)]
+                wild_csvdirlst = [self.wild_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in wild_tag_lst]
                 self.array_generator(wild_csvdirlst,filename,k_neighbor,center,self.wild_outdir_k)
 
                 ## for mutant
-                mutant_csvdirlst = [self.mutant_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in os.listdir(self.mutant_csv_path)]
+                mutant_csvdirlst = [self.mutant_csv_path + '/' + x + '/' + 'center_%s_neighbor_%s.csv' % (center, k_neighbor) for x in mutant_tag_lst]
                 self.array_generator(mutant_csvdirlst,filename,k_neighbor,center,self.mutant_outdir_k)
 
     def array_generator(self, csvdirlst,filename,k_neighbor,center,outdir_k):

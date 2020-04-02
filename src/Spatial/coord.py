@@ -203,10 +203,16 @@ class FeatureGenerator(object):
 
     @log
     def init_constant(self):
+        # self.energy_name_lst = ['fa_atr',              'fa_rep',      'fa_sol',    'fa_intra_rep',         'fa_intra_sol_xover4',
+        #                         'lk_ball_wtd',         'fa_elec',     'pro_close', 'hbond_sr_bb',          'hbond_lr_bb',
+        #                         'hbond_bb_sc',         'hbond_sc',    'dslf_fa13', 'atom_pair_constraint', 'angle_constraint',
+        #                         'dihedral_constraint', 'omega',       'fa_dun',    'p_aa_pp',              'yhh_planarity',
+        #                         'ref',                 'rama_prepro', 'total']
+
         self.energy_name_lst = ['fa_atr',              'fa_rep',      'fa_sol',    'fa_intra_rep',         'fa_intra_sol_xover4',
-                                'lk_ball_wtd',         'fa_elec',     'pro_close', 'hbond_sr_bb',          'hbond_lr_bb',
-                                'hbond_bb_sc',         'hbond_sc',    'dslf_fa13', 'atom_pair_constraint', 'angle_constraint',
-                                'dihedral_constraint', 'omega',       'fa_dun',    'p_aa_pp',              'yhh_planarity',
+                                'lk_ball_wtd',         'fa_elec',     'pro_close',
+                                'hbond_bb_sc',         'hbond_sc',
+                                                       'omega',       'fa_dun',    'p_aa_pp',              'yhh_planarity',
                                 'ref',                 'rama_prepro', 'total']
 
         self.stride_secondary = {'H':'H',
@@ -700,8 +706,8 @@ class FeatureGenerator(object):
                     ## -------------------------------------------------------------------------------------------------
                     map_new = df_map.loc[(df_map.CHAIN==atom_chain) & (df_map.POSITION_OLD==(str(het)+str(posid)+str(inode)).strip()),:].values[0,-1]
 
-                    energy = df_energy.loc[(df_energy.res==atom_res) & (df_energy.label==str(map_new)),:]
-                    temp_df.iloc[i,:] = energy.iloc[:,2:].values.reshape(1,-1)
+                    energy = df_energy.loc[(df_energy.res==atom_res) & (df_energy.label==str(map_new)),self.energy_name_lst]
+                    temp_df.iloc[i,:] = energy.values.reshape(1,-1)
 
                 self.df = pd.concat([self.df, temp_df], axis=1)
             # ----------------------------------------------------------------------------------------------------------
