@@ -2,15 +2,20 @@
 use strict;
 
 ## what you need to change
-my $user      = "yangjy";                 # your username
-my $datadir   = "/public/home/yangjy/for/sry/output";  # the datadir, where all targets are located
-my $list      = "list";         # the list of all proteins to predict, 
-my $listdir   = "/public/home/yangjy/for/sry";     # where the list is located
+#my $user      = "yangjy";                 # your username
+#my $datadir   = "/public/home/yangjy/for/sry/output";  # the datadir, where all targets are located
+#my $list      = "list";         # the list of all proteins to predict,
+#my $listdir   = "/public/home/yangjy/for/sry";     # where the list is located
+my $user      = "sry";                 # your username
+my $datadir   = "/public/home/sry/mCNN/dataset/TR/output";  # the datadir, where all targets are located
+my $list      = "list";         # the list of all proteins to predict,
+my $listdir   = "/public/home/sry/mCNN/dataset/TR";     # where the list is located
 ##end of change
 
 
 
-my $bindir    = "/public/home/yangjy/for/sry";     # where the COACH bin is located
+#my $bindir    = "/public/home/yangjy/for/sry";     # where the COACH bin is located
+my $bindir    = "/public/home/sry/mCNN/src/TrRosetta";     # where the COACH bin is located
 
 open(LST,"<$listdir/$list");
 while(my $line=<LST>)

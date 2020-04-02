@@ -4,8 +4,8 @@ use strict;
 #my $user="yangji";    ##### Change this to your name 
 my $user=`whoami`;    ##### Change this to your name 
 $user =~ s/\n//;
-my $MYMAX=50;        ###change this to the maximum number of jobs by you
-my $TOTMAX=100;      ##change this to the maximum number of jobs by all users
+my $MYMAX=200;        ###change this to the maximum number of jobs by you
+my $TOTMAX=500;      ##change this to the maximum number of jobs by all users
 
 while(1)
 {
