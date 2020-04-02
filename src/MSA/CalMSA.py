@@ -120,7 +120,11 @@ class CalculateMSA(object):
                 res_id_lst = [(str(res.get_id()[1]) + str(res.get_id()[2])).strip() for res in chain]
                 res_name_lst = [aa_321dict[res.get_resname()] for res in chain]
                 index = res_id_lst.index(str(POSITION))
-                assert res_name_lst[index] == WILD_TYPE
+                try:
+                    assert res_name_lst[index] == WILD_TYPE
+                except:
+                    print('[ERROR] pdbdir: [%s], muttag:[%s_%s_%s_%s]' % (pdbdir, WILD_TYPE, CHAIN, POSITION, MUTANT))
+                    sys.exit(1)
                 res_name_lst[index] = MUTANT
 
                 if len(res_name_lst) > 0:
