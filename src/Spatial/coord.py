@@ -124,11 +124,8 @@ def param_acider(NC, df_feature,OUTDIR,FILENAME,center,center_coord):
     df_neighbor.reset_index(drop=True, inplace=True)
     save_csv(df=df_neighbor, outdir=OUTDIR, filename=FILENAME)
     ## save center_coord
-    if center == 'geometric':
-        np.save('%s/%s_center_coord.npy' % (OUTDIR, FILENAME), center_coord)
-    if center == 'CA':
-        if not os.path.exists('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR):
-            np.save('%s/center_CA_neighbor_._center_coord.npy' % OUTDIR, center_coord)
+    if not os.path.exists('%s/center_%s_neighbor_._center_coord.npy' % (OUTDIR, center)):
+        np.save('%s/center_%s_neighbor_._center_coord.npy' %(OUTDIR,center), center_coord)
 
 def save_csv(df,outdir,filename):
     if not os.path.exists(outdir):
