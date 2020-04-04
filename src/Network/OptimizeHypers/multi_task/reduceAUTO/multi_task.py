@@ -82,7 +82,7 @@ def data(neighbor_obj):
 
 def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, class_weights_dict,obj):
         K.clear_session()
-        summary = True
+        summary = False
         verbose = 0
         # setHyperParams------------------------------------------------------------------------------------------------
         batch_size = 64
@@ -103,13 +103,18 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
         dilation_lower = 2
         dilation_upper = 16
 
-        reduce_layers = 5  # conv 5 times: 120 => 60 => 30 => 15 => 8 => 4
-        reduce_conv2D_filter_num = {{choice([8, 16, 32])}}#used for reduce dimention
+        ddg_reduce_layers = {{choice([3,4,5])}}  # conv 5 times: 120 => 60 => 30 => 15 => 8 => 4
+        y_reduce_layers = {{choice([3,4,5])}}  # conv 5 times: 120 => 60 => 30 => 15 => 8 => 4
+        ddg_reduce_conv2D_filter_num = {{choice([16, 32, 64])}}#used for reduce dimention
+        y_reduce_conv2D_filter_num = {{choice([8, 16, 32])}}#used for reduce dimention
         reduce_conv2D_dropout_rate = {{uniform(0.001, 0.25)}}
-        residual_stride = 2
+        ddg_residual_stride = 2
+        y_residual_stride = 2
 
-        dense1_num = {{choice([64, 128, 256])}}
-        dense2_num = {{choice([32, 64])}}
+        ddg_dense1_num = {{choice([64, 128, 256])}}
+        ddg_dense2_num = {{choice([32, 64])}}
+        y_dense1_num = {{choice([32, 64, 128])}}
+        y_dense2_num = {{choice([16, 32])}}
 
         drop_num = {{uniform(0.0001, 0.3)}}
 
@@ -147,7 +152,6 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
         if basic_conv2D_layers == 2:
             y = layers.Conv2D(basic_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
             y = layers.BatchNormalization(axis=-1)(y)
-
         ## loop with Conv2D with dilation (padding='same')
         for _ in range(loop_dilation2D_layers):
             y = layers.Conv2D(loop_dilation2D_filter_num, kernel_size, padding=padding_style,dilation_rate=dilation_lower, kernel_initializer=initializer, activation=activator)(y)
@@ -158,26 +162,63 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
                 dilation_lower=2
 
         ## Conv2D with dilation (padding='valaid') and residual block to reduce dimention.
-        for _ in range(reduce_layers):
-            y = layers.Conv2D(reduce_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y)
-            y = layers.BatchNormalization(axis=-1)(y)
-            y = layers.Dropout(reduce_conv2D_dropout_rate)(y)
-            y = layers.MaxPooling2D(pool_size,padding=padding_style)(y)
-            residual = layers.Conv2D(reduce_conv2D_filter_num, 1, strides=residual_stride, padding='same')(input_layer)
-            y = layers.add([y, residual])
-            residual_stride*=2
-
+        ## for regressor branch
+        y_ddg = layers.Conv2D(ddg_reduce_conv2D_filter_num, kernel_size, padding=padding_style,
+                              kernel_initializer=initializer, activation=activator)(y)
+        y_ddg = layers.BatchNormalization(axis=-1)(y_ddg)
+        y_ddg = layers.Dropout(reduce_conv2D_dropout_rate)(y_ddg)
+        y_ddg = layers.MaxPooling2D(pool_size, padding=padding_style)(y_ddg)
+        residual_ddg = layers.Conv2D(ddg_reduce_conv2D_filter_num, 1, strides=ddg_residual_stride, padding='same')(
+            input_layer)
+        y_ddg = layers.add([y_ddg, residual_ddg])
+        ddg_residual_stride *= 2
+        for _ in range(ddg_reduce_layers-1):
+            y_ddg = layers.Conv2D(ddg_reduce_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y_ddg)
+            y_ddg = layers.BatchNormalization(axis=-1)(y_ddg)
+            y_ddg = layers.Dropout(reduce_conv2D_dropout_rate)(y_ddg)
+            y_ddg = layers.MaxPooling2D(pool_size,padding=padding_style)(y_ddg)
+            residual_ddg = layers.Conv2D(ddg_reduce_conv2D_filter_num, 1, strides=ddg_residual_stride, padding='same')(input_layer)
+            y_ddg = layers.add([y_ddg, residual_ddg])
+            ddg_residual_stride*=2
         ## flat & dense
-        y = layers.Flatten()(y)
-        y = layers.Dense(dense1_num, activation=activator)(y)
-        y = layers.BatchNormalization(axis=-1)(y)
-        y  = layers.Dropout(drop_num)(y)
-        y = layers.Dense(dense2_num, activation=activator)(y)
-        y = layers.BatchNormalization(axis=-1)(y)
-        y = layers.Dropout(drop_num)(y)
+        y_ddg = layers.Flatten()(y_ddg)
+        y_ddg = layers.Dense(ddg_dense1_num, activation=activator)(y_ddg)
+        y_ddg = layers.BatchNormalization(axis=-1)(y_ddg)
+        y_ddg  = layers.Dropout(drop_num)(y_ddg)
+        y_ddg = layers.Dense(ddg_dense2_num, activation=activator)(y_ddg)
+        y_ddg = layers.BatchNormalization(axis=-1)(y_ddg)
+        y_ddg = layers.Dropout(drop_num)(y_ddg)
+        ddg_prediction = layers.Dense(1, name='ddg')(y_ddg)
+        # class_prediction = layers.Dense(len(np.unique(y_train)), activation='softmax', name='class')(y_ddg)
 
-        ddg_prediction = layers.Dense(1, name='ddg')(y)
-        class_prediction = layers.Dense(len(np.unique(y_train)),activation='softmax',name='class')(y)
+        ## for classifier branch
+        y_y = layers.Conv2D(y_reduce_conv2D_filter_num, kernel_size, padding=padding_style,
+                            kernel_initializer=initializer, activation=activator)(y)
+        y_y = layers.BatchNormalization(axis=-1)(y_y)
+        y_y = layers.Dropout(reduce_conv2D_dropout_rate)(y_y)
+        y_y = layers.MaxPooling2D(pool_size, padding=padding_style)(y_y)
+        residual_y = layers.Conv2D(y_reduce_conv2D_filter_num, 1, strides=y_residual_stride, padding='same')(
+            input_layer)
+        y_y = layers.add([y_y, residual_y])
+        y_residual_stride *= 2
+        for _ in range(y_reduce_layers-1):
+            y_y = layers.Conv2D(y_reduce_conv2D_filter_num,kernel_size,padding=padding_style,kernel_initializer=initializer,activation=activator)(y_y)
+            y_y = layers.BatchNormalization(axis=-1)(y_y)
+            y_y = layers.Dropout(reduce_conv2D_dropout_rate)(y_y)
+            y_y = layers.MaxPooling2D(pool_size,padding=padding_style)(y_y)
+            residual_y = layers.Conv2D(y_reduce_conv2D_filter_num, 1, strides=y_residual_stride, padding='same')(input_layer)
+            y_y = layers.add([y_y, residual_y])
+            y_residual_stride*=2
+        ## flat & dense
+        y_y = layers.Flatten()(y_y)
+        y_y = layers.Dense(y_dense1_num, activation=activator)(y_y)
+        y_y = layers.BatchNormalization(axis=-1)(y_y)
+        y_y = layers.Dropout(drop_num)(y_y)
+        y_y = layers.Dense(y_dense2_num, activation=activator)(y_y)
+        y_y = layers.BatchNormalization(axis=-1)(y_y)
+        y_y = layers.Dropout(drop_num)(y_y)
+        class_prediction = layers.Dense(len(np.unique(y_train)),activation='softmax',name='class')(y_y)
+
 
         model = models.Model(inputs=input_layer, outputs=[ddg_prediction,class_prediction])
 
