@@ -10,46 +10,67 @@ S2648.csv_cross_valid_position_level.fold1.test.csv
       S2648.csv_blind_position_level.test.csv
 '''
 def main():
+    main_pro_pos(rm=True)
+
+def main_pro_pos(rm=False):
     dataset_name = sys.argv[1]
+    if rm:
+        os.system('rm -rf /public/home/sry/mCNN/dataset/%s/npz/wild/*'%dataset_name)
+        os.system('rm -rf /public/home/sry/mCNN/dataset/%s/npz/mutant/*'%dataset_name)
     homedir = shell('echo $HOME')
-    k_neighborlst = [50, 120]
+    k_neighborlst = [30, 40, 50, 60, 70,80,90,100,110,120,130,140,150,160,170,180,190,200]
+    # k_neighborlst = [50, 120]
     centerlst = ['CA']
     pca = False
-    filelst = os.listdir('/public/home/sry/mCNN/dataset/S2648/cross_validation')
-    for file in filelst:
-        mutant_csv_pth='/public/home/sry/mCNN/dataset/S2648/cross_validation/'+file
-        filename_prefix = file.split('_')[-2][:3]+'_'+file.split('.')[-3]+'_'+file.split('.')[-2]
+    filelst = os.listdir('/public/home/sry/mCNN/dataset/%s/cross_validation'%dataset_name)
 
-        AG = ArrayGenerator(homedir, dataset_name, mutant_csv_pth, filename_prefix, k_neighborlst, centerlst, pca=pca)
+    ## for wild
+    feature_csv_dir = '%s/mCNN/dataset/SSD/feature/mCNN/wild/csv' % homedir
+    outdir = '%s/mCNN/dataset/%s/npz/wild/cross_valid' % (homedir, dataset_name)
+    for file in filelst:
+        mutant_csv_pth='/public/home/sry/mCNN/dataset/%s/cross_validation/'%dataset_name+file
+        filename_prefix = file.split('_')[-2][:3]+'_'+file.split('.')[-3]+'_'+file.split('.')[-2]
+        AG = ArrayGenerator(homedir, dataset_name, mutant_csv_pth, feature_csv_dir, outdir, filename_prefix, k_neighborlst, centerlst, pca=pca)
         AG.array_runner()
 
+    os.chdir('/public/home/sry/mCNN/dataset/%s/npz/wild')
+    os.system('mv ./err.lst ./err_dup.lst')
+    os.system('sort -u ./err_dup.lst > ./err.lst')
 
+    ## for mutant
+    feature_csv_dir = '%s/mCNN/dataset/SSD/feature/mCNN/mutant/csv' % homedir
+    outdir = '%s/mCNN/dataset/%s/npz/mutant/cross_valid' % (homedir, dataset_name)
+    for file in filelst:
+        mutant_csv_pth = '/public/home/sry/mCNN/dataset/%s/cross_validation/' % dataset_name + file
+        filename_prefix = file.split('_')[-2][:3] + '_' + file.split('.')[-3] + '_' + file.split('.')[-2]
+        AG = ArrayGenerator(homedir, dataset_name, mutant_csv_pth, feature_csv_dir, outdir, filename_prefix,
+                            k_neighborlst, centerlst, pca=pca)
+        AG.array_runner()
+
+    os.chdir('/public/home/sry/mCNN/dataset/%s/npz/mutant')
+    os.system('mv ./err.lst ./err_dup.lst')
+    os.system('sort -u ./err_dup.lst > ./err.lst')
+
+
+def blind_test():
+    pass
 
 class ArrayGenerator(object):
-    def __init__(self, homedir, dataset_name, mutant_csv_pth, filename_prefix, k_neighborlst, centerlst, pca=False):
-        self.homedir        = homedir
-        self.dataset_name   = dataset_name
-        self.mutant_csv_pth = mutant_csv_pth #/public/home/sry/mCNN/dataset/S2648/cross_validation/S2648.csv_cross_valid_position_level.fold4.test.csv
+    def __init__(self, homedir, dataset_name, mutant_csv_pth, feature_csv_dir, outdir, filename_prefix, k_neighborlst, centerlst, pca=False):
+        self.homedir         = homedir
+        self.dataset_name    = dataset_name
+        self.mutant_csv_pth  = mutant_csv_pth #~/mCNN/dataset/S2648/cross_validation/S2648.csv_cross_valid_position_level.fold4.test.csv
+        self.feature_csv_dir = feature_csv_dir # .../feature/mCNN/[wild|mutant]/csv
+        self.outdir          = outdir # dataset/S2648/npz/wild
         self.filename_prefix = filename_prefix #output filename_prefix
-        self.k_neighborlst  = k_neighborlst
-        self.centerlst      = centerlst
-        self.pca            = pca
+        self.k_neighborlst   = k_neighborlst
+        self.centerlst       = centerlst
+        self.pca             = pca
 
-        # self.wild_feature_csv_dir   = '%s/mCNN/dataset/%s/feature/mCNN/wild/csv' % (self.homedir,self.dataset_name)
-        # self.mutant_feature_csv_dir = '%s/mCNN/dataset/%s/feature/mCNN/mutant/csv' % (self.homedir, self.dataset_name)
-        self.wild_feature_csv_dir   = '%s/mCNN/dataset/SSD/feature/mCNN/wild/csv' % (self.homedir)
-        self.mutant_feature_csv_dir = '%s/mCNN/dataset/SSD/feature/mCNN/mutant/csv' % (self.homedir)
+        # set output dir for array
+        if not os.path.exists(self.outdir):
+            os.makedirs(self.outdir)
 
-
-        # set output dir for feature array
-        self.wild_outdir   = '%s/mCNN/dataset/%s/npz/wild' % (self.homedir, self.dataset_name)
-        self.mutant_outdir = '%s/mCNN/dataset/%s/npz/mutant' % (self.homedir, self.dataset_name)
-        if not os.path.exists(self.wild_outdir):
-            os.makedirs(self.wild_outdir)
-        if not os.path.exists(self.mutant_outdir):
-            os.makedirs(self.mutant_outdir)
-        os.system('rm -rf %s/*'%self.wild_outdir)
-        os.system('rm -rf %s/*'%self.mutant_outdir)
         self.keys = ['dist', 'x', 'y', 'z', 'occupancy', 'b_factor',
 
                      's_H', 's_G', 's_I', 's_E', 's_B', 's_T', 's_C',
@@ -86,45 +107,28 @@ class ArrayGenerator(object):
         df_mut = pd.read_csv(self.mutant_csv_pth) #S2648.csv_cross_valid_position_level.fold4.test.csv
         for neighbor in self.k_neighborlst:
             for center in self.centerlst:
-                for wild_mut_flag in ['wild','mutant']:
-                    filename_suffix = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, neighbor)
-                    filename = self.filename_prefix+'_'+filename_suffix
-                    csvpthlst = []
-                    phlst = []
-                    thermlst = []
-                    center_coordpthlst = []
-                    for i in range(len(df_mut)):
-                        mut_tag = '_'.join([str(x) for x in df_mut.iloc[i, :][['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT']].values])
+                filename_suffix = 'center_%s_PCA_%s_neighbor_%s' % (center, self.pca, neighbor)
+                filename = self.filename_prefix+'_'+filename_suffix
+                csvpthlst = []
+                phlst = []
+                thermlst = []
+                center_coordpthlst = []
+                for i in range(len(df_mut)):
+                    mut_tag = '_'.join([str(x) for x in df_mut.iloc[i, :][['PDB','WILD_TYPE','CHAIN','POSITION','MUTANT']].values])
+                    wild_feature_csv_pth = '%s/%s/center_%s_neighbor_%s.csv'%(self.feature_csv_dir,mut_tag,center,neighbor) #center_CA_neighbor_30.csv
+                    center_coord_pth = '%s/%s/center_%s_neighbor_._center_coord.npy'%(self.feature_csv_dir, mut_tag, center)
+                    if os.path.exists(wild_feature_csv_pth) and os.path.exists(center_coord_pth):
+                        ph,temperature = df_mut.iloc[i, :][['PH','TEMPERATURE']].values
+                        csvpthlst.append(wild_feature_csv_pth)
+                        phlst.append(ph)
+                        thermlst.append(temperature)
+                        center_coordpthlst.append(center_coord_pth)
+                    else:
+                        with open('%s/err.lst' % self.outdir, mode='a') as f:
+                            f.writelines('%s\n' % mut_tag)
 
-                        ## for wild
-                        if wild_mut_flag == 'wild':
-                            wild_feature_csv_pth = '%s/%s/center_%s_neighbor_%s.csv'%(self.wild_feature_csv_dir,mut_tag,center,neighbor) #center_CA_neighbor_30.csv
-                            center_coord_pth = '%s/%s/center_%s_neighbor_._center_coord.npy'%(self.wild_feature_csv_dir, mut_tag, center)
-                            if os.path.exists(wild_feature_csv_pth) and os.path.exists(center_coord_pth):
-                                ph,temperature = df_mut.iloc[i, :][['PH','TEMPERATURE']].values
-                                csvpthlst.append(wild_feature_csv_pth)
-                                phlst.append(ph)
-                                thermlst.append(temperature)
-                                center_coordpthlst.append(center_coord_pth)
-                            else:
-                                with open('%s/err.lst' % self.wild_outdir, mode='a') as f:
-                                    f.writelines('%s\n' % mut_tag)
-
-                        ## for mutant
-                        elif wild_mut_flag == 'mutant':
-                            mutant_feature_csv_pth = '%s/%s/center_%s_neighbor_%s.csv'%(self.mutant_feature_csv_dir,mut_tag,center,neighbor) #center_CA_neighbor_30.csv
-                            center_coord_pth = '%s/%s/center_%s_neighbor_._center_coord.npy'%(self.mutant_feature_csv_dir, mut_tag, center)
-                            if os.path.exists(mutant_feature_csv_pth) and os.path.exists(center_coord_pth):
-                                ph,temperature = df_mut.iloc[i, :][['PH','TEMPERATURE']].values
-                                csvpthlst.append(mutant_feature_csv_pth)
-                                phlst.append(ph)
-                                thermlst.append(temperature)
-                                center_coordpthlst.append(center_coord_pth)
-                            else:
-                                with open('%s/err.lst' % self.mutant_outdir, mode='a') as f:
-                                    f.writelines('%s\n' % mut_tag)
-                    self.array_generator(filename=filename, csvpthlst=csvpthlst, phlst=phlst, thermlst=thermlst,
-                                         outdir=self.mutant_outdir, center_coordpthlst=center_coordpthlst)
+                self.array_generator(filename=filename, csvpthlst=csvpthlst, phlst=phlst, thermlst=thermlst,
+                                         outdir=self.outdir, center_coordpthlst=center_coordpthlst)
 
 
     def array_generator(self, filename, csvpthlst,phlst,thermlst,outdir,center_coordpthlst=None):
