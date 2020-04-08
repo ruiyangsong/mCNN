@@ -90,9 +90,9 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
 
         lr = {{loguniform(np.log(1e-4), np.log(1e-2))}}
 
-        optimizer = {{choice(['adam','sgd','rmsprop'])}}
+        optimizer = 'adam'
 
-        activator = {{choice(['elu', 'relu', 'tanh'])}}
+        activator = {{choice(['elu', 'relu'])}}
 
         basic_conv2D_layers     = {{choice([1, 2])}}
         basic_conv2D_filter_num = {{choice([16, 32])}}
@@ -132,7 +132,12 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, cl
                 monitor='val_loss',
                 factor=0.8,
                 patience=10,
-                )
+                ),
+            callbacks.EarlyStopping(
+                monitor='val_loss',
+                min_delta=1e-4,
+                patience=20,
+                verbose=1)
             ]
 
         if lr > 0:
