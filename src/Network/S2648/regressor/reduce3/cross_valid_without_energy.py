@@ -18,9 +18,9 @@ def data(train_data_pth,test_data_pth):
     ddg_train = train_data['ddg'].reshape(-1)
     # erase rosetta energy[0:41 \union 58:end]
     idx_list = [x for x in range(42)] + [x for x in range(58,117)]
-    print(idx_list)
-    print(x_train.shape)
+    # print(idx_list)
     x_train = x_train[:,:,idx_list]
+    # print(x_train.shape)
 
     class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
     class_weights_dict = dict(enumerate(class_weights))
@@ -52,8 +52,9 @@ def data(train_data_pth,test_data_pth):
     y_test = test_data['y']
     ddg_test = test_data['ddg'].reshape(-1)
     # erase rosetta energy[0:41 \union 58:end]
-    print(x_test.shape)
+
     x_test = x_test[:, :, idx_list]
+    print(x_test.shape)
 
     # sort row default is chain, pass
     # reshape and one-hot
