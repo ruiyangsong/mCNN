@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 '--sry,2020/3/12'
 import os,time
-def queueGPU(USER_MEM=10000,INTERVAL=600):
+def queueGPU(USER_MEM=10000,INTERVAL=60):
+    """
+    :param USER_MEM: int, Memory in Mib that your program needs to allocate
+    :param INTERVAL: int, Sleep time in second
+    :return:
+    """
     try:
         totalmemlst=[int(x.split()[2]) for x in os.popen('nvidia-smi -q -d Memory |grep -A4 GPU|grep Total').readlines()]
         assert USER_MEM<=max(totalmemlst)
