@@ -27,47 +27,10 @@ import pandas as pd
 from mCNN.processing import aa_321dict,log,read_csv,str2bool,aa_123dict
 
 def main():
-    csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
-    df = pd.read_csv(csvpth)
-    kneighbor = 15
-    for i in range(len(df)):
-        key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT, PH, TEMPERATURE, DDG = df.iloc[i, :].values
-        mutant_tag = '%s.%s.%s.%s.%s.%s' % (key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT)
-        ## for wild
-        outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/wild'
-        pdbpth = '/public/home/sry/mCNN/dataset/TR/pdb_chain/%s.pdb'%PDB
-        stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/wild/%s.stride'%PDB
-
-        df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = CalNeighbor(df_pdb, k_neighbor=kneighbor)
-        FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor,stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s'%(PDB,kneighbor))
-
-        ## for TR output
-        outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR'
-        # TR_wild
-        TR_wild_tag = '%s.%s.%s' % (key, PDB, CHAIN)
-        pdbpth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % TR_wild_tag
-        stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/TR/%s.stride' % TR_wild_tag
-        df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = CalNeighbor(df_pdb, k_neighbor=kneighbor)
-        FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor, stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s' % (TR_wild_tag, kneighbor))
-        # TR_mut
-        pdbpth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % mutant_tag
-        stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/TR/%s.stride' % mutant_tag
-        df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = CalNeighbor(df_pdb, k_neighbor=kneighbor)
-        FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor,stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s' % (mutant_tag, kneighbor))
-
+    pass
 def main_all_atom():
     csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
     df = pd.read_csv(csvpth)
-    kneighbor = 'all'
     for i in range(len(df)):
         key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT, PH, TEMPERATURE, DDG = df.iloc[i, :].values
         mutant_tag = '%s.%s.%s.%s.%s.%s' % (key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT)
@@ -77,10 +40,9 @@ def main_all_atom():
         stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/wild/%s.stride'%PDB
 
         df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = df_pdb
         FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor,stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s'%(PDB,kneighbor))
+        df_feature = FG.append_stride(df_pdb=df_pdb,stride_pth=stridepth)
+        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all'%PDB)
 
         ## for TR output
         outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR'
@@ -89,18 +51,17 @@ def main_all_atom():
         pdbpth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % TR_wild_tag
         stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/TR/%s.stride' % TR_wild_tag
         df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = df_pdb
+
         FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor, stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s' % (TR_wild_tag, kneighbor))
+        df_feature = FG.append_stride(df_pdb=df_pdb, stride_pth=stridepth)
+        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all' % TR_wild_tag)
         # TR_mut
         pdbpth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % mutant_tag
         stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/TR/%s.stride' % mutant_tag
         df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-        df_neighbor = df_pdb
         FG = FeatureGenerator()
-        df_feature = FG.append_stride(df_pdb=df_neighbor,stride_pth=stridepth)
-        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_%s' % (mutant_tag, kneighbor))
+        df_feature = FG.append_stride(df_pdb=df_pdb,stride_pth=stridepth)
+        save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all' % mutant_tag)
 
 def save_csv(df,outdir,filename):
     if not os.path.exists(outdir):
@@ -187,6 +148,82 @@ def ParsePDB(pdbpth, mutant_tag, accept_atom = ('CA',), center='CA'):
     df_pdb[['dist']] = df_pdb[['dist']].astype(float)
     print('The atom_number (only CA) is:',len(df_pdb))
     return df_pdb, center_coord
+
+def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
+    """
+    从csvpth2中在csvpth1中反向查找对应的 CA 原子，注意：wild_structure 中有的残基可能没有解析出 alpha-C 原子.
+    csv columns are: [chain,res,het,posid,inode,full_name,atom_name,secondary,dist,x,y,z,occupancy,b_factor,s_Helix,s_Strand,s_Coil,sa,rsa,asa,phi,psi]
+    :param csvpth1: wild_structure csv with all CA atoms.
+    :param csvpth2: mut_structure csv with all CA atoms.
+                    e.g., /public/home/sry/mCNN/dataset/TR/feature/coord/TR/976.1EY0.I.A.139.G_neighbor_all.csv
+    :return:
+    """
+    print(csvpth1)
+    print(csvpth2)
+    key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT = mutant_tag.split('.')
+    map_pos_pth = '/public/home/sry/mCNN/dataset/TR/map_pos/%s_mapping.csv'%PDB
+    df1 = pd.read_csv(csvpth1)
+    df2 = pd.read_csv(csvpth2)
+    df_map = pd.read_csv(map_pos_pth)
+    # print(df1.dtypes)
+    # print(df2.dtypes)
+    # print(df_map.dtypes)
+    df_map[['POSITION_OLD']] = df_map[['POSITION_OLD']].astype(str)
+    df_map[['POSITION_NEW']] = df_map[['POSITION_NEW']].astype(str)
+
+    df2_neighbor = CalNeighbor(df2,k_neighbor=kneighbor+10)#有的res在wild里面找不到对应的，此时同时删除，故neighbor选多10个
+    df_neighbor = CalNeighbor(df2,k_neighbor=kneighbor)
+    df2_neighbor.reset_index(drop=True, inplace=True)
+    df_neighbor.reset_index(drop=True, inplace=True)
+    success_cnt = 0
+    df_lst = []
+
+    if POSITION.isdigit():
+        INODE = ' '
+        POSID = int(POSITION)
+    else:
+        INODE = POSITION[-1]
+        POSID = int(POSITION[:-1])
+
+    for i in range(len(df2_neighbor)):
+        if success_cnt == kneighbor:
+            break
+        res_df2, het_df2, posid_df2, inode_df2 = df2_neighbor.iloc[i][['res', 'het', 'posid', 'inode']].values
+        pos_df2 = (str(het_df2)+str(posid_df2)+str(inode_df2)).strip()
+        pos_df1 = df_map.loc[df_map.POSITION_NEW == pos_df2, 'POSITION_OLD'].values[0]
+        if pos_df1.isdigit():
+            inode_df1 = ' '
+            posid_df1 = int(pos_df1)
+        else:
+            inode_df1 = pos_df1[-1]
+            posid_df1 = int(pos_df1[:-1])
+
+        if pos_df1 == POSITION:
+            try:
+                dist_wild,x_wild,y_wild,z_wild,s_Helix_wild,s_Strand_wild,s_Coil_wild,sa_wild,rsa_wild,asa_wild,phi_wild,psi_wild = \
+                    df1.loc[(df1.res==aa_123dict[WILD_TYPE])&(df1.posid==POSID)&(df1.inode==INODE),
+                            ['dist','x','y','z','s_Helix','s_Strand','s_Coil','sa','rsa','asa','phi','psi']].values[0]
+                df_lst.append([dist_wild,x_wild,y_wild,z_wild,s_Helix_wild,s_Strand_wild,s_Coil_wild,sa_wild,rsa_wild,asa_wild,phi_wild,psi_wild])
+                success_cnt+=1
+            except:
+                print('_' * 100)
+                print('[ERROR at mut_site] pos_df1: %s, pos_df2: %s' % (pos_df1, pos_df2))
+                continue
+        else:
+            try:
+                dist_wild,x_wild,y_wild,z_wild,s_Helix_wild,s_Strand_wild,s_Coil_wild,sa_wild,rsa_wild,asa_wild,phi_wild,psi_wild = \
+                    df1.loc[(df1.res == res_df2) & (df1.posid == posid_df1)&(df1.inode==inode_df1),
+                            ['dist','x','y','z','s_Helix','s_Strand','s_Coil','sa','rsa','asa','phi','psi']].values[0]
+                df_lst.append([dist_wild,x_wild,y_wild,z_wild,s_Helix_wild,s_Strand_wild,s_Coil_wild,sa_wild,rsa_wild,asa_wild,phi_wild,psi_wild])
+                success_cnt+=1
+            except:
+                print('_'*100)
+                print('[ERROR] pos_df1: %s, pos_df2: %s'%(pos_df1,pos_df2))
+                continue
+
+    temp_df = pd.DataFrame(np.array(df_lst), columns=['dist_wild','x_wild','y_wild','z_wild','s_Helix_wild','s_Strand_wild','s_Coil_wild','sa_wild','rsa_wild','asa_wild','phi_wild','psi_wild'])
+    df_neighbor = pd.concat([df_neighbor, temp_df], axis=1)
+    print(df_neighbor)
 
 @log
 def CalNeighbor(df, k_neighbor=20):
@@ -368,5 +405,9 @@ class FeatureGenerator(object):
         return df_pdb
 
 if __name__ == '__main__':
-    # main()
     main_all_atom()
+    #
+    # csvpth1='/public/home/sry/mCNN/dataset/TR/feature/coord/wild/2ABD_neighbor_all.csv'
+    # csvpth2='/public/home/sry/mCNN/dataset/TR/feature/coord/TR/2111.2ABD.L.A.80.A_neighbor_all.csv'
+    # mutant_tag = '2111.2ABD.L.A.80.A'
+    # get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20)
