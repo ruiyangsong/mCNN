@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+'''only standard residue in mt_chain are accepted'''
 import os,warnings
 import pandas as pd
 from Bio.PDB import PDBIO, Select
@@ -40,7 +41,10 @@ def retrieve_pdb_chain(pdbdir,MDL=0,chain_name='A',write=0,outpath=None):
                     return False
 
             def accept_residue(self, residue):
-                return 1
+                if residue.get_id()[0] == ' ':
+                    return True
+                else:
+                    return False
 
             def accept_atom(self, atom):
                 """Overload this to reject atoms for output."""

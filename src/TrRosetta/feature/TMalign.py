@@ -4,21 +4,25 @@ import numpy as np
 import pandas as pd
 
 def main():
-    # pdb1pth = '/public/home/sry/mCNN/dataset/TR/pdb_chain/1A43.pdb'
-    # pdb2pth = '/public/home/sry/mCNN/dataset/TR/output/4.1A43.C.A.218.S/model1.pdb'
     csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
     df = pd.read_csv(csvpth)
     for i in range(len(df)):
         columns = ['key', 'PDB', 'WILD_TYPE', 'CHAIN', 'POSITION', 'MUTANT', 'PH', 'TEMPERATURE', 'DDG']
         key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT, PH, TEMPERATURE, DDG = df.iloc[i,:][columns].values
-        # wild_pdb_pth = '/public/home/sry/mCNN/dataset/TR/pdb_chain/%s.pdb'%PDB
-        wild_tag = '%s.%s.%s'%(key,PDB,CHAIN)
-        wild_pdb_pth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb'%(wild_tag)
+        ## for wild
+        wild_pdb_pth = '/public/home/sry/mCNN/dataset/TR/pdb_chain/%s.pdb'%PDB
         mutant_tag = '%s.%s.%s.%s.%s.%s'%(key,PDB,WILD_TYPE,CHAIN,POSITION,MUTANT)
         mutant_pdb_pth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb'%(mutant_tag) #2437.3SIL.A.A.53.L
         outdir = '/public/home/sry/mCNN/dataset/TR/feature/TMalign/wild_TR_%s'%mutant_tag
-        # outdir = '/public/home/sry/mCNN/dataset/TR/feature/TMalign/TR_TR_%s'%mutant_tag
         res_dict = TMalign(pdb1pth=wild_pdb_pth,pdb2pth=mutant_pdb_pth,outdir=outdir)
+
+        ## for TR output
+        wild_tag = '%s.%s.%s'%(key,PDB,CHAIN)
+        wild_pdb_pth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb'%(wild_tag)
+        mutant_tag = '%s.%s.%s.%s.%s.%s' % (key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT)
+        mutant_pdb_pth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % (mutant_tag)  # 2437.3SIL.A.A.53.L
+        outdir = '/public/home/sry/mCNN/dataset/TR/feature/TMalign/TR_TR_%s' % mutant_tag
+        res_dict = TMalign(pdb1pth=wild_pdb_pth, pdb2pth=mutant_pdb_pth, outdir=outdir)
 
 def TMalign(pdb1pth,pdb2pth,outdir='.'):
     os.makedirs(outdir,exist_ok=True)
