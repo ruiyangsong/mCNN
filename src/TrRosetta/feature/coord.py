@@ -21,13 +21,11 @@
 ** --sry.
 '''
 
-import os, argparse
+import os, sys,argparse
 import numpy as np
 import pandas as pd
 from mCNN.processing import aa_321dict,log,read_csv,str2bool,aa_123dict
 
-def main():
-    pass
 def main_all_atom():
     csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
     df = pd.read_csv(csvpth)
@@ -62,6 +60,19 @@ def main_all_atom():
         FG = FeatureGenerator()
         df_feature = FG.append_stride(df_pdb=df_pdb,stride_pth=stridepth)
         save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all' % mutant_tag)
+
+def main_appending_wild_TR():
+    kneighbor = 20
+    csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
+    outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/wild_TR'
+    df = pd.read_csv(csvpth)
+    for i in range(len(df)):
+        key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT, PH, TEMPERATURE, DDG = df.iloc[i, :].values
+        mutant_tag = '%s.%s.%s.%s.%s.%s' % (key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT)
+        csvpth1 = '/public/home/sry/mCNN/dataset/TR/feature/coord/wild/%s_neighbor_all.csv'%PDB
+        csvpth2 = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR/%s_neighbor_all.csv'%mutant_tag
+        df_neighbor = get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=kneighbor)
+        save_csv(df_neighbor,outdir=outdir,filename='%s_neighbor_%s' % (mutant_tag,kneighbor))
 
 def save_csv(df,outdir,filename):
     if not os.path.exists(outdir):
@@ -149,7 +160,7 @@ def ParsePDB(pdbpth, mutant_tag, accept_atom = ('CA',), center='CA'):
     print('The atom_number (only CA) is:',len(df_pdb))
     return df_pdb, center_coord
 
-def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
+def get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=20):
     """
     从csvpth2中在csvpth1中反向查找对应的 CA 原子，注意：wild_structure 中有的残基可能没有解析出 alpha-C 原子.
     csv columns are: [chain,res,het,posid,inode,full_name,atom_name,secondary,dist,x,y,z,occupancy,b_factor,s_Helix,s_Strand,s_Coil,sa,rsa,asa,phi,psi]
@@ -172,7 +183,7 @@ def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
     df_map[['POSITION_NEW']] = df_map[['POSITION_NEW']].astype(str)
 
     df2_neighbor = CalNeighbor(df2,k_neighbor=kneighbor+10)#有的res在wild里面找不到对应的，此时同时删除，故neighbor选多10个
-    df_neighbor = CalNeighbor(df2,k_neighbor=kneighbor)
+    df_neighbor = CalNeighbor(df2,k_neighbor=kneighbor+10)
     df2_neighbor.reset_index(drop=True, inplace=True)
     df_neighbor.reset_index(drop=True, inplace=True)
     success_cnt = 0
@@ -186,8 +197,6 @@ def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
         POSID = int(POSITION[:-1])
 
     for i in range(len(df2_neighbor)):
-        if success_cnt == kneighbor:
-            break
         res_df2, het_df2, posid_df2, inode_df2 = df2_neighbor.iloc[i][['res', 'het', 'posid', 'inode']].values
         pos_df2 = (str(het_df2)+str(posid_df2)+str(inode_df2)).strip()
         pos_df1 = df_map.loc[df_map.POSITION_NEW == pos_df2, 'POSITION_OLD'].values[0]
@@ -208,7 +217,7 @@ def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
             except:
                 print('_' * 100)
                 print('[ERROR at mut_site] pos_df1: %s, pos_df2: %s' % (pos_df1, pos_df2))
-                continue
+                sys.exit(1)
         else:
             try:
                 dist_wild,x_wild,y_wild,z_wild,s_Helix_wild,s_Strand_wild,s_Coil_wild,sa_wild,rsa_wild,asa_wild,phi_wild,psi_wild = \
@@ -219,11 +228,14 @@ def get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20):
             except:
                 print('_'*100)
                 print('[ERROR] pos_df1: %s, pos_df2: %s'%(pos_df1,pos_df2))
+                df_neighbor.drop(index=i,inplace=True)
+                df_neighbor.reset_index(drop=True, inplace=True)
                 continue
 
     temp_df = pd.DataFrame(np.array(df_lst), columns=['dist_wild','x_wild','y_wild','z_wild','s_Helix_wild','s_Strand_wild','s_Coil_wild','sa_wild','rsa_wild','asa_wild','phi_wild','psi_wild'])
     df_neighbor = pd.concat([df_neighbor, temp_df], axis=1)
-    print(df_neighbor)
+    df_neighbor = CalNeighbor(df_neighbor, k_neighbor=kneighbor)
+    return df_neighbor
 
 @log
 def CalNeighbor(df, k_neighbor=20):
@@ -405,9 +417,6 @@ class FeatureGenerator(object):
         return df_pdb
 
 if __name__ == '__main__':
-    main_all_atom()
-    #
-    # csvpth1='/public/home/sry/mCNN/dataset/TR/feature/coord/wild/2ABD_neighbor_all.csv'
-    # csvpth2='/public/home/sry/mCNN/dataset/TR/feature/coord/TR/2111.2ABD.L.A.80.A_neighbor_all.csv'
-    # mutant_tag = '2111.2ABD.L.A.80.A'
-    # get_corresponding_coord(csvpth1, csvpth2, mutant_tag, kneighbor=20)
+    # main_all_atom()
+
+    main_appending_wild_TR()
