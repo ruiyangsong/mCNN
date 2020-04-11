@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import os, sys
+import os
 from mCNN.processing import shell, log
 
 def main():
-    dataset_name = sys.argv[1]
+    dataset_name = 'TR'
     homedir = shell('echo $HOME')
-    appdir = '%s/mCNN/src/Stride/stride' %homedir
+    appdir = '%s/bin/stride' %homedir
     pdb_wild_dir = '%s/mCNN/dataset/%s/pdb_chain'%(homedir, dataset_name)#wild_pdb_dir
     pdb_TR_dir = '%s/mCNN/dataset/%s/output'%(homedir, dataset_name)
     outdir_wild = '%s/mCNN/dataset/%s/feature/stride/wild'%(homedir, dataset_name)
