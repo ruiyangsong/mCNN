@@ -27,6 +27,10 @@ import pandas as pd
 from mCNN.processing import aa_321dict,log,read_csv,str2bool,aa_123dict
 
 def main_all_atom():
+    '''
+    计算native_wild，TR_wild, TR_mutant的所有CA原子并保存在csv文件中
+    :return:
+    '''
     csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
     df = pd.read_csv(csvpth)
     for i in range(len(df)):
@@ -49,7 +53,6 @@ def main_all_atom():
         pdbpth = '/public/home/sry/mCNN/dataset/TR/output/%s/model1.pdb' % TR_wild_tag
         stridepth = '/public/home/sry/mCNN/dataset/TR/feature/stride/TR/%s.stride' % TR_wild_tag
         df_pdb, center_coord = ParsePDB(pdbpth, mutant_tag, accept_atom=('CA',), center='CA')
-
         FG = FeatureGenerator()
         df_feature = FG.append_stride(df_pdb=df_pdb, stride_pth=stridepth)
         save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all' % TR_wild_tag)
@@ -62,6 +65,7 @@ def main_all_atom():
         save_csv(df_feature, outdir=outdir, filename='%s_neighbor_all' % mutant_tag)
 
 def main_appending_wild_TR():
+    '''将native_wild的原子append到TR_mutant后面（原子之间相互对应，即对应的残基是一样的）'''
     kneighbor = 20
     csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
     outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/wild_TR'
@@ -73,6 +77,22 @@ def main_appending_wild_TR():
         csvpth2 = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR/%s_neighbor_all.csv'%mutant_tag
         df_neighbor = get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=kneighbor)
         save_csv(df_neighbor,outdir=outdir,filename='%s_neighbor_%s' % (mutant_tag,kneighbor))
+
+def main_appending_TR_TR():
+    '''将TR_wild的原子append到TR_mutant后面（原子之间相互对应，即对应的残基是一样的）'''
+    kneighbor = 20
+    csvpth = '/public/home/sry/mCNN/dataset/TR/S2648_TR500.csv'
+    outdir = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR_TR'
+    df = pd.read_csv(csvpth)
+    for i in range(len(df)):
+        key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT, PH, TEMPERATURE, DDG = df.iloc[i, :].values
+        mutant_tag = '%s.%s.%s.%s.%s.%s' % (key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT)
+        wild_tag   = '%s.%s.%s'% (key, PDB, CHAIN)
+        csvpth1 = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR/%s_neighbor_all.csv'%wild_tag
+        csvpth2 = '/public/home/sry/mCNN/dataset/TR/feature/coord/TR/%s_neighbor_all.csv'%mutant_tag
+        df_neighbor = get_corresponding_coord_TR_TR(csvpth1, csvpth2, mutant_tag, kneighbor=kneighbor)
+        save_csv(df_neighbor, outdir=outdir, filename='%s_neighbor_%s' % (mutant_tag, kneighbor))
+# ----------------------------------------------------------------------------------------------------------------------
 
 def save_csv(df,outdir,filename):
     if not os.path.exists(outdir):
@@ -160,6 +180,47 @@ def ParsePDB(pdbpth, mutant_tag, accept_atom = ('CA',), center='CA'):
     print('The atom_number (only CA) is:',len(df_pdb))
     return df_pdb, center_coord
 
+def get_corresponding_coord_TR_TR(csvpth1, csvpth2, mutant_tag, kneighbor=20):
+    print(csvpth1)
+    print(csvpth2)
+    success_cnt = 0
+    df_lst = []
+    key, PDB, WILD_TYPE, CHAIN, POSITION, MUTANT = mutant_tag.split('.')
+    df1 = pd.read_csv(csvpth1)
+    df2 = pd.read_csv(csvpth2)
+
+    for i in range(len(df1)):
+        try:
+            assert df1.iloc[i][['res']].values[0] == df2.iloc[i][['res']].values[0]
+        except:
+            # print(df1.iloc[i][['res']].values[0],df2.iloc[i][['res']].values[0])
+            assert df1.iloc[i][['res']].values[0] == aa_123dict[WILD_TYPE] and df2.iloc[i][['res']].values[0] == aa_123dict[MUTANT]
+
+    df2_neighbor = CalNeighbor(df2, k_neighbor=kneighbor)
+    df2_neighbor.reset_index(drop=True, inplace=True)
+    for i in range(len(df2_neighbor)):
+        if success_cnt == kneighbor:
+            break
+        res_df2, het_df2, posid_df2, inode_df2 = df2_neighbor.iloc[i][['res', 'het', 'posid', 'inode']].values
+        try:
+            dist_wild, x_wild, y_wild, z_wild, s_Helix_wild, s_Strand_wild, s_Coil_wild, sa_wild, rsa_wild, asa_wild, phi_wild, psi_wild = \
+                df1.loc[(df1.het == het_df2) & (df1.posid == posid_df2) & (df1.inode == inode_df2),
+                        ['dist', 'x', 'y', 'z', 's_Helix', 's_Strand', 's_Coil', 'sa', 'rsa', 'asa', 'phi', 'psi']].values[0]
+            df_lst.append([dist_wild, x_wild, y_wild, z_wild, s_Helix_wild, s_Strand_wild, s_Coil_wild, sa_wild, rsa_wild, asa_wild, phi_wild, psi_wild])
+            success_cnt += 1
+        except:
+            print('_' * 100)
+            print('[ERROR at mut_site] posid_df2: %s' % (posid_df2))
+            sys.exit(1)
+    temp_df = pd.DataFrame(np.array(df_lst),
+                           columns=['dist_wild', 'x_wild', 'y_wild', 'z_wild', 's_Helix_wild', 's_Strand_wild',
+                                    's_Coil_wild', 'sa_wild', 'rsa_wild', 'asa_wild', 'phi_wild', 'psi_wild'])
+    temp_df.columns=['dist_wild', 'x_wild', 'y_wild', 'z_wild', 's_Helix_wild', 's_Strand_wild','s_Coil_wild', 'sa_wild', 'rsa_wild', 'asa_wild', 'phi_wild', 'psi_wild']
+    # print(temp_df)
+    df_neighbor = pd.concat([df2_neighbor, temp_df], axis=1)
+    return df_neighbor
+
+
 def get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=20):
     """
     从csvpth2中在csvpth1中反向查找对应的 CA 原子，注意：wild_structure 中有的残基可能没有解析出 alpha-C 原子.
@@ -189,10 +250,11 @@ def get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=20):
     success_cnt = 0
     df_lst = []
 
-    if POSITION.isdigit():
+    try:
         INODE = ' '
         POSID = int(POSITION)
-    else:
+    except:
+        print(POSITION)
         INODE = POSITION[-1]
         POSID = int(POSITION[:-1])
 
@@ -200,10 +262,11 @@ def get_corresponding_coord_wild_TR(csvpth1, csvpth2, mutant_tag, kneighbor=20):
         res_df2, het_df2, posid_df2, inode_df2 = df2_neighbor.iloc[i][['res', 'het', 'posid', 'inode']].values
         pos_df2 = (str(het_df2)+str(posid_df2)+str(inode_df2)).strip()
         pos_df1 = df_map.loc[df_map.POSITION_NEW == pos_df2, 'POSITION_OLD'].values[0]
-        if pos_df1.isdigit():
+        try:
             inode_df1 = ' '
             posid_df1 = int(pos_df1)
-        else:
+        except:
+            print(pos_df1)
             inode_df1 = pos_df1[-1]
             posid_df1 = int(pos_df1[:-1])
 
@@ -418,5 +481,5 @@ class FeatureGenerator(object):
 
 if __name__ == '__main__':
     # main_all_atom()
-
-    main_appending_wild_TR()
+    # main_appending_wild_TR()
+    main_appending_TR_TR()
