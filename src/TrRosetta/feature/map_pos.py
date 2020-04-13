@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+'''将 pdb_chain 中的pdb文件顺序编号'''
 import os,warnings
 from functools import reduce
 import numpy as np
