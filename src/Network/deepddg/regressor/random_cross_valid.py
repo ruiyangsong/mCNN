@@ -286,7 +286,7 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
 
 if __name__ == '__main__':
     ## config TF
-    CUDA_rate = '0.5'
+    CUDA_rate = '0.45'
     queueGPU(USER_MEM=9000, INTERVAL=60)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
