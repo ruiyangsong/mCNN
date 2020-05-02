@@ -1,5 +1,7 @@
 'split train test randomly'
 import os, json
+import time
+
 import numpy as np
 from sklearn.utils import class_weight
 import tensorflow as tf
@@ -10,15 +12,52 @@ from keras import Input, models, layers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_reg, pearson_r
 from mCNN.queueGPU import queueGPU
 from keras.utils import to_categorical
+from matplotlib import pyplot as plt
+
+def loss_plot(history_dict,outpth):
+    loss                = history_dict['loss']
+    mean_absolute_error = history_dict['mean_absolute_error']
+    pearson_r           = history_dict['pearson_r']
+    val_loss                = history_dict['val_loss']
+    val_mean_absolute_error = history_dict['val_mean_absolute_error']
+    val_pearson_r           = history_dict['val_pearson_r']
+    epochs = range(1, len(loss) + 1)
+    plt.subplot(3,1,1)
+    plt.plot(epochs, loss, 'r', label='Training loss (mse)')
+    plt.plot(epochs, val_loss, 'g', label='Validation loss (mse)')
+    # plt.title('Training and validation loss')
+    # plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(3, 1, 2)
+    plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
+    plt.plot(epochs, val_mean_absolute_error, 'g', label='Validation mae')
+    # plt.title('Training and validation mae')
+    # plt.xlabel('Epochs')
+    plt.ylabel('MAE')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(3, 1, 3)
+    plt.plot(epochs, pearson_r, 'r', label='Training pcc')
+    plt.plot(epochs, val_pearson_r, 'g', label='Validation pcc')
+    # plt.title('Training and validation pcc')
+    plt.xlabel('Epochs')
+    plt.ylabel('PCC')
+    plt.grid(True)
+    plt.legend(loc="lower right")
+
+    # plt.show()
+    plt.savefig(outpth)#pngfile
+    plt.clf()
 
 def data(x,y,ddg,train_index,test_index):
     ## train data
     x_train = x[train_index]
     y_train = y[train_index]
     ddg_train = ddg[train_index].reshape(-1)
-    print(x.shape)
-    print(train_index.shape)
-    print('x_train_shape:',x_train.shape)
 
     ## valid data
     random_seed = 10
@@ -34,7 +73,7 @@ def data(x,y,ddg,train_index,test_index):
     y_positive, y_negative = y_train[positive_indices], y_train[negative_indices]
     ddg_positive, ddg_negative = ddg_train[positive_indices], ddg_train[negative_indices]
 
-    left_positive, left_negative = round(0.8 * x_positive.shape[0]), round(0.8 * x_negative.shape[0])
+    left_positive, left_negative = round(x_positive.shape[0] * 8 / 9), round(x_negative.shape[0] * 8 / 9)
     x_train = np.vstack((x_positive[:left_positive], x_negative[:left_negative]))
     x_val = np.vstack((x_positive[left_positive:], x_negative[left_negative:]))
     y_train = np.vstack((y_positive[:left_positive], y_negative[:left_negative]))
@@ -49,9 +88,8 @@ def data(x,y,ddg,train_index,test_index):
 
     # erase rosetta energy[0:41 \union 58:end]
 
-    print('x_test shape:',x_test.shape)
-
     # sort row default is chain, pass
+
     # reshape and one-hot
     y_train = to_categorical(y_train)
     y_test = to_categorical(y_test)
@@ -111,13 +149,14 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
     history_dict = history.history
     return network, history_dict
 
-def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val):
+def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
     K.clear_session()
     summary = False
-    verbose = 0
+    verbose = 1
     # setHyperParams------------------------------------------------------------------------------------------------
     batch_size = 64
-    epochs = 200
+    # epochs = 200
+    epochs = 40
 
     lr = 0.0049
 
@@ -156,9 +195,16 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
     my_callbacks = [
         callbacks.ReduceLROnPlateau(
             monitor='val_loss',
-            factor=0.5,
+            factor=0.33,
             patience=5,
-        )
+        ),
+        callbacks.ModelCheckpoint(
+            filepath=filepth,
+            monitor='val_loss',
+            verbose=1,
+            save_best_only=True,
+            mode='min',
+            save_weights_only=True)
     ]
 
     if lr > 0:
@@ -232,16 +278,15 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
                        epochs=epochs,
                        verbose=verbose,
                        callbacks=my_callbacks,
-                       validation_data=(x_test, ddg_test),
+                       validation_data=(x_val, ddg_val),
                        shuffle=True,
                        )
     # print('\n----------History:\n%s'%result.history)
-
-    return model,result.history
+    return model, result.history
 
 if __name__ == '__main__':
     ## config TF
-    CUDA_rate = '0.01'
+    CUDA_rate = '0.5'
     queueGPU(USER_MEM=9000, INTERVAL=60)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
@@ -251,6 +296,9 @@ if __name__ == '__main__':
         else:
             config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
         set_session(tf.Session(config=config))
+
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/model_random_cv_%s'%time.strftime("%Y.%m.%d.%H.%M", time.localtime())
+    os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
     ## load data
     data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/all/all_neighbor_120.npz'
@@ -260,23 +308,96 @@ if __name__ == '__main__':
     k_count = 1
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=1)
     for train_index, test_index in skf.split(x, y):
+        print('-'*50)
         print('%d-th fold is in progress.' % (k_count))
-        k_count+=1
         x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val = data(x, y, ddg, train_index, test_index)
+        print('x_train: %s'
+              '\ny_train: %s'
+              '\nddg_train: %s'
+              '\nx_test: %s'
+              '\ny_test: %s'
+              '\nddg_test: %s'
+              '\nx_val: %s'
+              '\ny_val: %s'
+              '\nddg_val: %s'
+              %(x_train.shape, y_train.shape, ddg_train.shape,
+                x_test.shape, y_test.shape, ddg_test.shape,
+                x_val.shape, y_val.shape, ddg_val.shape))
+        #
+        # train & test
+        #
+        filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
         # model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val)
-        model, history_dict = Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val)
+        model, history_dict = Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
 
-        pearson_coeff, std, mae = test_report_reg(model, x_test, ddg_test)
+        #
+        # save model architecture
+        #
+        try:
+            model_json = model.to_json()
+            with open('%s/fold_%s_model.json'%(modeldir,k_count), 'w') as json_file:
+                json_file.write(model_json)
+        except:
+            print('save model.json to json failed, fold_num: %s' % k_count)
+        #
+        # save model weights
+        #
+        try:
+            model.save_weights(filepath='%s/fold_%s_weightsFinal.h5' % (modeldir,k_count))
+        except:
+            print('save final model weights failed, fold_num: %s' % k_count)
+        #
+        # save training history
+        #
+        try:
+            with open('%s/fold_%s_history.dict'%(modeldir,k_count), 'w') as file:
+                file.write(str(history_dict))
+            # with open('%s/fold_%s_history.dict'%(modeldir,k_count), 'r') as file:
+            #     print(eval(file.read()))
+        except:
+            print('save history_dict failed, fold_num: %s' % k_count)
+        #
+        # save loss figure
+        #
+        try:
+            figure_pth = '%s/fold_%s_lossFigure.png'%(modeldir,k_count)
+            loss_plot(history_dict,outpth=figure_pth)
+        except:
+            print('save loss plot figure failed, fold_num: %s' % k_count)
+
+        #
+        # Load model
+        #
+        with open('%s/fold_%s_model.json'%(modeldir,k_count), 'r') as json_file:
+            loaded_model_json = json_file.read()
+        loaded_model = models.model_from_json(loaded_model_json)  # keras.models.model_from_yaml(yaml_string)
+        loaded_model.load_weights(filepath='%s/fold_%s_weightsFinal.h5' % (modeldir,k_count))
+        # loaded_model.compile(optimizer='rmsprop',  # SGD,adam,rmsprop
+        #                      loss='mse',
+        #                      metrics=['mae',pearson_r])  # mae平均绝对误差（mean absolute error） accuracy)
+
+        #
+        # Test model
+        #
+        # pearson_coeff, std, mae = test_report_reg(model, x_test, ddg_test)
+        pearson_coeff, std, mae = test_report_reg(loaded_model, x_test, ddg_test)
         print('\n----------Predict:'
               '\npearson_coeff: %s, std: %s, mae: %s'
               % (pearson_coeff, std, mae))
         score_dict['pearson_coeff'].append(pearson_coeff)
         score_dict['std'].append(std)
         score_dict['mae'].append(mae)
+        k_count += 1
 
-    # with open('/dl/sry/mCNN/dataset/deepddg/saved_model/wild/cross_valid/regressor_avg_scores.json', 'w') as file:
-    #     file.write(json.dumps(score_dict))
-    # print average
+    #
+    # save score dict
+    #
+    try:
+        with open('%s/fold_._score.dict' % modeldir, 'w') as file:
+            file.write(str(score_dict))
+    except:
+        print('save score dict failed')
+
     print('\nAVG results','-'*10)
     for key in score_dict.keys():
         print('*avg(%s): %s'%(key,np.mean(score_dict[key])))
