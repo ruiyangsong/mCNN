@@ -198,14 +198,19 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
             factor=0.33,
             patience=5,
         ),
+        callbacks.EarlyStopping(
+            monitor='val_pearson_r',
+            patience=15,
+        ),
         callbacks.ModelCheckpoint(
             filepath=filepth,
-            monitor='val_loss',
+            monitor='val_pearson_r',
             verbose=1,
             save_best_only=True,
-            mode='min',
+            mode='max',
             save_weights_only=True)
     ]
+
 
     if lr > 0:
         if optimizer == 'adam':
@@ -287,7 +292,7 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
 if __name__ == '__main__':
     ## config TF
     CUDA_rate = '0.45'
-    queueGPU(USER_MEM=9000, INTERVAL=60)
+    queueGPU(USER_MEM=6000, INTERVAL=60)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
         config = tf.ConfigProto()

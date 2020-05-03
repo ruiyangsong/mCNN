@@ -1,4 +1,3 @@
-'split train test randomly'
 import os, json
 import time
 
@@ -10,7 +9,6 @@ from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_reg, pearson_r
-from mCNN.queueGPU import queueGPU
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
 
@@ -53,21 +51,27 @@ def loss_plot(history_dict,outpth):
     plt.savefig(outpth)#pngfile
     plt.clf()
 
-def data(x, y, ddg, x_test, y_test, ddg_test, train_index, val_index):
+def data(train_data_pth,test_data_pth, val_data_pth):
     ## train data
-    x_train = x[train_index]
-    y_train = y[train_index]
-    ddg_train = ddg[train_index].reshape(-1)
-    ddg_test = ddg_test.reshape(-1)
-    ## val data
-    x_val = x[val_index]
-    y_val = y[val_index]
-    ddg_val = ddg[val_index].reshape(-1)
+    train_data = np.load(train_data_pth)
+    x_train = train_data['x']
+    y_train = train_data['y']
+    ddg_train = train_data['ddg'].reshape(-1)
+    # class_weights = class_weight.compute_class_weight('balanced', np.unique(y_train), y_train.reshape(-1))
+    # class_weights_dict = dict(enumerate(class_weights))
+    ## valid data
+    val_data = np.load(val_data_pth)
+    x_val = val_data['x']
+    y_val = val_data['y']
+    ddg_val = val_data['ddg'].reshape(-1)
 
-    # erase rosetta energy[0:41 \union 58:end]
+    ## test data
+    test_data = np.load(test_data_pth)
+    x_test = test_data['x']
+    y_test = test_data['y']
+    ddg_test = test_data['ddg'].reshape(-1)
 
     # sort row default is chain, pass
-
     # reshape and one-hot
     y_train = to_categorical(y_train)
     y_test = to_categorical(y_test)
@@ -76,8 +80,6 @@ def data(x, y, ddg, x_test, y_test, ddg_test, train_index, val_index):
     train_shape = x_train.shape
     test_shape = x_test.shape
     val_shape = x_val.shape
-    print(train_shape,test_shape,val_shape)
-
     col_train = train_shape[-1]
     col_test = test_shape[-1]
     col_val = val_shape[-1]
@@ -269,9 +271,11 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
     return model, result.history
 
 if __name__ == '__main__':
-    ## config TF
+    from mCNN.queueGPU import queueGPU
     CUDA_rate = '0.45'
+    ## config TF
     queueGPU(USER_MEM=6000, INTERVAL=60)
+    # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
         config = tf.ConfigProto()
@@ -281,24 +285,17 @@ if __name__ == '__main__':
             config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
         set_session(tf.Session(config=config))
 
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/model_random_train_cv_%s'%time.strftime("%Y.%m.%d.%H.%M", time.localtime())
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/model_cv_%s'%time.strftime("%Y.%m.%d.%H.%M", time.localtime())
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
-    ## load data
-    data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/all/all_train_neighbor_120.npz'
-    test_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/all/cro_foldall_test_center_CA_PCA_False_neighbor_120.npz'
-    print('load %s'%data_pth)
-    Data = np.load(data_pth)
-    x, y, ddg = Data['x'], Data['y'], Data['ddg']
-    test_data = np.load(test_data_pth)
 
-    k_count = 1
-    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=1)
-    for train_index, val_index in skf.split(x, y):
-        print('-'*50)
-        print('%d-th fold is in progress.' % (k_count))
-        x_test, y_test, ddg_test = test_data['x'], test_data['y'], test_data['ddg']
-        x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val = data(x, y, ddg, x_test, y_test, ddg_test, train_index, val_index)
+    test_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_foldall_test_center_CA_PCA_False_neighbor_120.npz'
+    for i in range(10):
+        k_count = i+1
+        print('--cross validation begin, fold %s is processing.'%k_count)
+        train_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_train_center_CA_PCA_False_neighbor_120.npz'%k_count
+        valid_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_valid_center_CA_PCA_False_neighbor_120.npz'%k_count
+        x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val = data(train_data_pth,test_data_pth,valid_data_pth)
         print('x_train: %s'
               '\ny_train: %s'
               '\nddg_train: %s'
@@ -308,9 +305,10 @@ if __name__ == '__main__':
               '\nx_val: %s'
               '\ny_val: %s'
               '\nddg_val: %s'
-              %(x_train.shape, y_train.shape, ddg_train.shape,
-                x_test.shape, y_test.shape, ddg_test.shape,
-                x_val.shape, y_val.shape, ddg_val.shape))
+              % (x_train.shape, y_train.shape, ddg_train.shape,
+                 x_test.shape, y_test.shape, ddg_test.shape,
+                 x_val.shape, y_val.shape, ddg_val.shape))
+
         #
         # train & test
         #
