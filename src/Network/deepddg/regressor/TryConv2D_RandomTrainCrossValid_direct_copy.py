@@ -8,7 +8,7 @@ from sklearn.model_selection import StratifiedKFold
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
 from keras import Input, models, layers, optimizers, callbacks
-from mCNN.Network.metrics import test_report_reg, pearson_r
+from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
 
@@ -16,11 +16,13 @@ def loss_plot(history_dict,outpth):
     loss                = history_dict['loss']
     mean_absolute_error = history_dict['mean_absolute_error']
     pearson_r           = history_dict['pearson_r']
+    rmse                = history_dict['rmse']
     val_loss                = history_dict['val_loss']
     val_mean_absolute_error = history_dict['val_mean_absolute_error']
     val_pearson_r           = history_dict['val_pearson_r']
+    val_rmse                = history_dict['val_rmse']
     epochs = range(1, len(loss) + 1)
-    plt.subplot(3,1,1)
+    plt.subplot(4,1,1)
     plt.plot(epochs, loss, 'r', label='Training loss (mse)')
     plt.plot(epochs, val_loss, 'g', label='Validation loss (mse)')
     # plt.title('Training and validation loss')
@@ -29,7 +31,7 @@ def loss_plot(history_dict,outpth):
     plt.grid(True)
     plt.legend(loc="upper right")
 
-    plt.subplot(3, 1, 2)
+    plt.subplot(4, 1, 2)
     plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
     plt.plot(epochs, val_mean_absolute_error, 'g', label='Validation mae')
     # plt.title('Training and validation mae')
@@ -38,7 +40,16 @@ def loss_plot(history_dict,outpth):
     plt.grid(True)
     plt.legend(loc="upper right")
 
-    plt.subplot(3, 1, 3)
+    plt.subplot(4, 1, 3)
+    plt.plot(epochs, rmse, 'r', label='Training rmse')
+    plt.plot(epochs, val_rmse, 'g', label='Validation rmse')
+    # plt.title('Training and validation rmse')
+    # plt.xlabel('Epochs')
+    plt.ylabel('RMSE')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(4, 1, 4)
     plt.plot(epochs, pearson_r, 'r', label='Training pcc')
     plt.plot(epochs, val_pearson_r, 'g', label='Validation pcc')
     # plt.title('Training and validation pcc')
@@ -172,7 +183,7 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
     initializer = 'random_uniform'
     padding_style = 'same'
     loss_type = 'mse'
-    metrics = ('mae', pearson_r)
+    metrics = ('mae', pearson_r, rmse)
 
     my_callbacks = [
         callbacks.ReduceLROnPlateau(
@@ -181,15 +192,15 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
             patience=5,
         ),
         callbacks.EarlyStopping(
-            monitor='val_pearson_r',
-            patience=15,
+            monitor='val_loss',
+            patience=10,
         ),
         callbacks.ModelCheckpoint(
             filepath=filepth,
-            monitor='val_pearson_r',
+            monitor='val_loss',
             verbose=1,
             save_best_only=True,
-            mode='max',
+            mode='min',
             save_weights_only=True)
     ]
 
@@ -285,9 +296,10 @@ if __name__ == '__main__':
             config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
         set_session(tf.Session(config=config))
 
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/model_cv_%s'%time.strftime("%Y.%m.%d.%H.%M", time.localtime())
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TryConv2D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
+    train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
 
     test_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_foldall_test_center_CA_PCA_False_neighbor_120.npz'
     for i in range(10):
@@ -312,7 +324,8 @@ if __name__ == '__main__':
         #
         # train & test
         #
-        filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
+        # filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
+        filepth = '%s/fold_%s_weights-best.h5'%(modeldir,k_count)
         # model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val)
         model, history_dict = Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
 
@@ -357,7 +370,7 @@ if __name__ == '__main__':
         with open('%s/fold_%s_model.json'%(modeldir,k_count), 'r') as json_file:
             loaded_model_json = json_file.read()
         loaded_model = models.model_from_json(loaded_model_json)  # keras.models.model_from_yaml(yaml_string)
-        loaded_model.load_weights(filepath='%s/fold_%s_weightsFinal.h5' % (modeldir,k_count))
+        loaded_model.load_weights(filepath=filepth)
         # loaded_model.compile(optimizer='rmsprop',  # SGD,adam,rmsprop
         #                      loss='mse',
         #                      metrics=['mae',pearson_r])  # mae平均绝对误差（mean absolute error） accuracy)
@@ -373,6 +386,9 @@ if __name__ == '__main__':
         score_dict['pearson_coeff'].append(pearson_coeff)
         score_dict['std'].append(std)
         score_dict['mae'].append(mae)
+        train_score_dict['pearson_coeff'].append(history_dict['pearson_r'])
+        train_score_dict['std'].append(history_dict['rmse'])
+        train_score_dict['mae'].append(history_dict['mean_absolute_error'])
         k_count += 1
 
     #
@@ -383,6 +399,23 @@ if __name__ == '__main__':
             file.write(str(score_dict))
     except:
         print('save score dict failed')
+
+    #
+    # save AVG score
+    #
+    try:
+        with open('%s/fold_.avg_score_train_test.txt' % modeldir, 'w') as file:
+            file.writelines('----------train AVG results\n')
+            for key in score_dict.keys():
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key][-1])))
+            file.writelines('----------EarlyStopping train AVG results\n')
+            for key in score_dict.keys():
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key][-11])))
+            file.writelines('----------test AVG results\n')
+            for key in score_dict.keys():
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(score_dict[key])))
+    except:
+        print('save AVG score failed')
 
     print('\nAVG results','-'*10)
     for key in score_dict.keys():
