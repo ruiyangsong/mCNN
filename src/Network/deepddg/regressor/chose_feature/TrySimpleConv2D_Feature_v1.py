@@ -12,44 +12,47 @@ from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
 
-def loss_plot(history_dict,outpth):
-    loss                = history_dict['loss']
+
+def loss_plot(history_dict, outpth):
+    loss = history_dict['loss']
     mean_absolute_error = history_dict['mean_absolute_error']
-    pearson_r           = history_dict['pearson_r']
-    rmse                = history_dict['rmse']
-    val_loss                = history_dict['val_loss']
+    pearson_r = history_dict['pearson_r']
+    rmse = history_dict['rmse']
+    val_loss = history_dict['val_loss']
     val_mean_absolute_error = history_dict['val_mean_absolute_error']
-    val_pearson_r           = history_dict['val_pearson_r']
-    val_rmse                = history_dict['val_rmse']
+    val_pearson_r = history_dict['val_pearson_r']
+    val_rmse = history_dict['val_rmse']
     epochs = range(1, len(loss) + 1)
-    plt.subplot(4,1,1)
+
+    plt.figure(figsize=(10, 10))
+    plt.subplot(2, 2, 1)
     plt.plot(epochs, loss, 'r', label='Training loss (mse)')
     plt.plot(epochs, val_loss, 'g', label='Validation loss (mse)')
     # plt.title('Training and validation loss')
-    # plt.xlabel('Epochs')
+    plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.grid(True)
     plt.legend(loc="upper right")
 
-    plt.subplot(4, 1, 2)
+    plt.subplot(2, 2, 2)
     plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
     plt.plot(epochs, val_mean_absolute_error, 'g', label='Validation mae')
     # plt.title('Training and validation mae')
-    # plt.xlabel('Epochs')
+    plt.xlabel('Epochs')
     plt.ylabel('MAE')
     plt.grid(True)
     plt.legend(loc="upper right")
 
-    plt.subplot(4, 1, 3)
+    plt.subplot(2, 2, 3)
     plt.plot(epochs, rmse, 'r', label='Training rmse')
     plt.plot(epochs, val_rmse, 'g', label='Validation rmse')
     # plt.title('Training and validation rmse')
-    # plt.xlabel('Epochs')
+    plt.xlabel('Epochs')
     plt.ylabel('RMSE')
     plt.grid(True)
     plt.legend(loc="upper right")
 
-    plt.subplot(4, 1, 4)
+    plt.subplot(2, 2, 4)
     plt.plot(epochs, pearson_r, 'r', label='Training pcc')
     plt.plot(epochs, val_pearson_r, 'g', label='Validation pcc')
     # plt.title('Training and validation pcc')
@@ -116,73 +119,12 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     x_val = x_val.reshape(x_val.shape + (1,))
     return x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val
 
-def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val):
+def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
     row_num, col_num = x_train.shape[1:3]
-    network = models.Sequential()
-    network.add(layers.Conv2D(filters=16, kernel_size=(5, 3), activation='relu', input_shape=(row_num, col_num, 1)))
-    # network.add(layers.MaxPooling2D(pool_size=(2, 2)))
-    network.add(layers.Conv2D(32, (5, 3), activation='relu'))
-    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
-    network.add(layers.Conv2D(64, (5, 3), activation='relu'))
-    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
-    network.add(layers.Flatten())
-    network.add(layers.Dense(128, activation='relu'))
-    network.add(layers.Dropout(0.5))
-    network.add(layers.Dense(16, activation='relu'))
-    network.add(layers.Dropout(0.3))
-    network.add(layers.Dense(1))
-    # print(network.summary())
-    # rmsp = optimizers.RMSprop(lr=0.0001,  decay=0.1)
-    network.compile(optimizer='rmsprop',  # SGD,adam,rmsprop
-                    loss='mse',
-                    metrics=['mae'])  # mae平均绝对误差（mean absolute error） accuracy
-    history = network.fit(
-        x_train, ddg_train, validation_data=(x_val, ddg_val),
-        epochs=100, batch_size=64, verbose=0)
-    history_dict = history.history
-    return network, history_dict
-
-def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
-    K.clear_session()
-    summary = False
     verbose = 1
-    # setHyperParams------------------------------------------------------------------------------------------------
     batch_size = 64
-    # epochs = 200
     epochs = 80
 
-    lr = 0.0049
-
-    optimizer = 'sgd'
-
-    activator = 'elu'
-
-    basic_conv2D_layers = 1
-    basic_conv2D_filter_num = 16
-
-    loop_dilation2D_layers = 2
-    loop_dilation2D_filter_num = 64
-    loop_dilation2D_dropout_rate = 0.2008
-    dilation_lower = 2
-    dilation_upper = 16
-
-    reduce_layers = 3  # conv 3 times: 120 => 60 => 30 => 15
-    # print(reduce_layers)
-
-    reduce_conv2D_filter_num = 16
-    reduce_conv2D_dropout_rate = 0.1783
-    residual_stride = 2
-
-    dense1_num = 128
-    dense2_num = 32
-
-    drop_num = 0.2605
-
-    kernel_size = (3, 3)
-    pool_size = (2, 2)
-    initializer = 'random_uniform'
-    padding_style = 'same'
-    loss_type = 'mse'
     metrics = ('mae', pearson_r, rmse)
 
     my_callbacks = [
@@ -204,72 +146,26 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
             save_weights_only=True)
     ]
 
-    if lr > 0:
-        if optimizer == 'adam':
-            chosed_optimizer = optimizers.Adam(lr=lr)
-        elif optimizer == 'sgd':
-            chosed_optimizer = optimizers.SGD(lr=lr)
-        elif optimizer == 'rmsprop':
-            chosed_optimizer = optimizers.RMSprop(lr=lr)
-
-    # build --------------------------------------------------------------------------------------------------------
-    ## basic Conv2D
-    input_layer = Input(shape=x_train.shape[1:])
-    y = layers.Conv2D(basic_conv2D_filter_num, kernel_size, padding=padding_style, kernel_initializer=initializer,
-                      activation=activator)(input_layer)
-    y = layers.BatchNormalization(axis=-1)(y)
-    if basic_conv2D_layers == 2:
-        y = layers.Conv2D(basic_conv2D_filter_num, kernel_size, padding=padding_style, kernel_initializer=initializer,
-                          activation=activator)(y)
-        y = layers.BatchNormalization(axis=-1)(y)
-
-    ## loop with Conv2D with dilation (padding='same')
-    for _ in range(loop_dilation2D_layers):
-        y = layers.Conv2D(loop_dilation2D_filter_num, kernel_size, padding=padding_style, dilation_rate=dilation_lower,
-                          kernel_initializer=initializer, activation=activator)(y)
-        y = layers.BatchNormalization(axis=-1)(y)
-        y = layers.Dropout(loop_dilation2D_dropout_rate)(y)
-        dilation_lower *= 2
-        if dilation_lower > dilation_upper:
-            dilation_lower = 2
-
-    ## Conv2D with dilation (padding='valaid') and residual block to reduce dimention.
-    for _ in range(reduce_layers):
-        y = layers.Conv2D(reduce_conv2D_filter_num, kernel_size, padding=padding_style, kernel_initializer=initializer,
-                          activation=activator)(y)
-        y = layers.BatchNormalization(axis=-1)(y)
-        y = layers.Dropout(reduce_conv2D_dropout_rate)(y)
-        y = layers.MaxPooling2D(pool_size, padding=padding_style)(y)
-        residual = layers.Conv2D(reduce_conv2D_filter_num, 1, strides=residual_stride, padding='same')(input_layer)
-        y = layers.add([y, residual])
-        residual_stride *= 2
-
-    ## flat & dense
-    y = layers.Flatten()(y)
-    y = layers.Dense(dense1_num, activation=activator)(y)
-    y = layers.BatchNormalization(axis=-1)(y)
-    y = layers.Dropout(drop_num)(y)
-    y = layers.Dense(dense2_num, activation=activator)(y)
-    y = layers.BatchNormalization(axis=-1)(y)
-    y = layers.Dropout(drop_num)(y)
-
-    output_layer = layers.Dense(1)(y)
-
-    model = models.Model(inputs=input_layer, outputs=output_layer)
-
-    if summary:
-        model.summary()
-
-    model.compile(optimizer=chosed_optimizer,
-                  loss=loss_type,
-                  metrics=list(metrics)  # accuracy
-                  )
-
-    K.set_session(tf.Session(graph=model.output.graph))
-    init = K.tf.global_variables_initializer()
-    K.get_session().run(init)
-
-    result = model.fit(x=x_train,
+    network = models.Sequential()
+    network.add(layers.Conv2D(filters=16, kernel_size=(5, 5), activation='relu', input_shape=(row_num, col_num, 1)))
+    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    network.add(layers.Conv2D(32, (5, 5), activation='relu'))
+    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    network.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    network.add(layers.Flatten())
+    network.add(layers.Dense(128, activation='relu'))
+    network.add(layers.Dropout(0.5))
+    network.add(layers.Dense(16, activation='relu'))
+    network.add(layers.Dropout(0.3))
+    network.add(layers.Dense(1))
+    # print(network.summary())
+    # rmsp = optimizers.RMSprop(lr=0.0001,  decay=0.1)
+    rmsp = optimizers.RMSprop(lr=0.0001)
+    network.compile(optimizer=rmsp,#'rmsprop',  # SGD,adam,rmsprop
+                    loss='mse',
+                    metrics=list(metrics))  # mae平均绝对误差（mean absolute error） accuracy
+    result = network.fit(x=x_train,
                        y=ddg_train,
                        batch_size=batch_size,
                        epochs=epochs,
@@ -278,8 +174,7 @@ def Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_
                        validation_data=(x_val, ddg_val),
                        shuffle=True,
                        )
-    # print('\n----------History:\n%s'%result.history)
-    return model, result.history
+    return network, result.history
 
 if __name__ == '__main__':
     from mCNN.queueGPU import queueGPU
@@ -296,10 +191,11 @@ if __name__ == '__main__':
             config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
         set_session(tf.Session(config=config))
 
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TryConv2D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TrySimpleConv2D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
     train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
+    es_train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
 
     test_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_foldall_test_center_CA_PCA_False_neighbor_120.npz'
     for i in range(10):
@@ -326,8 +222,7 @@ if __name__ == '__main__':
         #
         # filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
         filepth = '%s/fold_%s_weights-best.h5'%(modeldir,k_count)
-        # model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val)
-        model, history_dict = Conv2DMultiTaskIn1(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
+        model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
 
         #
         # save model architecture
@@ -386,9 +281,15 @@ if __name__ == '__main__':
         score_dict['pearson_coeff'].append(pearson_coeff)
         score_dict['std'].append(std)
         score_dict['mae'].append(mae)
-        train_score_dict['pearson_coeff'].append(history_dict['pearson_r'])
-        train_score_dict['std'].append(history_dict['rmse'])
-        train_score_dict['mae'].append(history_dict['mean_absolute_error'])
+
+        train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-1])
+        train_score_dict['std'].append(history_dict['rmse'][-1])
+        train_score_dict['mae'].append(history_dict['mean_absolute_error'][-1])
+
+        es_train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-11])
+        es_train_score_dict['std'].append(history_dict['rmse'][-11])
+        es_train_score_dict['mae'].append(history_dict['mean_absolute_error'][-11])
+
         k_count += 1
 
     #
@@ -407,10 +308,10 @@ if __name__ == '__main__':
         with open('%s/fold_.avg_score_train_test.txt' % modeldir, 'w') as file:
             file.writelines('----------train AVG results\n')
             for key in score_dict.keys():
-                file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key][-1])))
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key])))
             file.writelines('----------EarlyStopping train AVG results\n')
             for key in score_dict.keys():
-                file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key][-11])))
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(es_train_score_dict[key])))
             file.writelines('----------test AVG results\n')
             for key in score_dict.keys():
                 file.writelines('*avg(%s): %s\n'%(key,np.mean(score_dict[key])))
