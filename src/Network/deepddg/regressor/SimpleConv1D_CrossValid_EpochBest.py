@@ -12,7 +12,10 @@ from keras import Input, models, layers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
-
+'''
+基于所有的训练数据，测试独立测试集（无验证集）做 blind test
+由于每折选择的epoch不同，所以做了10次 blind test，第k次blind test的训练数据为k-th train append k-th val
+'''
 def data(train_data_pth,test_data_pth, val_data_pth):
     ## train data
     train_data = np.load(train_data_pth)
@@ -84,9 +87,10 @@ def ieee_net(x_train, y_train, ddg_train, epoch_best):
         return lr
 
     lrate = callbacks.LearningRateScheduler(step_decay, verbose=verbose)
-    my_callbacks = [
-        lrate
-    ]
+    # my_callbacks = [
+    #     lrate
+    # ]
+    my_callbacks = None
 
     network = models.Sequential()
     network.add(layers.Conv1D(filters=16, kernel_size=5, activation='relu', input_shape=(row_num, col_num)))

@@ -12,52 +12,10 @@ from keras import Input, models, layers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
-
-
-def loss_plot(history_dict, outpth):
-    loss = history_dict['loss']
-    mean_absolute_error = history_dict['mean_absolute_error']
-    pearson_r = history_dict['pearson_r']
-    rmse = history_dict['rmse']
-
-    epochs = range(1, len(loss) + 1)
-
-    plt.figure(figsize=(10, 10))
-    plt.subplot(2, 2, 1)
-    plt.plot(epochs, loss, 'r', label='Training loss (mse)')
-    # plt.title('Training and validation loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 2)
-    plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
-    # plt.title('Training and validation mae')
-    plt.xlabel('Epochs')
-    plt.ylabel('MAE')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 3)
-    plt.plot(epochs, rmse, 'r', label='Training rmse')
-    # plt.title('Training and validation rmse')
-    plt.xlabel('Epochs')
-    plt.ylabel('RMSE')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 4)
-    plt.plot(epochs, pearson_r, 'r', label='Training pcc')
-    # plt.title('Training and validation pcc')
-    plt.xlabel('Epochs')
-    plt.ylabel('PCC')
-    plt.grid(True)
-    plt.legend(loc="lower right")
-
-    # plt.show()
-    plt.savefig(outpth)#pngfile
-    plt.clf()
+'''
+基于所有的训练数据，测试独立测试集（无验证集）做 blind test
+选择固定的epoch，做了10次 blind test，第k次blind test的训练数据为k-th train append k-th val
+'''
 
 def data(train_data_pth,test_data_pth, val_data_pth):
     ## train data
