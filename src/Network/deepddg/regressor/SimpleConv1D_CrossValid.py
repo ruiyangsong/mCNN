@@ -1,4 +1,5 @@
 import os, json
+import sys
 import time
 
 import numpy as np
@@ -114,9 +115,9 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     x_val = x_val.reshape(val_shape)
 
     # reshape
-    x_train = x_train.reshape(x_train.shape + (1,))
-    x_test = x_test.reshape(x_test.shape + (1,))
-    x_val = x_val.reshape(x_val.shape + (1,))
+    # x_train = x_train.reshape(x_train.shape + (1,))
+    # x_test = x_test.reshape(x_test.shape + (1,))
+    # x_val = x_val.reshape(x_val.shape + (1,))
     return x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val
 
 def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
@@ -147,12 +148,12 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
     ]
 
     network = models.Sequential()
-    network.add(layers.Conv2D(filters=16, kernel_size=(5, 5), activation='relu', input_shape=(row_num, col_num, 1)))
-    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
-    network.add(layers.Conv2D(32, (5, 5), activation='relu'))
-    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
-    network.add(layers.Conv2D(64, (3, 3), activation='relu'))
-    network.add(layers.MaxPooling2D(pool_size=(2, 2)))
+    network.add(layers.Conv1D(filters=16, kernel_size=5, activation='relu', input_shape=(row_num, col_num)))
+    network.add(layers.MaxPooling1D(pool_size=2))
+    network.add(layers.Conv1D(32, 5, activation='relu'))
+    network.add(layers.MaxPooling1D(pool_size=2))
+    network.add(layers.Conv1D(64, 3, activation='relu'))
+    network.add(layers.MaxPooling1D(pool_size=2))
     network.add(layers.Flatten())
     network.add(layers.Dense(128, activation='relu'))
     network.add(layers.Dropout(0.5))
@@ -178,9 +179,9 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
 
 if __name__ == '__main__':
     from mCNN.queueGPU import queueGPU
-    CUDA_rate = '0.45'
+    CUDA_rate = '0.2'
     ## config TF
-    queueGPU(USER_MEM=6000, INTERVAL=60)
+    queueGPU(USER_MEM=3000, INTERVAL=60)
     # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':
@@ -191,7 +192,8 @@ if __name__ == '__main__':
             config.gpu_options.per_process_gpu_memory_fraction = float(CUDA_rate)
         set_session(tf.Session(config=config))
 
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TrySimpleConv2D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
+    # modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TrySimpleConv1D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/%s_%s'%(sys.argv[0][:-3], time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
     train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
