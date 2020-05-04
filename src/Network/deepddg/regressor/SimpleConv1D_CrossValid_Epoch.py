@@ -112,7 +112,7 @@ def ieee_net(x_train, y_train, ddg_train):
     row_num, col_num = x_train.shape[1:3]
     verbose = 1
     batch_size = 64
-    epochs = 20 #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
+    epochs = int(sys.argv[1]) #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
 
     metrics = ('mae', pearson_r, rmse)
 
@@ -164,6 +164,7 @@ def ieee_net(x_train, y_train, ddg_train):
     return network, result.history
 
 if __name__ == '__main__':
+    epochs = int(sys.argv[1])
     from mCNN.queueGPU import queueGPU
     CUDA_rate = '0.2'
     ## config TF
@@ -179,7 +180,7 @@ if __name__ == '__main__':
         set_session(tf.Session(config=config))
 
     # modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TrySimpleConv1D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/%s_%s'%(sys.argv[0][:-3], time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/%s_%s'%(sys.argv[0][:-3]+sys.argv[1], time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
     train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
