@@ -19,16 +19,12 @@ def loss_plot(history_dict, outpth):
     mean_absolute_error = history_dict['mean_absolute_error']
     pearson_r = history_dict['pearson_r']
     rmse = history_dict['rmse']
-    val_loss = history_dict['val_loss']
-    val_mean_absolute_error = history_dict['val_mean_absolute_error']
-    val_pearson_r = history_dict['val_pearson_r']
-    val_rmse = history_dict['val_rmse']
+
     epochs = range(1, len(loss) + 1)
 
     plt.figure(figsize=(10, 10))
     plt.subplot(2, 2, 1)
     plt.plot(epochs, loss, 'r', label='Training loss (mse)')
-    plt.plot(epochs, val_loss, 'g', label='Validation loss (mse)')
     # plt.title('Training and validation loss')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
@@ -37,7 +33,6 @@ def loss_plot(history_dict, outpth):
 
     plt.subplot(2, 2, 2)
     plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
-    plt.plot(epochs, val_mean_absolute_error, 'g', label='Validation mae')
     # plt.title('Training and validation mae')
     plt.xlabel('Epochs')
     plt.ylabel('MAE')
@@ -46,7 +41,6 @@ def loss_plot(history_dict, outpth):
 
     plt.subplot(2, 2, 3)
     plt.plot(epochs, rmse, 'r', label='Training rmse')
-    plt.plot(epochs, val_rmse, 'g', label='Validation rmse')
     # plt.title('Training and validation rmse')
     plt.xlabel('Epochs')
     plt.ylabel('RMSE')
@@ -55,7 +49,6 @@ def loss_plot(history_dict, outpth):
 
     plt.subplot(2, 2, 4)
     plt.plot(epochs, pearson_r, 'r', label='Training pcc')
-    plt.plot(epochs, val_pearson_r, 'g', label='Validation pcc')
     # plt.title('Training and validation pcc')
     plt.xlabel('Epochs')
     plt.ylabel('PCC')
@@ -80,6 +73,9 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     y_val = val_data['y']
     ddg_val = val_data['ddg'].reshape(-1)
 
+    x_train = np.vstack((x_train,x_val))
+    y_train = np.vstack((y_train,y_val))
+    ddg_train = np.hstack((ddg_train,ddg_val))
     ## test data
     test_data = np.load(test_data_pth)
     x_test = test_data['x']
@@ -90,17 +86,13 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     # reshape and one-hot
     y_train = to_categorical(y_train)
     y_test = to_categorical(y_test)
-    y_val = to_categorical(y_val)
     # normalization
     train_shape = x_train.shape
     test_shape = x_test.shape
-    val_shape = x_val.shape
     col_train = train_shape[-1]
     col_test = test_shape[-1]
-    col_val = val_shape[-1]
     x_train = x_train.reshape((-1, col_train))
     x_test = x_test.reshape((-1, col_test))
-    x_val = x_val.reshape((-1,col_val))
     mean = x_train.mean(axis=0)
     std = x_train.std(axis=0)
     std[np.argwhere(std == 0)] = 0.01
@@ -108,43 +100,38 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     x_train /= std
     x_test -= mean
     x_test /= std
-    x_val -= mean
-    x_val /= std
     x_train = x_train.reshape(train_shape)
     x_test = x_test.reshape(test_shape)
-    x_val = x_val.reshape(val_shape)
 
     # reshape
     # x_train = x_train.reshape(x_train.shape + (1,))
     # x_test = x_test.reshape(x_test.shape + (1,))
-    # x_val = x_val.reshape(x_val.shape + (1,))
-    return x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val
+    return x_train, y_train, ddg_train, x_test, y_test, ddg_test
 
-def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
+def ieee_net(x_train, y_train, ddg_train):
     row_num, col_num = x_train.shape[1:3]
     verbose = 1
     batch_size = 64
-    epochs = 80
+    epochs = 20 #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
 
     metrics = ('mae', pearson_r, rmse)
 
+    def step_decay(epoch):
+        # drops as progression proceeds, good for sgd
+        if epoch > 0.9 * epochs:
+            lr = 0.00001
+        elif epoch > 0.75 * epochs:
+            lr = 0.0001
+        elif epoch > 0.5 * epochs:
+            lr = 0.001
+        else:
+            lr = 0.01
+        print('lr: %f' % lr)
+        return lr
+
+    lrate = callbacks.LearningRateScheduler(step_decay, verbose=verbose)
     my_callbacks = [
-        callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
-            factor=0.33,
-            patience=5,
-        ),
-        callbacks.EarlyStopping(
-            monitor='val_loss',
-            patience=10,
-        ),
-        callbacks.ModelCheckpoint(
-            filepath=filepth,
-            monitor='val_loss',
-            verbose=1,
-            save_best_only=True,
-            mode='min',
-            save_weights_only=True)
+        lrate
     ]
 
     network = models.Sequential()
@@ -167,14 +154,13 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
                     loss='mse',
                     metrics=list(metrics))  # mae平均绝对误差（mean absolute error） accuracy
     result = network.fit(x=x_train,
-                       y=ddg_train,
-                       batch_size=batch_size,
-                       epochs=epochs,
-                       verbose=verbose,
-                       callbacks=my_callbacks,
-                       validation_data=(x_val, ddg_val),
-                       shuffle=True,
-                       )
+                         y=ddg_train,
+                         batch_size=batch_size,
+                         epochs=epochs,
+                         verbose=verbose,
+                         callbacks=my_callbacks,
+                         shuffle=True,
+                         )
     return network, result.history
 
 if __name__ == '__main__':
@@ -205,26 +191,20 @@ if __name__ == '__main__':
         print('--cross validation begin, fold %s is processing.'%k_count)
         train_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_train_center_CA_PCA_False_neighbor_120.npz'%k_count
         valid_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_valid_center_CA_PCA_False_neighbor_120.npz'%k_count
-        x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val = data(train_data_pth,test_data_pth,valid_data_pth)
+        x_train, y_train, ddg_train, x_test, y_test, ddg_test = data(train_data_pth,test_data_pth,valid_data_pth)
         print('x_train: %s'
               '\ny_train: %s'
               '\nddg_train: %s'
               '\nx_test: %s'
               '\ny_test: %s'
               '\nddg_test: %s'
-              '\nx_val: %s'
-              '\ny_val: %s'
-              '\nddg_val: %s'
               % (x_train.shape, y_train.shape, ddg_train.shape,
-                 x_test.shape, y_test.shape, ddg_test.shape,
-                 x_val.shape, y_val.shape, ddg_val.shape))
+                 x_test.shape, y_test.shape, ddg_test.shape))
 
         #
         # train & test
         #
-        # filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
-        filepth = '%s/fold_%s_weights-best.h5'%(modeldir,k_count)
-        model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
+        model, history_dict = ieee_net(x_train, y_train, ddg_train)
 
         #
         # save model architecture
@@ -252,14 +232,6 @@ if __name__ == '__main__':
             #     print(eval(file.read()))
         except:
             print('save history_dict failed, fold_num: %s' % k_count)
-        #
-        # save loss figure
-        #
-        try:
-            figure_pth = '%s/fold_%s_lossFigure.png'%(modeldir,k_count)
-            loss_plot(history_dict,outpth=figure_pth)
-        except:
-            print('save loss plot figure failed, fold_num: %s' % k_count)
 
         #
         # Load model
@@ -267,10 +239,7 @@ if __name__ == '__main__':
         with open('%s/fold_%s_model.json'%(modeldir,k_count), 'r') as json_file:
             loaded_model_json = json_file.read()
         loaded_model = models.model_from_json(loaded_model_json)  # keras.models.model_from_yaml(yaml_string)
-        loaded_model.load_weights(filepath=filepth)
-        # loaded_model.compile(optimizer='rmsprop',  # SGD,adam,rmsprop
-        #                      loss='mse',
-        #                      metrics=['mae',pearson_r])  # mae平均绝对误差（mean absolute error） accuracy)
+        loaded_model.load_weights(filepath='%s/fold_%s_weightsFinal.h5' % (modeldir,k_count))
 
         #
         # Test model
@@ -287,10 +256,6 @@ if __name__ == '__main__':
         train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-1])
         train_score_dict['std'].append(history_dict['rmse'][-1])
         train_score_dict['mae'].append(history_dict['mean_absolute_error'][-1])
-
-        es_train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-11])
-        es_train_score_dict['std'].append(history_dict['rmse'][-11])
-        es_train_score_dict['mae'].append(history_dict['mean_absolute_error'][-11])
 
         k_count += 1
 
@@ -311,9 +276,6 @@ if __name__ == '__main__':
             file.writelines('----------train AVG results\n')
             for key in score_dict.keys():
                 file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key])))
-            file.writelines('----------EarlyStopping train AVG results\n')
-            for key in score_dict.keys():
-                file.writelines('*avg(%s): %s\n'%(key,np.mean(es_train_score_dict[key])))
             file.writelines('----------test AVG results\n')
             for key in score_dict.keys():
                 file.writelines('*avg(%s): %s\n'%(key,np.mean(score_dict[key])))
