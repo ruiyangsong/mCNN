@@ -13,52 +13,6 @@ from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
 
-
-def loss_plot(history_dict, outpth):
-    loss = history_dict['loss']
-    mean_absolute_error = history_dict['mean_absolute_error']
-    pearson_r = history_dict['pearson_r']
-    rmse = history_dict['rmse']
-
-    epochs = range(1, len(loss) + 1)
-
-    plt.figure(figsize=(10, 10))
-    plt.subplot(2, 2, 1)
-    plt.plot(epochs, loss, 'r', label='Training loss (mse)')
-    # plt.title('Training and validation loss')
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 2)
-    plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
-    # plt.title('Training and validation mae')
-    plt.xlabel('Epochs')
-    plt.ylabel('MAE')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 3)
-    plt.plot(epochs, rmse, 'r', label='Training rmse')
-    # plt.title('Training and validation rmse')
-    plt.xlabel('Epochs')
-    plt.ylabel('RMSE')
-    plt.grid(True)
-    plt.legend(loc="upper right")
-
-    plt.subplot(2, 2, 4)
-    plt.plot(epochs, pearson_r, 'r', label='Training pcc')
-    # plt.title('Training and validation pcc')
-    plt.xlabel('Epochs')
-    plt.ylabel('PCC')
-    plt.grid(True)
-    plt.legend(loc="lower right")
-
-    # plt.show()
-    plt.savefig(outpth)#pngfile
-    plt.clf()
-
 def data(train_data_pth,test_data_pth, val_data_pth):
     ## train data
     train_data = np.load(train_data_pth)
@@ -108,11 +62,11 @@ def data(train_data_pth,test_data_pth, val_data_pth):
     # x_test = x_test.reshape(x_test.shape + (1,))
     return x_train, y_train, ddg_train, x_test, y_test, ddg_test
 
-def ieee_net(x_train, y_train, ddg_train):
+def ieee_net(x_train, y_train, ddg_train, epoch_best):
     row_num, col_num = x_train.shape[1:3]
     verbose = 1
     batch_size = 64
-    epochs = 20 #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
+    epochs = epoch_best #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
 
     metrics = ('mae', pearson_r, rmse)
 
@@ -188,6 +142,7 @@ if __name__ == '__main__':
     test_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_foldall_test_center_CA_PCA_False_neighbor_120.npz'
     for i in range(10):
         k_count = i+1
+        fold_specific_epoch = [15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
         print('--cross validation begin, fold %s is processing.'%k_count)
         train_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_train_center_CA_PCA_False_neighbor_120.npz'%k_count
         valid_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_valid_center_CA_PCA_False_neighbor_120.npz'%k_count
@@ -204,7 +159,7 @@ if __name__ == '__main__':
         #
         # train & test
         #
-        model, history_dict = ieee_net(x_train, y_train, ddg_train)
+        model, history_dict = ieee_net(x_train, y_train, ddg_train,epoch_best=fold_specific_epoch[i])
 
         #
         # save model architecture
