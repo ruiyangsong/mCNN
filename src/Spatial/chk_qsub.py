@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''chk qsub results err'''
+'''chk qsub results err,检查是否目标csv都已经成功存在'''
 import os
 wild_err_lst = []
 mutant_err_lst = []
