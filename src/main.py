@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os, sys, time
-from processing import read_csv
+from processing import read_csv,check_pid
 
 '''
 the spatial feature (mCSM, mCNN arrray feature, RSA by stride) are based on refined structure and mutant structure which constructed by pyrosetta.
 '''
+if len(sys.argv) == 1:
+    print('Usage: ./main.py [dataset_name]')
+    sys.exit(0)
 
 dataset_name = sys.argv[1]
 #-----------------------------------------------------------------------------------------------------------------------
@@ -48,7 +51,11 @@ for path_name in pathdict:
 ##########################################
 # print('\n***Cleaning old files...')
 # os.system('rm -rf %s/*' % pathdict['log_dir'])
+# os.system('rm -rf %s/*' % pathdict['bak_dir'])
 # os.system('rm -rf %s/*' % pathdict['err_dir'])
+# os.system('rm -rf %s/*' % pathdict['npz_dir'])
+# os.system('rm -rf /public/home/sry/mCNN/dataset/%s/feature/*'%dataset_name)
+
 # os.system('rm -rf %s/*' % pathdict['msa_dir'])
 # os.system('rm -rf %s/*' % pathdict['rosetta_dir'])
 # os.system('rm -rf %s/*' % pathdict['stride_dir'])
@@ -68,8 +75,9 @@ if run_code == 0:
 if run_code == 0:
     print('\n***Calculating msa feature based on mdl_0...')
     strf_time = time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
-    run_code += os.system('nohup ./MSA/CalMSA.py %s > %s/msa.%s.log 2>&1 &'%(dataset_name,pathdict['log_dir'],strf_time))
     print('running as nohup')
+    nohup_pid = os.popen('nohup ./MSA/CalMSA.py %s > %s/msa.%s.log 2>&1 &echo $!'%(dataset_name,pathdict['log_dir'],strf_time)).readlines()[0].strip()
+    run_code += 0
 
 ## rosetta
 if run_code == 0:
@@ -91,6 +99,7 @@ if run_code == 0:
 ## mCNN
 if run_code == 0:
     print('\n***Calculating mCNN feature...')
+    check_pid(nohup_pid)
     run_code += os.system('./Spatial/run_coord.py %s --flag all -k 120 110 50 40 60 80 100 --center CA -T False'%dataset_name)
 ## mCNN on two clusters
 # if run_code == 0:
