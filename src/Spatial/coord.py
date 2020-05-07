@@ -95,7 +95,7 @@ def main():
             df_feature = FG.append_feature()
             save_csv(df=df_feature, outdir=OUTDIR, filename='center_%s' % center)
             param_acider(NC, df_feature, OUTDIR, FILENAME, center, center_coord)
-        ## 如果包含全部原子的文件已经存在，且目标近邻数的csv文件不存在，执行此部分。
+        ## 如果包含全部原子的文件已经存在，且目标近邻数的csv文件不存在，则读取包含全部原子的文件并筛选近邻。
         elif not os.path.exists('%s/%s.csv'%(OUTDIR,FILENAME)):
             df_feature = read_csv('%s/center_%s.csv'%(OUTDIR,center))
             param_acider(NC, df_feature, OUTDIR, FILENAME, center, center_coord)
