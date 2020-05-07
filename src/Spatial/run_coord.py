@@ -184,7 +184,7 @@ class CoordRunner(object):
 
 
 # ======================================================================================================================
-# Generating numpy array of the whole dataset.
+# Generating numpy array of the whole dataset. see ../Network/generate_array.py
 # ======================================================================================================================
 
 # class ArrayGenerator(object):
