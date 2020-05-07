@@ -24,12 +24,19 @@ aa_123dict = {'A': 'ALA', 'R': 'ARG', 'N': 'ASN', 'D': 'ASP', 'C': 'CYS',
 def log(func):
     @functools.wraps(func)
     def wrapper(*args, **kw):
-        print('@call %s()' % func.__name__)
+        print('\n@call %s()' % func.__name__)
         start = time.time()
         res = func(*args, **kw)
         print('runtime: %f seconds.' % (time.time() - start))
         return res
     return wrapper
+
+def check_pid(pid):
+    run_code = len(os.popen("ps aux | awk '{print $2}'| grep -w %s" % pid).readlines())
+    while run_code != 0:
+        time.sleep(60)
+        run_code = len(os.popen("ps aux | awk '{print $2}'| grep -w %s" % pid).readlines())
+    print('check_pid done')
 
 def check_qsub(tag,sleep_time,verbose=1):
     jobs = int(shell('qzy | grep %s | wc -l' % tag))
