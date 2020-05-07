@@ -33,11 +33,14 @@ def main():
     QR.coord_runner()
 
     if flag == 'first':
-        ## first means only calc df_feature (ALL the ATOMS)
+        ## first means only calc df_feature (ALL the ATOMS), do not run the latter part in this main function
         exit(0)
-
+    # ==================================================================================================================
+    ## ArrayGenerator was replaced by another script (../Network/generate_array.py)
+    # ==================================================================================================================
     # AG = ArrayGenerator(homedir, dataset_name, k_neighborlst,centerlst,pca)
     # AG.array_runner()
+    # ==================================================================================================================
 #-----------------------------------------------------------------------------------------------------------------------
 class CoordRunner(object):
     def __init__(self,homedir,dataset_name,flag,k_neighborlst,centerlst,featurelst):
