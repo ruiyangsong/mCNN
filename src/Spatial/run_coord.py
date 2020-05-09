@@ -11,7 +11,7 @@ from mCNN.processing import shell, str2bool, read_csv, log, check_qsub, save_dat
 
 def main():
     homedir    = shell('echo $HOME')
-    featurelst = ' '.join(['rsa', 'thermo', 'onehot', 'pharm', 'hp', 'mass', 'deltar', 'pharm_deltar','hp_deltar', 'msa', 'energy', 'ddg'])
+    featurelst = ' '.join(['depth', 'rsa', 'thermo', 'onehot', 'pharm', 'hp', 'mass', 'deltar', 'pharm_deltar','hp_deltar', 'msa', 'energy', 'ddg'])
     # ------------------------------------------------------------------------------------------------------------------
     ## parse argument
     parser = argparse.ArgumentParser()
@@ -61,6 +61,7 @@ class CoordRunner(object):
         self.ref_pdb_dir = '%s/mCNN/dataset/%s/feature/rosetta/ref_output' % (homedir, dataset_name)
         self.mut_pdb_dir = '%s/mCNN/dataset/%s/feature/rosetta/mut_output' % (homedir, dataset_name)
 
+        self.msms_dir    = '%s/mCNN/dataset/%s/feature/msms'%(homedir,dataset_name)
         self.stride_dir  = '%s/mCNN/dataset/%s/feature/stride'%(homedir,dataset_name)
         self.msa_dir     = '%s/mCNN/dataset/%s/feature/msa'%(homedir,dataset_name)
 
@@ -112,6 +113,7 @@ class CoordRunner(object):
 
         energy_dir   = '%s/%s/energy.csv' % (self.ref_pdb_dir, pdbid)
         mapping_dir  = '%s/%s.csv'%(self.map_csv_dir,pdbid)
+        surface_dir  = '%s/ref_output_surface/%s/%s_ref_radii_1.4.surface.npz'%(self.msms_dir,pdbid,pdbid)
         sa_dir       = '%s/wild/%s.stride' % (self.stride_dir, pdbid)
         # -----------------------------qsub-----------------------------------------------------------------------------
         filename = 'center_%s_neighbor_%s'%(center,k_neighbor)
@@ -133,8 +135,8 @@ class CoordRunner(object):
         g.writelines('#!/usr/bin/env bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature, wt_blast_path,mt_blast_dir,energy_dir, mapping_dir, sa_dir, thermo, ddg))
+            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s --surfacedir %s -S %s -t %s -d %s\n'
+            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature, wt_blast_path,mt_blast_dir,energy_dir, mapping_dir, surface_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
@@ -153,6 +155,7 @@ class CoordRunner(object):
 
         energy_dir = '%s/%s/energy.csv' % (self.mut_pdb_dir, rosetta_mut_tag)
         mapping_dir = '%s/%s.csv' % (self.map_csv_dir, pdbid)
+        surface_dir = '%s/mut_output_surface/%s/%s_mut_radii_1.4.surface.npz'%(self.msms_dir,rosetta_mut_tag,pdbid)
         sa_dir = '%s/mutant/%s.stride' % (self.stride_dir, rosetta_mut_tag)
         # -----------------------------qsub-----------------------------
         filename = 'center_%s_neighbor_%s'%(center,k_neighbor)
@@ -174,9 +177,8 @@ class CoordRunner(object):
         g.writelines('#!/usr/bin/env bash\n')
         g.writelines("echo 'user:' `whoami`\necho 'hostname:' `hostname`\necho 'begin at:' `date`\n")
         g.writelines(
-            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s -S %s -t %s -d %s\n'
-            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature,
-               wt_blast_path, mt_blast_dir, energy_dir, mapping_dir, sa_dir, thermo, ddg))
+            '%s --flag %s -p %s -tag %s -k %s -c %s -o %s -n %s --reverse %s -f %s --wtblastdir %s --mtblastdir %s --energydir %s --mappingdir %s --surfacedir %s -S %s -t %s -d %s\n'
+            % (self.app, self.flag, pdbdir, mutant_tag, k_neighbor, center, csv_outdir, filename,reverse, self.feature, wt_blast_path, mt_blast_dir, energy_dir, mapping_dir, surface_dir, sa_dir, thermo, ddg))
         g.writelines("echo 'end at:' `date`\n")
         g.close()
         os.system('chmod 755 %s' % run_prog)
