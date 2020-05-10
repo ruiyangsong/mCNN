@@ -32,12 +32,26 @@ def main():
     run_neighbor(dataset_name, wild_feature_csv_dir, wild_outdir, atom_lst, kneighbor_lst, center_lst, pca)
     run_radii(dataset_name, wild_feature_csv_dir, wild_outdir, atom_lst, radii_lst, center_lst, pca)
 
+    try:
+        os.chdir('%s/../' % wild_outdir)
+        print('drop duplicates in err.lst file, current dir is [%s]'%os.getcwd())
+        os.system('mv err.lst err_dup.lst && sort -u err_dup.lst > err.lst')
+    except:
+        pass
+
     ## mutant
     # mutant_feature_csv_dir = '/public/home/sry/mCNN/dataset/' + dataset_name + '/feature/mCNN/mutant/csv'
     mutant_feature_csv_dir = '/public/home/sry/mCNN/dataset/SSD/feature/mCNN/mutant/csv'
     mutant_outdir = '/public/home/sry/mCNN/dataset/' + dataset_name + '/npz/mutant/cross_valid'
     run_neighbor(dataset_name, mutant_feature_csv_dir, mutant_outdir, atom_lst, kneighbor_lst, center_lst, pca)
     run_radii(dataset_name, mutant_feature_csv_dir, mutant_outdir, atom_lst, radii_lst, center_lst, pca)
+
+    try:
+        os.chdir('%s/../' % mutant_outdir)
+        print('drop duplicates in err.lst file, current dir is [%s]'%os.getcwd())
+        os.system('mv err.lst err_dup.lst && sort -u err_dup.lst > err.lst')
+    except:
+        pass
 
 
 def run_neighbor(dataset_name,feature_csv_dir,outdir,atom_lst,kneighbor_lst,center_lst,pca):
@@ -53,11 +67,6 @@ def run_neighbor(dataset_name,feature_csv_dir,outdir,atom_lst,kneighbor_lst,cent
                 filename = filename_prefix + 'center_%s_PCA_%s_neighbor_%s' % (center, pca, kneighbor)
                 AG = ArrayGenerator(fold_csv_pth, feature_csv_dir, outdir, filename, atom_lst=atom_lst, center=center, pca=pca)
                 AG.neighbor_array_generator(k_neighbor=kneighbor)
-    try:
-        os.chdir('%s../' % outdir)
-        os.system('mv err.lst err_dup.lst && sort -u err_dup.lst > err.lst')
-    except:
-        pass
 
 
 def run_radii(dataset_name,feature_csv_dir,outdir,atom_lst,radii_lst,center_lst,pca):
@@ -73,16 +82,7 @@ def run_radii(dataset_name,feature_csv_dir,outdir,atom_lst,radii_lst,center_lst,
                 filename = filename_prefix + 'center_%s_PCA_%s_radii_%s' % (center, pca, radii)
                 AG = ArrayGenerator(fold_csv_pth, feature_csv_dir, outdir, filename, atom_lst=atom_lst, center=center, pca=pca)
                 AG.radii_array_generator(radii=radii)
-    try:
-        os.chdir('%s../' % outdir)
-        os.system('mv err.lst err_dup.lst && sort -u err_dup.lst > err.lst')
-    except:
-        pass
 
-
-
-def blind_test():
-    pass
 
 class ArrayGenerator(object):
     def __init__(self, mutant_csv_pth, feature_csv_dir, outdir, filename, atom_lst=None, center='CA', pca=False):

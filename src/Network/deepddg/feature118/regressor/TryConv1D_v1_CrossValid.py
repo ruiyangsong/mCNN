@@ -8,7 +8,7 @@ import tensorflow as tf
 from sklearn.model_selection import StratifiedKFold
 from keras import backend as K
 from keras.backend.tensorflow_backend import set_session
-from keras import Input, models, layers, optimizers, callbacks
+from keras import Input, models, layers, optimizers, callbacks, regularizers
 from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
@@ -123,7 +123,8 @@ def data(train_data_pth,test_data_pth, val_data_pth):
 def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
     row_num, col_num = x_train.shape[1:3]
     verbose = 1
-    batch_size = 64
+    # batch_size = 64
+    batch_size = 128
     epochs = 80
 
     metrics = ('mae', pearson_r, rmse)
@@ -140,29 +141,35 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
         ),
         callbacks.ModelCheckpoint(
             filepath=filepth,
-            monitor='val_loss',
+            # monitor='val_loss',
+            monitor='val_pearson_r',
             verbose=1,
             save_best_only=True,
-            mode='min',
+            mode='max',
             save_weights_only=True)
     ]
 
     network = models.Sequential()
-    network.add(layers.Conv1D(filters=16, kernel_size=5, activation='relu', input_shape=(row_num, col_num)))
+    network.add(layers.Conv1D(filters=256, kernel_size=5, activation='relu', input_shape=(row_num, col_num),kernel_regularizer=regularizers.l2(0.01)))
+    network.add(layers.Conv1D(filters=256, kernel_size=5, activation='relu', input_shape=(row_num, col_num),kernel_regularizer=regularizers.l2(0.01)))
+    network.add(layers.BatchNormalization(axis=-1))
     network.add(layers.MaxPooling1D(pool_size=2))
-    network.add(layers.Conv1D(32, 5, activation='relu'))
+    network.add(layers.Conv1D(128, 5, activation='relu',kernel_regularizer=regularizers.l2(0.025)))
+    network.add(layers.BatchNormalization(axis=-1))
     network.add(layers.MaxPooling1D(pool_size=2))
-    network.add(layers.Conv1D(64, 3, activation='relu'))
+    network.add(layers.Conv1D(64, 3, activation='relu',kernel_regularizer=regularizers.l2(0.001)))
+    network.add(layers.BatchNormalization(axis=-1))
     network.add(layers.MaxPooling1D(pool_size=2))
     network.add(layers.Flatten())
-    network.add(layers.Dense(128, activation='relu'))
+    network.add(layers.Dense(128, activation='relu',kernel_regularizer=regularizers.l2(0.01)))
+    network.add(layers.BatchNormalization(axis=-1))
     network.add(layers.Dropout(0.5))
     network.add(layers.Dense(16, activation='relu'))
     network.add(layers.Dropout(0.3))
     network.add(layers.Dense(1))
     # print(network.summary())
     # rmsp = optimizers.RMSprop(lr=0.0001,  decay=0.1)
-    rmsp = optimizers.RMSprop(lr=0.0001)
+    rmsp = optimizers.RMSprop(lr=0.01)
     network.compile(optimizer=rmsp,#'rmsprop',  # SGD,adam,rmsprop
                     loss='mse',
                     metrics=list(metrics))  # mae平均绝对误差（mean absolute error） accuracy
@@ -179,9 +186,9 @@ def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val
 
 if __name__ == '__main__':
     from mCNN.queueGPU import queueGPU
-    CUDA_rate = '0.2'
+    CUDA_rate = '0.01'
     ## config TF
-    queueGPU(USER_MEM=3000, INTERVAL=60)
+    queueGPU(USER_MEM=3400, INTERVAL=60)
     # os.environ['CUDA_VISIBLE_DEVICES'] = CUDA
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     if CUDA_rate != 'full':

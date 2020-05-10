@@ -12,12 +12,61 @@ from keras import Input, models, layers, optimizers, callbacks
 from mCNN.Network.metrics import test_report_reg, pearson_r, rmse
 from keras.utils import to_categorical
 from matplotlib import pyplot as plt
-'''
-基于所有的训练数据，测试独立测试集（无验证集）做 blind test 来选择特征，网络结构是 '../SimpleConv1D_CrossValid_Epoch.py' 中的结构
-选择固定的epoch，做10次 blind test，第k次blind test的训练数据为k-th train append k-th val
-相当于测试了模型10次来评估模型的稳定性
-'''
-def data(train_data_pth,test_data_pth, val_data_pth, idx_list):
+
+
+def loss_plot(history_dict, outpth):
+    loss = history_dict['loss']
+    mean_absolute_error = history_dict['mean_absolute_error']
+    pearson_r = history_dict['pearson_r']
+    rmse = history_dict['rmse']
+    val_loss = history_dict['val_loss']
+    val_mean_absolute_error = history_dict['val_mean_absolute_error']
+    val_pearson_r = history_dict['val_pearson_r']
+    val_rmse = history_dict['val_rmse']
+    epochs = range(1, len(loss) + 1)
+
+    plt.figure(figsize=(10, 10))
+    plt.subplot(2, 2, 1)
+    plt.plot(epochs, loss, 'r', label='Training loss (mse)')
+    plt.plot(epochs, val_loss, 'g', label='Validation loss (mse)')
+    # plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(2, 2, 2)
+    plt.plot(epochs, mean_absolute_error, 'r', label='Training mae')
+    plt.plot(epochs, val_mean_absolute_error, 'g', label='Validation mae')
+    # plt.title('Training and validation mae')
+    plt.xlabel('Epochs')
+    plt.ylabel('MAE')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(2, 2, 3)
+    plt.plot(epochs, rmse, 'r', label='Training rmse')
+    plt.plot(epochs, val_rmse, 'g', label='Validation rmse')
+    # plt.title('Training and validation rmse')
+    plt.xlabel('Epochs')
+    plt.ylabel('RMSE')
+    plt.grid(True)
+    plt.legend(loc="upper right")
+
+    plt.subplot(2, 2, 4)
+    plt.plot(epochs, pearson_r, 'r', label='Training pcc')
+    plt.plot(epochs, val_pearson_r, 'g', label='Validation pcc')
+    # plt.title('Training and validation pcc')
+    plt.xlabel('Epochs')
+    plt.ylabel('PCC')
+    plt.grid(True)
+    plt.legend(loc="lower right")
+
+    # plt.show()
+    plt.savefig(outpth)#pngfile
+    plt.clf()
+
+def data(train_data_pth,test_data_pth, val_data_pth):
     ## train data
     train_data = np.load(train_data_pth)
     x_train = train_data['x']
@@ -31,30 +80,27 @@ def data(train_data_pth,test_data_pth, val_data_pth, idx_list):
     y_val = val_data['y']
     ddg_val = val_data['ddg'].reshape(-1)
 
-    x_train = np.vstack((x_train,x_val))
-    y_train = np.vstack((y_train,y_val))
-    ddg_train = np.hstack((ddg_train,ddg_val))
     ## test data
     test_data = np.load(test_data_pth)
     x_test = test_data['x']
     y_test = test_data['y']
     ddg_test = test_data['ddg'].reshape(-1)
 
-    # Select feature
-    x_train = x_train[:, :, idx_list]
-    x_test = x_test[:, :, idx_list]
-
     # sort row default is chain, pass
     # reshape and one-hot
     y_train = to_categorical(y_train)
     y_test = to_categorical(y_test)
+    y_val = to_categorical(y_val)
     # normalization
     train_shape = x_train.shape
     test_shape = x_test.shape
+    val_shape = x_val.shape
     col_train = train_shape[-1]
     col_test = test_shape[-1]
+    col_val = val_shape[-1]
     x_train = x_train.reshape((-1, col_train))
     x_test = x_test.reshape((-1, col_test))
+    x_val = x_val.reshape((-1,col_val))
     mean = x_train.mean(axis=0)
     std = x_train.std(axis=0)
     std[np.argwhere(std == 0)] = 0.01
@@ -62,38 +108,44 @@ def data(train_data_pth,test_data_pth, val_data_pth, idx_list):
     x_train /= std
     x_test -= mean
     x_test /= std
+    x_val -= mean
+    x_val /= std
     x_train = x_train.reshape(train_shape)
     x_test = x_test.reshape(test_shape)
+    x_val = x_val.reshape(val_shape)
 
     # reshape
     # x_train = x_train.reshape(x_train.shape + (1,))
     # x_test = x_test.reshape(x_test.shape + (1,))
-    return x_train, y_train, ddg_train, x_test, y_test, ddg_test
+    # x_val = x_val.reshape(x_val.shape + (1,))
+    return x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val
 
-def ieee_net(x_train, y_train, ddg_train):
+def ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth):
     row_num, col_num = x_train.shape[1:3]
     verbose = 1
-    batch_size = 64
-    epochs = int(sys.argv[1]) #[15, 12, 16, 29, 16, 12, 10, 31, 10, 19]
+    batch_size = 128#64
+    epochs = 80
 
     metrics = ('mae', pearson_r, rmse)
 
-    def step_decay(epoch):
-        # drops as progression proceeds, good for sgd
-        if epoch > 0.9 * epochs:
-            lr = 0.00001
-        elif epoch > 0.75 * epochs:
-            lr = 0.0001
-        elif epoch > 0.5 * epochs:
-            lr = 0.001
-        else:
-            lr = 0.01
-        print('lr: %f' % lr)
-        return lr
-
-    lrate = callbacks.LearningRateScheduler(step_decay, verbose=verbose)
     my_callbacks = [
-        lrate
+        callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.33,
+            patience=5,
+        ),
+        callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+        ),
+        callbacks.ModelCheckpoint(
+            filepath=filepth,
+            monitor='val_pearson_r',
+            # monitor='val_loss',
+            verbose=1,
+            save_best_only=True,
+            mode='max',
+            save_weights_only=True)
     ]
 
     network = models.Sequential()
@@ -116,20 +168,17 @@ def ieee_net(x_train, y_train, ddg_train):
                     loss='mse',
                     metrics=list(metrics))  # mae平均绝对误差（mean absolute error） accuracy
     result = network.fit(x=x_train,
-                         y=ddg_train,
-                         batch_size=batch_size,
-                         epochs=epochs,
-                         verbose=verbose,
-                         callbacks=my_callbacks,
-                         shuffle=True,
-                         )
+                       y=ddg_train,
+                       batch_size=batch_size,
+                       epochs=epochs,
+                       verbose=verbose,
+                       callbacks=my_callbacks,
+                       validation_data=(x_val, ddg_val),
+                       shuffle=True,
+                       )
     return network, result.history
 
 if __name__ == '__main__':
-    epochs = int(sys.argv[1])
-
-    idx_list = [x for x in range(42)] + [x for x in range(58, 117)]
-
     from mCNN.queueGPU import queueGPU
     CUDA_rate = '0.2'
     ## config TF
@@ -145,7 +194,7 @@ if __name__ == '__main__':
         set_session(tf.Session(config=config))
 
     # modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/TrySimpleConv1D_CrossValid_%s'%time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime())
-    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/%s_%s'%(sys.argv[0][:-3]+sys.argv[1], time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
+    modeldir = '/dl/sry/mCNN/src/Network/deepddg/regressor/%s_%s'%(sys.argv[0][:-3], time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
     os.makedirs(modeldir, exist_ok=True)
     score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
     train_score_dict = {'pearson_coeff':[], 'std':[], 'mae':[]}
@@ -157,20 +206,26 @@ if __name__ == '__main__':
         print('--cross validation begin, fold %s is processing.'%k_count)
         train_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_train_center_CA_PCA_False_neighbor_120.npz'%k_count
         valid_data_pth = '/dl/sry/mCNN/dataset/deepddg/npz/wild/cross_valid/cro_fold%s_valid_center_CA_PCA_False_neighbor_120.npz'%k_count
-        x_train, y_train, ddg_train, x_test, y_test, ddg_test = data(train_data_pth,test_data_pth,valid_data_pth,idx_list)
+        x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val = data(train_data_pth,test_data_pth,valid_data_pth)
         print('x_train: %s'
               '\ny_train: %s'
               '\nddg_train: %s'
               '\nx_test: %s'
               '\ny_test: %s'
               '\nddg_test: %s'
+              '\nx_val: %s'
+              '\ny_val: %s'
+              '\nddg_val: %s'
               % (x_train.shape, y_train.shape, ddg_train.shape,
-                 x_test.shape, y_test.shape, ddg_test.shape))
+                 x_test.shape, y_test.shape, ddg_test.shape,
+                 x_val.shape, y_val.shape, ddg_val.shape))
 
         #
         # train & test
         #
-        model, history_dict = ieee_net(x_train, y_train, ddg_train)
+        # filepth = '%s/fold_%s_weights-improvement-{epoch:02d}-{val_loss:.4f}.h5'%(modeldir,k_count)
+        filepth = '%s/fold_%s_weights-best.h5'%(modeldir,k_count)
+        model, history_dict = ieee_net(x_train, y_train, ddg_train, x_test, y_test, ddg_test, x_val, y_val, ddg_val, filepth)
 
         #
         # save model architecture
@@ -198,6 +253,14 @@ if __name__ == '__main__':
             #     print(eval(file.read()))
         except:
             print('save history_dict failed, fold_num: %s' % k_count)
+        #
+        # save loss figure
+        #
+        try:
+            figure_pth = '%s/fold_%s_lossFigure.png'%(modeldir,k_count)
+            loss_plot(history_dict,outpth=figure_pth)
+        except:
+            print('save loss plot figure failed, fold_num: %s' % k_count)
 
         #
         # Load model
@@ -205,7 +268,10 @@ if __name__ == '__main__':
         with open('%s/fold_%s_model.json'%(modeldir,k_count), 'r') as json_file:
             loaded_model_json = json_file.read()
         loaded_model = models.model_from_json(loaded_model_json)  # keras.models.model_from_yaml(yaml_string)
-        loaded_model.load_weights(filepath='%s/fold_%s_weightsFinal.h5' % (modeldir,k_count))
+        loaded_model.load_weights(filepath=filepth)
+        # loaded_model.compile(optimizer='rmsprop',  # SGD,adam,rmsprop
+        #                      loss='mse',
+        #                      metrics=['mae',pearson_r])  # mae平均绝对误差（mean absolute error） accuracy)
 
         #
         # Test model
@@ -222,6 +288,10 @@ if __name__ == '__main__':
         train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-1])
         train_score_dict['std'].append(history_dict['rmse'][-1])
         train_score_dict['mae'].append(history_dict['mean_absolute_error'][-1])
+
+        es_train_score_dict['pearson_coeff'].append(history_dict['pearson_r'][-11])
+        es_train_score_dict['std'].append(history_dict['rmse'][-11])
+        es_train_score_dict['mae'].append(history_dict['mean_absolute_error'][-11])
 
         k_count += 1
 
@@ -242,6 +312,9 @@ if __name__ == '__main__':
             file.writelines('----------train AVG results\n')
             for key in score_dict.keys():
                 file.writelines('*avg(%s): %s\n'%(key,np.mean(train_score_dict[key])))
+            file.writelines('----------EarlyStopping train AVG results\n')
+            for key in score_dict.keys():
+                file.writelines('*avg(%s): %s\n'%(key,np.mean(es_train_score_dict[key])))
             file.writelines('----------test AVG results\n')
             for key in score_dict.keys():
                 file.writelines('*avg(%s): %s\n'%(key,np.mean(score_dict[key])))
