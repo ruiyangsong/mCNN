@@ -64,7 +64,7 @@ def run_neighbor(dataset_name,feature_csv_dir,outdir,atom_lst,kneighbor_lst,cent
             for center in center_lst:
                 fold_csv_pth = '/public/home/sry/mCNN/dataset/' + dataset_name + '/cross_validation/' + fold_csv_name
                 filename_prefix = fold_csv_name.split('_')[-2][:3] + '_' + fold_csv_name.split('.')[-3] + '_' + fold_csv_name.split('.')[-2]
-                filename = filename_prefix + 'center_%s_PCA_%s_neighbor_%s' % (center, pca, kneighbor)
+                filename = filename_prefix + '_center_%s_PCA_%s_neighbor_%s' % (center, pca, kneighbor)
                 AG = ArrayGenerator(fold_csv_pth, feature_csv_dir, outdir, filename, atom_lst=atom_lst, center=center, pca=pca)
                 AG.neighbor_array_generator(k_neighbor=kneighbor)
 
@@ -79,7 +79,7 @@ def run_radii(dataset_name,feature_csv_dir,outdir,atom_lst,radii_lst,center_lst,
             for center in center_lst:
                 fold_csv_pth = '/public/home/sry/mCNN/dataset/' + dataset_name + '/cross_validation/' + fold_csv_name
                 filename_prefix = fold_csv_name.split('_')[-2][:3] + '_' + fold_csv_name.split('.')[-3] + '_' + fold_csv_name.split('.')[-2]
-                filename = filename_prefix + 'center_%s_PCA_%s_radii_%s' % (center, pca, radii)
+                filename = filename_prefix + '_center_%s_PCA_%s_radii_%s' % (center, pca, radii)
                 AG = ArrayGenerator(fold_csv_pth, feature_csv_dir, outdir, filename, atom_lst=atom_lst, center=center, pca=pca)
                 AG.radii_array_generator(radii=radii)
 
