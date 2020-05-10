@@ -13,12 +13,11 @@ example of fold-specific csv files:
 {deepddg.csv}_{cross_valid}.{fold1}.{train}.csv]
 '''
 def main():
-    # if len(sys.argv) == 1:
-    #     print('Usage: generate_array.py [dataset_name]')
-    #     sys.exit(0)
-    #
-    # dataset_name  = sys.argv[1]
-    dataset_name  = 'deepddg'
+    if len(sys.argv) == 1:
+        print('Usage: generate_array.py [dataset_name]')
+        sys.exit(0)
+
+    dataset_name  = sys.argv[1]
     kneighbor_lst = [120]
     radii_lst     = [12]
     center_lst    = ['CA']
@@ -294,11 +293,4 @@ class ArrayGenerator(object):
         print('npz array stores at [%s/%s.npz]' % (self.outdir, self.filename))
 
 if __name__ == '__main__':
-    import time
-    while True:
-        if len(os.popen('~/bin/qzy | grep sry').readlines()) == 0:
-            break
-        else:
-            time.sleep(30)
-
     main()
