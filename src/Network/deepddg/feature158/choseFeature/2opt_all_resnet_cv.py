@@ -21,7 +21,6 @@ def Conv1DRegressorIn1(flag):
     K.clear_session()
     current_neighbor              = space['neighbor']
     current_idx_idx               = space['idx_idx']
-    current_batch_size            = space['batch_size']
 
     current_dense_num             = space['dense_num']
     current_dilation1D_layers     = space['dilation1D_layers']
@@ -56,7 +55,7 @@ def Conv1DRegressorIn1(flag):
     idx = idx_lst[idx_idx]
     ## hypers for net
     lr = 1e-4  # 0.0001
-    batch_size = {{choice([1, 16, 32, 64])}}
+    batch_size = 32
     epochs = 200
     padding_style = 'same'
     activator_Conv1D = 'elu'
@@ -148,8 +147,8 @@ def Conv1DRegressorIn1(flag):
     #
     # cross_valid
     #
-    hyper_param_tag = '%s_%s_%s_%s_%s_%s_%s' % (
-        current_neighbor, current_idx_idx, current_batch_size, current_dense_num,
+    hyper_param_tag = '%s_%s_%s_%s_%s_%s' % (
+        current_neighbor, current_idx_idx, current_dense_num,
         current_dilation1D_layers, current_dilation1D_filter_num, current_reduce1D_filter_num)
     modeldir = '/dl/sry/projects/from_hp/mCNN/src/Network/deepddg/opt_all_resnet/model/%s-%s' % (
         hyper_param_tag, time.strftime("%Y.%m.%d.%H.%M.%S", time.localtime()))
