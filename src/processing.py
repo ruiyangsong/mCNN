@@ -112,6 +112,10 @@ def read_csv(csvdir):
     f.close()
     return df
 
+def eval2dict(pth):
+    with open(pth,'w') as f:
+        return eval(f.read())
+
 def save_data_array(x,y,ddg_value,filename,outdir):
     if not os.path.exists(outdir):
         os.system('mkdir -p %s'%outdir)
